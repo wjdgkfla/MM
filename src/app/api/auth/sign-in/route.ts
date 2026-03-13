@@ -3,6 +3,7 @@ import { dataAccess } from '@/lib/data'
 import { isGmuEmail } from '@/lib/validators'
 import { AuthSession } from '@/lib/auth/types'
 import { setSessionCookie } from '@/lib/auth/session'
+import { resolveSessionRole } from '@/lib/auth/devAdmin'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,16 +18,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only GMU emails are allowed (@gmu.edu or @masonlive.gmu.edu)' }, { status: 400 })
     }
 
-    const existing = dataAccess.users.findAll().find((user) => user.gmuEmail.toLowerCase() === email)
+    const existing = dataAccess.users.findByEmail(email)
     if (existing?.accountState === 'suspended') {
       return NextResponse.json({ error: 'This account is currently suspended' }, { status: 403 })
     }
 
-    const session: AuthSession = {
-      userId: existing?.id || `stub-${email.split('@')[0]}`,
-      role: existing?.role || 'student',
+    const user = dataAccess.users.upsert({
       email,
       displayName: existing?.displayName || String(body?.displayName || email.split('@')[0]),
+      role: existing?.role || resolveSessionRole(email),
+    })
+
+    const session: AuthSession = {
+      userId: user.id,
+      role: user.role,
+      email,
+      displayName: user.displayName,
       gmuVerified: true,
       issuedAt: new Date().toISOString(),
     }

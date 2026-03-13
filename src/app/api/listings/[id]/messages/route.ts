@@ -18,11 +18,9 @@ export async function GET(
     return NextResponse.json({ error: 'buyerId is required' }, { status: 400 })
   }
 
-  if (viewerUserId) {
-    db.messages.markThreadAsRead(params.id, buyerId, viewerUserId)
-  }
-
-  const messages = db.messages.getByListingAndBuyer(params.id, buyerId)
+  const messages = viewerUserId
+    ? db.messages.getThread(params.id, listing.sellerId, buyerId)
+    : db.messages.getByListing(params.id, buyerId)
   return NextResponse.json(messages)
 }
 
@@ -38,39 +36,30 @@ export async function POST(
   try {
     const body = await request.json()
     const senderId = String(body.senderId || '').trim()
-    const senderName = String(body.senderName || '').trim()
     const senderEmail = String(body.senderEmail || '').trim().toLowerCase()
     const content = String(body.content || '').trim()
 
-    if (!senderId || !senderName || !senderEmail || !content) {
+    if (!senderId || !senderEmail || !content) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const senderRole = senderId === listing.sellerId ? 'seller' : 'buyer'
     const providedBuyerId = String(body.buyerId || '').trim()
-    const providedBuyerEmail = String(body.buyerEmail || '').trim().toLowerCase()
     const buyerId = senderRole === 'buyer' ? senderId : providedBuyerId
-    const buyerEmail = senderRole === 'buyer' ? senderEmail : providedBuyerEmail
 
-    if (!buyerId || !buyerEmail || buyerId === listing.sellerId) {
+    if (!buyerId || buyerId === listing.sellerId) {
       return NextResponse.json({ error: 'Valid buyer identity is required' }, { status: 400 })
     }
 
     const message = db.messages.create({
-      threadId: `${params.id}:${buyerId}`,
       listingId: params.id,
-      buyerId,
-      buyerEmail,
-      senderId,
-      senderName,
-      senderEmail,
-      senderRole,
-      content,
-      readByUserIds: [senderId],
+      fromUserId: senderId,
+      toUserId: senderRole === 'buyer' ? listing.sellerId : buyerId,
+      body: content,
     })
 
     return NextResponse.json(message)
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
   }
 }

@@ -79,6 +79,8 @@ export interface ListingsRepository {
 export interface UsersRepository {
   findAll(): User[]
   findById(id: string): User | undefined
+  findByEmail(email: string): User | undefined
+  upsert(input: { email: string; displayName: string; role?: UserRole }): User
   updateRole(id: string, role: UserRole): User | null
   updateAccountState(id: string, accountState: UserAccountState): User | null
 }

@@ -45,7 +45,16 @@ export function Header() {
           </Link>
           {session ? (
             <>
-              <span className="hidden sm:inline text-gray-500 text-xs">{session.displayName}</span>
+              <div className="hidden sm:flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1">
+                <span className="text-xs font-medium text-gray-700">{session.displayName}</span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                    session.role === 'admin' ? 'bg-amber-100 text-amber-800' : 'bg-[#e8f4ee] text-[#006633]'
+                  }`}
+                >
+                  {session.role === 'admin' ? 'Admin' : 'Student'}
+                </span>
+              </div>
               <button type="button" onClick={handleSignOut} className="rounded-lg px-2 py-1 text-gray-600 hover:bg-gray-100 hover:text-[#006633] transition-colors font-medium">
                 Sign out
               </button>

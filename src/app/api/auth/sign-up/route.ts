@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { dataAccess } from '@/lib/data'
+import { resolveSessionRole } from '@/lib/auth/devAdmin'
 import { isGmuEmail } from '@/lib/validators'
 import { AuthSession } from '@/lib/auth/types'
 import { setSessionCookie } from '@/lib/auth/session'
@@ -17,17 +19,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Sign-up is limited to GMU emails' }, { status: 400 })
     }
 
-    // Stub sign-up: this creates a session now; user persistence comes later.
-    const session: AuthSession = {
-      userId: `stub-${email.split('@')[0]}`,
-      role: 'student',
+    const user = dataAccess.users.upsert({
       email,
       displayName,
+      role: resolveSessionRole(email),
+    })
+
+    const session: AuthSession = {
+      userId: user.id,
+      role: user.role,
+      email,
+      displayName: user.displayName,
       gmuVerified: true,
       issuedAt: new Date().toISOString(),
     }
 
-    const response = NextResponse.json({ session, note: 'Stub sign-up completed. Persist users in DB later.' })
+    const response = NextResponse.json({ session, note: 'Demo sign-up completed with local dev persistence.' })
     setSessionCookie(response, session)
     return response
   } catch {

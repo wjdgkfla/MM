@@ -118,11 +118,16 @@ export async function POST(request: NextRequest) {
   try {
     const session = getSessionFromRequest(request)
     if (!session) {
-      return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
+      return NextResponse.json({ error: 'Sign in required before posting. Your session may have expired.' }, { status: 401 })
     }
 
     if (!isGmuEmail(session.email) || !session.gmuVerified) {
-      return NextResponse.json({ error: 'GMU verified session required' }, { status: 403 })
+      return NextResponse.json(
+        {
+          error: `GMU verified session required for posting. Signed in as ${session.email}. Try signing out and back in with a GMU email.`,
+        },
+        { status: 403 }
+      )
     }
 
     const body = await request.json()

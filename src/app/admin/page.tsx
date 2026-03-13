@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { AUTH_COOKIE_NAME } from '@/lib/auth/constants'
+import { DEV_ADMIN_EMAILS } from '@/lib/auth/devAdmin'
 import { decodeSession } from '@/lib/auth/session'
 import { AdminModerationClient } from './AdminModerationClient'
 
@@ -13,7 +14,8 @@ export default function AdminPage() {
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="ui-surface p-6 text-center">
           <h1 className="text-2xl font-bold text-[#006633]">Admin access requires sign-in</h1>
-          <p className="mt-2 text-sm text-gray-600">Use the seeded admin account to review marketplace activity.</p>
+          <p className="mt-2 text-sm text-gray-600">Use the seeded demo admin account to review marketplace activity.</p>
+          <p className="mt-2 text-xs text-gray-500">Demo admin emails: {DEV_ADMIN_EMAILS.join(', ')}</p>
           <Link href="/sign-in?redirect=/admin" className="ui-btn-primary mt-4 inline-flex">
             Sign in
           </Link>
@@ -27,7 +29,13 @@ export default function AdminPage() {
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="ui-surface p-6 text-center">
           <h1 className="text-2xl font-bold text-[#006633]">Admin only</h1>
-          <p className="mt-2 text-sm text-gray-600">Your account can use marketplace features but does not have admin privileges.</p>
+          <p className="mt-2 text-sm text-gray-600">
+            You are signed in as {session.displayName} ({session.email}) with the <span className="font-medium">{session.role}</span> role.
+          </p>
+          <p className="mt-2 text-sm text-gray-600">
+            This account can use marketplace features, but it does not have access to the admin moderation tools.
+          </p>
+          <p className="mt-2 text-xs text-gray-500">For demo testing, sign out and use: {DEV_ADMIN_EMAILS.join(', ')}</p>
           <Link href="/" className="mt-4 inline-block text-sm font-medium text-[#006633]">
             Back to browse feed
           </Link>

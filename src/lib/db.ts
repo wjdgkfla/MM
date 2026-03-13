@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import {
   AdminActivityLog,
   Listing,
@@ -14,7 +16,7 @@ import { UpdateListingInput } from './data/contracts'
 
 const now = Date.now()
 
-const users: User[] = [
+const seedUsers: User[] = [
   {
     id: 'u1',
     role: 'student',
@@ -181,7 +183,7 @@ const toSellerProfile = (user: User): SellerProfileSnapshot => ({
   campusVerification: user.campusVerification,
 })
 
-const listings: Listing[] = [
+const seedListings: Listing[] = [
   {
     id: 'l1',
     title: 'CS 112 + MATH 125 Textbook Bundle',
@@ -193,7 +195,7 @@ const listings: Listing[] = [
     moderationState: 'visible',
     imageUrls: ['/listings/textbook-bundle.svg'],
     sellerId: 'u1',
-    sellerProfile: toSellerProfile(users[0]),
+    sellerProfile: toSellerProfile(seedUsers[0]),
     campusLocation: 'fairfax',
     pickupZone: 'jc-lobby',
     pickupNotes: 'Meet inside Johnson Center lobby near the info desk between 12-2 PM.',
@@ -217,7 +219,7 @@ const listings: Listing[] = [
     moderationState: 'visible',
     imageUrls: ['/listings/mini-fridge.svg'],
     sellerId: 'u2',
-    sellerProfile: toSellerProfile(users[1]),
+    sellerProfile: toSellerProfile(seedUsers[1]),
     campusLocation: 'fairfax',
     pickupZone: 'potomac-courtyard',
     pickupNotes: 'Can help load into car after 5 PM.',
@@ -237,7 +239,7 @@ const listings: Listing[] = [
     moderationState: 'visible',
     imageUrls: ['/listings/monitor.svg'],
     sellerId: 'u6',
-    sellerProfile: toSellerProfile(users[5]),
+    sellerProfile: toSellerProfile(seedUsers[5]),
     campusLocation: 'fairfax',
     pickupZone: 'engineering-atrium',
     pickupNotes: 'Pickup weekdays after class around 4:30 PM.',
@@ -257,7 +259,7 @@ const listings: Listing[] = [
     moderationState: 'visible',
     imageUrls: ['/listings/calculator.svg'],
     sellerId: 'u3',
-    sellerProfile: toSellerProfile(users[2]),
+    sellerProfile: toSellerProfile(seedUsers[2]),
     campusLocation: 'arlington',
     pickupZone: 'van-metre-hall',
     pickupNotes: 'Can meet in Van Metre Hall lobby mornings.',
@@ -277,7 +279,7 @@ const listings: Listing[] = [
     moderationState: 'visible',
     imageUrls: ['/listings/desk-lamp.svg'],
     sellerId: 'u5',
-    sellerProfile: toSellerProfile(users[4]),
+    sellerProfile: toSellerProfile(seedUsers[4]),
     campusLocation: 'sci-tech',
     pickupZone: 'sci-tech-kiosk',
     pickupNotes: 'Available most afternoons near student kiosk.',
@@ -297,7 +299,7 @@ const listings: Listing[] = [
     moderationState: 'visible',
     imageUrls: ['/listings/dorm-chair.svg'],
     sellerId: 'u7',
-    sellerProfile: toSellerProfile(users[6]),
+    sellerProfile: toSellerProfile(seedUsers[6]),
     campusLocation: 'fairfax',
     pickupZone: 'shenandoah-deck',
     pickupNotes: 'Pickup in Shenandoah deck level 2 evenings.',
@@ -317,7 +319,7 @@ const listings: Listing[] = [
     moderationState: 'visible',
     imageUrls: ['/listings/hoodie.svg'],
     sellerId: 'u4',
-    sellerProfile: toSellerProfile(users[3]),
+    sellerProfile: toSellerProfile(seedUsers[3]),
     campusLocation: 'fairfax',
     pickupZone: 'fenwick-entrance',
     pickupNotes: 'Sold, kept for listing history.',
@@ -337,7 +339,7 @@ const listings: Listing[] = [
     moderationState: 'visible',
     imageUrls: ['/listings/moving-boxes.svg'],
     sellerId: 'u8',
-    sellerProfile: toSellerProfile(users[7]),
+    sellerProfile: toSellerProfile(seedUsers[7]),
     campusLocation: 'fairfax',
     pickupZone: 'off-campus-fairfax',
     pickupNotes: 'Off-campus near Main St. DM before pickup.',
@@ -348,15 +350,7 @@ const listings: Listing[] = [
   },
 ]
 
-const refreshListingCounts = () => {
-  users.forEach((user) => {
-    user.listingCount = listings.filter((listing) => listing.sellerId === user.id).length
-  })
-}
-
-refreshListingCounts()
-
-const messages: Message[] = [
+const seedMessages: Message[] = [
   {
     id: 'm1',
     listingId: 'l1',
@@ -407,18 +401,97 @@ const messages: Message[] = [
   },
 ]
 
-const reports: Report[] = []
-const adminActivityLogs: AdminActivityLog[] = []
+type DevStoreState = {
+  users: User[]
+  listings: Listing[]
+  messages: Message[]
+  reports: Report[]
+  adminActivityLogs: AdminActivityLog[]
+}
+
+const DEV_STORE_PATH = path.join(process.cwd(), '.mason-market-dev-store.json')
+
+const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T
+
+function refreshListingCounts(store: DevStoreState) {
+  store.users.forEach((user) => {
+    user.listingCount = store.listings.filter((listing) => listing.sellerId === user.id).length
+  })
+}
+
+const createSeedState = (): DevStoreState => {
+  const state: DevStoreState = {
+    users: clone(seedUsers),
+    listings: clone(seedListings),
+    messages: clone(seedMessages),
+    reports: [],
+    adminActivityLogs: [],
+  }
+  refreshListingCounts(state)
+  return state
+}
+
+const writeStateToDisk = (state: DevStoreState) => {
+  fs.writeFileSync(DEV_STORE_PATH, JSON.stringify(state, null, 2), 'utf8')
+}
+
+const isValidState = (value: unknown): value is DevStoreState => {
+  if (!value || typeof value !== 'object') return false
+  const candidate = value as Partial<DevStoreState>
+  return (
+    Array.isArray(candidate.users) &&
+    Array.isArray(candidate.listings) &&
+    Array.isArray(candidate.messages) &&
+    Array.isArray(candidate.reports) &&
+    Array.isArray(candidate.adminActivityLogs)
+  )
+}
+
+const loadStateFromDisk = (): DevStoreState => {
+  try {
+    if (!fs.existsSync(DEV_STORE_PATH)) {
+      const seedState = createSeedState()
+      writeStateToDisk(seedState)
+      return seedState
+    }
+
+    const raw = fs.readFileSync(DEV_STORE_PATH, 'utf8')
+    const parsed = JSON.parse(raw) as unknown
+    if (isValidState(parsed)) {
+      const state = clone(parsed)
+      refreshListingCounts(state)
+      return state
+    }
+  } catch {
+    // Reset to the seeded store if the dev file is missing or corrupted.
+  }
+
+  const resetState = createSeedState()
+  writeStateToDisk(resetState)
+  return resetState
+}
+
+const globalStore = globalThis as typeof globalThis & {
+  __masonMarketDevStore?: DevStoreState
+}
+
+const state = globalStore.__masonMarketDevStore ?? loadStateFromDisk()
+globalStore.__masonMarketDevStore = state
+
+function persistState() {
+  refreshListingCounts(state)
+  writeStateToDisk(state)
+}
 
 export const db = {
   listings: {
-    getAll: () => [...listings].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
-    getById: (id: string) => listings.find((listing) => listing.id === id),
+    getAll: () => [...state.listings].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
+    getById: (id: string) => state.listings.find((listing) => listing.id === id),
     getBySellerId: (sellerId: string) =>
-      listings
+      state.listings
         .filter((listing) => listing.sellerId === sellerId)
         .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
-    countBySellerId: (sellerId: string) => listings.filter((listing) => listing.sellerId === sellerId).length,
+    countBySellerId: (sellerId: string) => state.listings.filter((listing) => listing.sellerId === sellerId).length,
     create: (listing: Omit<Listing, 'id' | 'createdAt' | 'updatedAt'>) => {
       const timestamp = new Date().toISOString()
       const newListing: Listing = {
@@ -428,12 +501,12 @@ export const db = {
         createdAt: timestamp,
         updatedAt: timestamp,
       }
-      listings.unshift(newListing)
-      refreshListingCounts()
+      state.listings.unshift(newListing)
+      persistState()
       return newListing
     },
     update: (id: string, updates: UpdateListingInput) => {
-      const listing = listings.find((item) => item.id === id)
+      const listing = state.listings.find((item) => item.id === id)
       if (!listing) return null
 
       const nextListing: Listing = {
@@ -442,61 +515,113 @@ export const db = {
         updatedAt: new Date().toISOString(),
       }
 
-      const index = listings.findIndex((item) => item.id === id)
-      listings[index] = nextListing
+      const index = state.listings.findIndex((item) => item.id === id)
+      state.listings[index] = nextListing
+      persistState()
       return nextListing
     },
     updateStatus: (id: string, status: Listing['status']) => {
-      const listing = listings.find((item) => item.id === id)
+      const listing = state.listings.find((item) => item.id === id)
       if (!listing) return null
       listing.status = status
       listing.updatedAt = new Date().toISOString()
+      persistState()
       return listing
     },
     updateModerationState: (id: string, moderationState: ListingModerationState) => {
-      const listing = listings.find((item) => item.id === id)
+      const listing = state.listings.find((item) => item.id === id)
       if (!listing) return null
       listing.moderationState = moderationState
       listing.updatedAt = new Date().toISOString()
+      persistState()
       return listing
     },
     remove: (id: string) => {
-      const index = listings.findIndex((item) => item.id === id)
+      const index = state.listings.findIndex((item) => item.id === id)
       if (index < 0) return false
 
-      listings.splice(index, 1)
-      for (let messageIndex = messages.length - 1; messageIndex >= 0; messageIndex -= 1) {
-        if (messages[messageIndex].listingId === id) {
-          messages.splice(messageIndex, 1)
+      state.listings.splice(index, 1)
+      for (let messageIndex = state.messages.length - 1; messageIndex >= 0; messageIndex -= 1) {
+        if (state.messages[messageIndex].listingId === id) {
+          state.messages.splice(messageIndex, 1)
         }
       }
-      refreshListingCounts()
+      persistState()
       return true
     },
   },
   users: {
-    getAll: () => [...users],
-    getById: (id: string) => users.find((user) => user.id === id),
+    getAll: () => [...state.users],
+    getById: (id: string) => state.users.find((user) => user.id === id),
+    getByEmail: (email: string) => state.users.find((user) => user.gmuEmail.toLowerCase() === email.trim().toLowerCase()),
+    upsert: ({
+      email,
+      displayName,
+      role = 'student',
+    }: {
+      email: string
+      displayName: string
+      role?: UserRole
+    }) => {
+      const normalizedEmail = email.trim().toLowerCase()
+      const existing = state.users.find((user) => user.gmuEmail.toLowerCase() === normalizedEmail)
+      const nowIso = new Date().toISOString()
+
+      if (existing) {
+        existing.displayName = displayName || existing.displayName
+        existing.role = role
+        existing.gmuEmailVerified = true
+        existing.isStudentSeller = role !== 'admin'
+        existing.lastActiveAt = nowIso
+        persistState()
+        return existing
+      }
+
+      const newUser: User = {
+        id: `u_${normalizedEmail.replace(/[^a-z0-9]/g, '_')}`,
+        role,
+        accountState: 'active',
+        displayName: displayName || normalizedEmail.split('@')[0],
+        gmuEmail: normalizedEmail,
+        gmuEmailVerified: true,
+        isStudentSeller: role !== 'admin',
+        homeCampus: 'fairfax',
+        campusVerification: 'verified',
+        lastActiveAt: nowIso,
+        joinedAt: nowIso,
+        trustBadge: 'verified-gmu',
+        reputationScore: role === 'admin' ? 5 : 0,
+        listingCount: 0,
+      }
+      state.users.unshift(newUser)
+      persistState()
+      return newUser
+    },
     updateRole: (id: string, role: UserRole) => {
-      const user = users.find((item) => item.id === id)
+      const user = state.users.find((item) => item.id === id)
       if (!user) return null
       user.role = role
+      user.isStudentSeller = role !== 'admin'
+      user.lastActiveAt = new Date().toISOString()
+      persistState()
       return user
     },
     updateAccountState: (id: string, accountState: UserAccountState) => {
-      const user = users.find((item) => item.id === id)
+      const user = state.users.find((item) => item.id === id)
       if (!user) return null
       user.accountState = accountState
+      user.lastActiveAt = new Date().toISOString()
+      persistState()
       return user
     },
   },
   messages: {
     getByListing: (listingId: string, buyerId?: string) =>
-      messages
+      state.messages
         .filter((m) => m.listingId === listingId && (!buyerId || m.fromUserId === buyerId || m.toUserId === buyerId))
         .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt)),
     getThread: (listingId: string, userA: string, userB: string) =>
-      messages
+      state.messages
         .filter(
           (m) =>
             m.listingId === listingId &&
@@ -510,11 +635,12 @@ export const db = {
         id: `m${Date.now()}`,
         createdAt: new Date().toISOString(),
       }
-      messages.push(newMessage)
+      state.messages.push(newMessage)
+      persistState()
       return newMessage
     },
     getInboxByUser: (userId: string) => {
-      return messages
+      return state.messages
         .filter((m) => m.fromUserId === userId || m.toUserId === userId)
         .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
         .map((message) => {
@@ -526,7 +652,7 @@ export const db = {
     },
   },
   reports: {
-    getAll: () => [...reports].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
+    getAll: () => [...state.reports].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
     create: (payload: Omit<Report, 'id' | 'createdAt' | 'status'>) => {
       const newReport: Report = {
         ...payload,
@@ -534,25 +660,28 @@ export const db = {
         status: 'open',
         createdAt: new Date().toISOString(),
       }
-      reports.unshift(newReport)
+      state.reports.unshift(newReport)
+      persistState()
       return newReport
     },
     updateStatus: (id: string, status: ReportStatus) => {
-      const report = reports.find((item) => item.id === id)
+      const report = state.reports.find((item) => item.id === id)
       if (!report) return null
       report.status = status
+      persistState()
       return report
     },
   },
   adminActivity: {
-    getAll: () => [...adminActivityLogs].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
+    getAll: () => [...state.adminActivityLogs].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
     create: (payload: Omit<AdminActivityLog, 'id' | 'createdAt'>) => {
       const entry: AdminActivityLog = {
         ...payload,
         id: `a${Date.now()}`,
         createdAt: new Date().toISOString(),
       }
-      adminActivityLogs.unshift(entry)
+      state.adminActivityLogs.unshift(entry)
+      persistState()
       return entry
     },
   },

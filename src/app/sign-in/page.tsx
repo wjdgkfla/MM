@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { DEV_ADMIN_EMAILS } from '@/lib/auth/devAdmin'
 
 export default function SignInPage() {
   const router = useRouter()
@@ -10,6 +11,10 @@ export default function SignInPage() {
   const [redirect, setRedirect] = useState('/')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  const useDemoAdmin = (adminEmail: string) => {
+    setEmail(adminEmail)
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -68,8 +73,24 @@ export default function SignInPage() {
           </button>
         </form>
 
-        <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600">
-          Demo admin account: <span className="font-medium">admin@gmu.edu</span>
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-900">
+          <p className="font-semibold">Admin testing</p>
+          <p className="mt-1">Seeded demo admin access is available through these GMU emails:</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {DEV_ADMIN_EMAILS.map((adminEmail) => (
+              <button
+                key={adminEmail}
+                type="button"
+                onClick={() => useDemoAdmin(adminEmail)}
+                className="rounded-full border border-amber-300 bg-white px-2.5 py-1 font-medium text-amber-900"
+              >
+                {adminEmail}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px]">
+            This is clearly demo-only so admin testing is easier until a real auth and role system is added.
+          </p>
         </div>
 
         <p className="mt-4 text-sm text-gray-600">

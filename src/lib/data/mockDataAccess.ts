@@ -17,6 +17,8 @@ export const mockDataAccess: MarketplaceDataAccess = {
   users: {
     findAll: () => db.users.getAll(),
     findById: (id) => db.users.getById(id),
+    findByEmail: (email) => db.users.getByEmail(email),
+    upsert: (input) => db.users.upsert(input),
     updateRole: (id, role) => db.users.updateRole(id, role),
     updateAccountState: (id, accountState) =>
       db.users.updateAccountState(id, accountState),

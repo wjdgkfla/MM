@@ -114,6 +114,12 @@ export interface Message {
   createdAt: string
 }
 
+export interface SessionUser {
+  id: string
+  name: string
+  email: string
+}
+
 export interface Report {
   id: string
   listingId: string

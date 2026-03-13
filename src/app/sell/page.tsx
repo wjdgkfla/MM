@@ -137,7 +137,11 @@ export default function SellPage() {
       const listing = await res.json()
       router.push(`/item/${listing.id}`)
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Failed to create listing. Please try again.')
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : 'Failed to create listing. If your session looks wrong, sign out and back in before retrying.'
+      )
     } finally {
       setSubmitting(false)
     }
@@ -163,6 +167,11 @@ export default function SellPage() {
     <div className="max-w-2xl mx-auto px-4 py-6 sm:py-8">
       <h1 className="text-2xl font-bold text-[#006633] mb-2">Post an item</h1>
       <p className="text-gray-600 mb-8">Quick listing for GMU students. Most posts take under 2 minutes.</p>
+
+      <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+        Signed in as <span className="font-medium">{session.displayName}</span> ({session.email}) with the{' '}
+        <span className="font-medium">{session.role}</span> role.
+      </div>
 
       <form onSubmit={handleSubmit} className="ui-surface space-y-5 p-4 sm:p-6">
         <div>
