@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <rect width="1200" height="900" fill="#edf0f4"/>
+  <rect x="410" y="170" width="380" height="560" rx="30" fill="#dfe5ea" stroke="#9aa8b2" stroke-width="10"/>
+  <line x1="410" y1="430" x2="790" y2="430" stroke="#9aa8b2" stroke-width="10"/>
+  <rect x="738" y="282" width="20" height="84" rx="8" fill="#8f9ca5"/>
+  <rect x="738" y="530" width="20" height="84" rx="8" fill="#8f9ca5"/>
+  <text x="250" y="810" fill="#2f3f4a" font-family="Arial, sans-serif" font-size="64" font-weight="700">Mini Fridge</text>
+</svg>

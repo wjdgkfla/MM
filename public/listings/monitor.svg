@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <rect width="1200" height="900" fill="#e9eef7"/>
+  <rect x="210" y="170" width="780" height="470" rx="28" fill="#1f2937"/>
+  <rect x="250" y="210" width="700" height="390" rx="16" fill="#9ec5ff"/>
+  <rect x="540" y="640" width="120" height="70" rx="10" fill="#4b5563"/>
+  <rect x="470" y="710" width="260" height="26" rx="12" fill="#6b7280"/>
+  <text x="420" y="810" fill="#1f2937" font-family="Arial, sans-serif" font-size="64" font-weight="700">Monitor</text>
+</svg>

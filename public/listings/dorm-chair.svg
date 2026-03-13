@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <rect width="1200" height="900" fill="#f0f0f0"/>
+  <rect x="430" y="240" width="340" height="220" rx="22" fill="#3e4a54"/>
+  <rect x="460" y="440" width="280" height="150" rx="18" fill="#566473"/>
+  <rect x="500" y="590" width="24" height="140" fill="#2d3741"/>
+  <rect x="680" y="590" width="24" height="140" fill="#2d3741"/>
+  <text x="380" y="820" fill="#2b3340" font-family="Arial, sans-serif" font-size="64" font-weight="700">Dorm Chair</text>
+</svg>

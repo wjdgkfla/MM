@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <rect width="1200" height="900" fill="#f4efe4"/>
+  <rect x="500" y="680" width="220" height="40" rx="18" fill="#737373"/>
+  <rect x="590" y="420" width="36" height="260" rx="12" fill="#8b8b8b"/>
+  <polygon points="470,420 760,420 690,280 540,280" fill="#d7b980"/>
+  <circle cx="610" cy="458" r="22" fill="#ffd97c"/>
+  <text x="410" y="820" fill="#4a4133" font-family="Arial, sans-serif" font-size="64" font-weight="700">Desk Lamp</text>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <rect width="1200" height="900" fill="#e8f3ea"/>
+  <path d="M390 690 L390 380 Q450 250 600 250 Q750 250 810 380 L810 690 Z" fill="#006633"/>
+  <path d="M520 300 Q600 360 680 300" stroke="#f1f5f9" stroke-width="16" fill="none"/>
+  <text x="500" y="520" fill="#ffcc00" font-family="Arial, sans-serif" font-size="74" font-weight="700">GMU</text>
+  <text x="440" y="820" fill="#234533" font-family="Arial, sans-serif" font-size="64" font-weight="700">GMU Hoodie</text>
+</svg>

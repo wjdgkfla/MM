@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <rect width="1200" height="900" fill="#f0f5ec"/>
+  <rect x="430" y="130" width="340" height="640" rx="34" fill="#324c3f"/>
+  <rect x="475" y="190" width="250" height="120" rx="12" fill="#bdd3b5"/>
+  <g fill="#dde7d7">
+    <rect x="485" y="350" width="60" height="60" rx="8"/>
+    <rect x="570" y="350" width="60" height="60" rx="8"/>
+    <rect x="655" y="350" width="60" height="60" rx="8"/>
+    <rect x="485" y="435" width="60" height="60" rx="8"/>
+    <rect x="570" y="435" width="60" height="60" rx="8"/>
+    <rect x="655" y="435" width="60" height="60" rx="8"/>
+    <rect x="485" y="520" width="60" height="60" rx="8"/>
+    <rect x="570" y="520" width="60" height="60" rx="8"/>
+    <rect x="655" y="520" width="60" height="60" rx="8"/>
+  </g>
+  <text x="360" y="840" fill="#24372e" font-family="Arial, sans-serif" font-size="64" font-weight="700">TI-84 Calculator</text>
+</svg>

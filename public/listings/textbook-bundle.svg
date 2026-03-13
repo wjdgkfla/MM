@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <rect width="1200" height="900" fill="#e8f1ea"/>
+  <rect x="250" y="210" width="300" height="430" rx="18" fill="#006633"/>
+  <rect x="650" y="240" width="300" height="430" rx="18" fill="#ffcc00"/>
+  <text x="130" y="780" fill="#234" font-family="Arial, sans-serif" font-size="64" font-weight="700">Textbook Bundle</text>
+</svg>
