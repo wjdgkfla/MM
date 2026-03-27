@@ -3,11 +3,14 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { getFirebaseClientAuth } from '@/lib/firebase/client'
 
 export default function SignUpPage() {
   const router = useRouter()
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [redirect, setRedirect] = useState('/')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -23,10 +26,17 @@ export default function SignUpPage() {
     setSubmitting(true)
 
     try {
+      const auth = getFirebaseClientAuth()
+      const credential = await createUserWithEmailAndPassword(auth, email.trim(), password)
+      if (displayName.trim()) {
+        await updateProfile(credential.user, { displayName: displayName.trim() })
+      }
+      const idToken = await credential.user.getIdToken(true)
+
       const res = await fetch('/api/auth/sign-up', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName, email }),
+        body: JSON.stringify({ displayName: displayName.trim(), idToken }),
       })
 
       if (!res.ok) {
@@ -47,7 +57,7 @@ export default function SignUpPage() {
     <div className="max-w-md mx-auto px-4 py-8">
       <div className="ui-surface p-6">
         <h1 className="text-2xl font-bold text-[#006633]">Create account</h1>
-        <p className="mt-1 text-sm text-gray-600">GMU-only access. Full account persistence is stubbed for now.</p>
+        <p className="mt-1 text-sm text-gray-600">GMU-only access with Firebase email/password authentication.</p>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
@@ -70,6 +80,19 @@ export default function SignUpPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@gmu.edu"
+              className="ui-input"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="At least 6 characters"
               className="ui-input"
             />
           </div>

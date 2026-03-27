@@ -4,14 +4,31 @@ import { isGmuEmail } from '@/lib/validators'
 import { AuthSession } from '@/lib/auth/types'
 import { setSessionCookie } from '@/lib/auth/session'
 import { resolveSessionRole } from '@/lib/auth/devAdmin'
+import { getFirebaseAdminAuth } from '@/lib/firebase/admin'
+import { syncUserToFirebase } from '@/lib/firebase/users'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const email = String(body?.email || '').trim().toLowerCase()
+    const idToken = String(body?.idToken || '').trim()
+    if (!idToken) {
+      return NextResponse.json({ error: 'Missing Firebase ID token' }, { status: 400 })
+    }
+
+    const adminAuth = getFirebaseAdminAuth()
+    if (!adminAuth) {
+      return NextResponse.json(
+        { error: 'Firebase Admin is not configured on the server' },
+        { status: 500 }
+      )
+    }
+
+    const decoded = await adminAuth.verifyIdToken(idToken)
+    const email = String(decoded.email || '').trim().toLowerCase()
+    const tokenDisplayName = String(decoded.name || '').trim()
 
     if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Email is missing in Firebase token' }, { status: 400 })
     }
 
     if (!isGmuEmail(email)) {
@@ -25,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     const user = dataAccess.users.upsert({
       email,
-      displayName: existing?.displayName || String(body?.displayName || email.split('@')[0]),
+      displayName: existing?.displayName || tokenDisplayName || email.split('@')[0],
       role: existing?.role || resolveSessionRole(email),
     })
 
@@ -37,6 +54,14 @@ export async function POST(request: NextRequest) {
       gmuVerified: true,
       issuedAt: new Date().toISOString(),
     }
+
+    await syncUserToFirebase({
+      id: user.id,
+      email: user.gmuEmail,
+      displayName: user.displayName,
+      role: user.role,
+      gmuVerified: user.gmuEmailVerified,
+    })
 
     const response = NextResponse.json({ session })
     setSessionCookie(response, session)

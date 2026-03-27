@@ -4,10 +4,13 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { DEV_ADMIN_EMAILS } from '@/lib/auth/devAdmin'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { getFirebaseClientAuth } from '@/lib/firebase/client'
 
 export default function SignInPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [redirect, setRedirect] = useState('/')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -27,10 +30,14 @@ export default function SignInPage() {
     setSubmitting(true)
 
     try {
+      const auth = getFirebaseClientAuth()
+      const credential = await signInWithEmailAndPassword(auth, email.trim(), password)
+      const idToken = await credential.user.getIdToken()
+
       const res = await fetch('/api/auth/sign-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ idToken }),
       })
 
       if (!res.ok) {
@@ -65,6 +72,18 @@ export default function SignInPage() {
               className="ui-input"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              className="ui-input"
+            />
+          </div>
 
           {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
 
@@ -75,7 +94,7 @@ export default function SignInPage() {
 
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-900">
           <p className="font-semibold">Admin testing</p>
-          <p className="mt-1">Seeded demo admin access is available through these GMU emails:</p>
+          <p className="mt-1">Quick-fill admin email (you still need the matching Firebase Auth password):</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {DEV_ADMIN_EMAILS.map((adminEmail) => (
               <button
@@ -89,7 +108,7 @@ export default function SignInPage() {
             ))}
           </div>
           <p className="mt-2 text-[11px]">
-            This is clearly demo-only so admin testing is easier until a real auth and role system is added.
+            Auth now uses Firebase email/password and server-side token verification.
           </p>
         </div>
 

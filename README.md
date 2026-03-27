@@ -57,10 +57,10 @@ This project is currently an MVP with mock/in-memory persistence and a database-
 - Fields shown only when category is `textbooks`
 - Displayed on item detail when present
 
-## Important Accounts (Mock Auth)
+## Important Accounts
 
 - Admin: `admin@gmu.edu`
-- Sign-in uses GMU email stub flow (no password yet)
+- Sign-in/sign-up now use Firebase email/password auth
 - Suspended users are blocked from signing in
 
 ## Key Routes
@@ -82,6 +82,52 @@ This project is currently an MVP with mock/in-memory persistence and a database-
 - TypeScript
 - Tailwind CSS
 - In-memory mock DB + DAL abstraction (`src/lib/data/*`) for future DB migration
+- Firebase Admin SDK (enabled for real user tracking when env vars are set)
+
+## Firebase User Tracking Setup
+
+Mason Market now syncs signed-in users to Firestore (`users` collection) from the auth routes.
+
+Add these values in `.env.local`:
+
+```bash
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxx@your-project-id.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+NEXT_PUBLIC_FIREBASE_API_KEY=your-web-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-web-app-id
+```
+
+You can copy from `.env.local.example` as a starting template.
+
+Alternative (easier): place your downloaded Firebase service account key at project root as:
+
+```bash
+firebase-service-account.json
+```
+
+The app now supports either `.env.local` OR `firebase-service-account.json` for Firebase Admin auth.
+
+Notes:
+- Keep `FIREBASE_PRIVATE_KEY` quoted and include `\n` newlines exactly as shown.
+- If these env vars are missing, the app safely falls back to local mock persistence for auth/session behavior.
+- Firestore users are written with `id`, `email`, `displayName`, `role`, `gmuEmailVerified`, `updatedAt`, `lastSignInAt`.
+- In Firebase Console, enable `Authentication -> Email/Password`.
+
+### One-click seed to Firestore
+
+After signing in as admin (`admin@gmu.edu` in demo mode), go to `/admin` and click `Seed Firebase Data`.
+
+Use `Check Firebase Status` first to verify env vars + Firestore connection.
+
+This writes/merges current Mason Market data into Firestore collections:
+- `users`
+- `listings`
+- `messages`
+- `reports`
+- `adminActivity`
 
 ## Local Setup
 

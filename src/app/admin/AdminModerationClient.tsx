@@ -45,6 +45,7 @@ export function AdminModerationClient({
   const [payload, setPayload] = useState<ModerationPayload | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [info, setInfo] = useState('')
   const [busyKey, setBusyKey] = useState<string>('')
 
   const load = async () => {
@@ -179,6 +180,59 @@ export function AdminModerationClient({
     }
   }
 
+  const seedFirebase = async () => {
+    setBusyKey('seed-firebase')
+    setError('')
+    setInfo('')
+    try {
+      const res = await fetch('/api/admin/firebase/seed', { method: 'POST' })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        throw new Error(body?.error || 'Failed to seed Firebase')
+      }
+      const counts = body?.counts
+      if (counts) {
+        setInfo(
+          `Seeded Firebase: ${counts.users} users, ${counts.listings} listings, ${counts.messages} messages, ${counts.reports} reports, ${counts.adminActivity} admin activity entries.`
+        )
+      } else {
+        setInfo('Firebase seed completed.')
+      }
+    } catch (seedError) {
+      setError(seedError instanceof Error ? seedError.message : 'Failed to seed Firebase')
+    } finally {
+      setBusyKey('')
+    }
+  }
+
+  const checkFirebaseStatus = async () => {
+    setBusyKey('check-firebase')
+    setError('')
+    setInfo('')
+    try {
+      const res = await fetch('/api/admin/firebase/status')
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        throw new Error(body?.error || 'Failed to check Firebase status')
+      }
+
+      const env = body?.env || {}
+      const message = [
+        body?.connected ? 'Firebase connected.' : 'Firebase not connected.',
+        `Env -> PROJECT_ID:${env.FIREBASE_PROJECT_ID ? 'set' : 'missing'}, CLIENT_EMAIL:${env.FIREBASE_CLIENT_EMAIL ? 'set' : 'missing'}, PRIVATE_KEY:${env.FIREBASE_PRIVATE_KEY ? 'set' : 'missing'}.`,
+        body?.details ? `Details: ${body.details}` : '',
+      ]
+        .filter(Boolean)
+        .join(' ')
+
+      setInfo(message)
+    } catch (statusError) {
+      setError(statusError instanceof Error ? statusError.message : 'Failed to check Firebase status')
+    } finally {
+      setBusyKey('')
+    }
+  }
+
   const listings = payload?.listings || []
   const users = payload?.users || []
   const reports = payload?.reports || []
@@ -190,6 +244,26 @@ export function AdminModerationClient({
       <p className="mt-1 text-sm text-gray-600">
         Signed in as {adminName} ({adminEmail})
       </p>
+      <div className="mt-3">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={checkFirebaseStatus}
+            disabled={busyKey === 'check-firebase'}
+            className="ui-btn-secondary"
+          >
+            {busyKey === 'check-firebase' ? 'Checking Firebase...' : 'Check Firebase Status'}
+          </button>
+          <button
+            type="button"
+            onClick={seedFirebase}
+            disabled={busyKey === 'seed-firebase'}
+            className="ui-btn-secondary"
+          >
+            {busyKey === 'seed-firebase' ? 'Seeding Firebase...' : 'Seed Firebase Data'}
+          </button>
+        </div>
+      </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
         {TABS.map((item) => (
@@ -209,6 +283,7 @@ export function AdminModerationClient({
       </div>
 
       {error ? <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+      {info ? <p className="mt-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{info}</p> : null}
 
       {loading ? (
         <div className="mt-6 space-y-3">
