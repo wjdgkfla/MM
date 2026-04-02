@@ -12,20 +12,18 @@ export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
       <button
         onClick={() => onSelect(null)}
-        className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-colors ${
-          !selected ? 'bg-[#006633] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+        className={`ui-pill whitespace-nowrap ${
+          !selected ? 'ui-pill-active shadow-[var(--air-shadow)]' : 'ui-pill-neutral'
         }`}
       >
-        All Items
+        All
       </button>
       {CATEGORIES.map((category) => (
         <button
           key={category}
           onClick={() => onSelect(category)}
-          className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-colors ${
-            selected === category
-              ? 'bg-[#006633] text-white shadow-sm'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          className={`ui-pill whitespace-nowrap ${
+            selected === category ? 'ui-pill-active shadow-[var(--air-shadow)]' : 'ui-pill-neutral'
           }`}
         >
           {CATEGORY_LABELS[category]}
