@@ -1,6 +1,6 @@
-﻿'use client'
+'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ListingCard } from '@/components/ListingCard'
 import { CategoryFilter } from '@/components/CategoryFilter'
@@ -40,6 +40,7 @@ export default function HomePage() {
   const [listings, setListings] = useState<Listing[]>([])
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
+  const didSeedFromUrl = useRef(false)
   const [category, setCategory] = useState<Listing['category'] | null>(null)
   const [campusLocation, setCampusLocation] = useState<CampusLocation | ''>('')
   const [pickupZone, setPickupZone] = useState<PickupZone | ''>('')
@@ -55,6 +56,17 @@ export default function HomePage() {
   const { session } = useAuthSession()
   const { savedSet, toggleFavorite } = useFavorites(session?.userId)
 
+  // Seed search from ?search= param when arriving from the header search bar.
+  useEffect(() => {
+    if (didSeedFromUrl.current) return
+    didSeedFromUrl.current = true
+    const q = new URLSearchParams(window.location.search).get('search')
+    if (q) {
+      setSearchInput(q)
+      setSearch(q)
+    }
+  }, [])
+
   const handleToggleFavorite = (listingId: string) => {
     if (!session) {
       router.push('/sign-in?redirect=/')
@@ -63,33 +75,21 @@ export default function HomePage() {
     toggleFavorite(listingId)
   }
 
-  const handleLoggedOutSearch = () => {
-    const params = new URLSearchParams({ redirect: '/' })
-    const submittedSearch = searchInput.trim()
-    if (submittedSearch) {
-      params.set('search', submittedSearch)
-    }
-    router.push(`/sign-in?${params.toString()}`)
-  }
-
   useEffect(() => {
-    if (!session) {
-      setLoading(false)
-      return
-    }
-
     const params = new URLSearchParams()
-    if (category) params.set('category', category)
-    if (search) params.set('search', search)
-    if (campusLocation) params.set('campusLocation', campusLocation)
-    if (pickupZone) params.set('pickupZone', pickupZone)
-    if (condition) params.set('condition', condition)
-    if (status) params.set('status', status)
-    if (minPrice) params.set('minPrice', minPrice)
-    if (maxPrice) params.set('maxPrice', maxPrice)
-    if (courseTag) params.set('courseTag', courseTag)
-    if (freeOnly) params.set('freeOnly', 'true')
-    params.set('sort', sort)
+    if (session) {
+      if (category) params.set('category', category)
+      if (search) params.set('search', search)
+      if (campusLocation) params.set('campusLocation', campusLocation)
+      if (pickupZone) params.set('pickupZone', pickupZone)
+      if (condition) params.set('condition', condition)
+      if (status) params.set('status', status)
+      if (minPrice) params.set('minPrice', minPrice)
+      if (maxPrice) params.set('maxPrice', maxPrice)
+      if (courseTag) params.set('courseTag', courseTag)
+      if (freeOnly) params.set('freeOnly', 'true')
+      params.set('sort', sort)
+    }
 
     setLoading(true)
     fetch(`/api/listings?${params.toString()}`)
@@ -128,30 +128,6 @@ export default function HomePage() {
     setSort('newest')
   }
 
-  if (!session) {
-    return (
-      <div className="mx-auto flex min-h-[72vh] w-full max-w-[720px] flex-col items-center justify-center px-4 py-12 text-center">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--mason-green)] shadow-[var(--air-shadow)]">
-          <span className="text-4xl font-bold text-[var(--mason-gold)]">M</span>
-        </div>
-
-        <h1 className="text-4xl font-bold tracking-[-0.03em] text-[var(--air-text)] sm:text-5xl">Mason Market</h1>
-        <p className="mt-3 max-w-xl text-base text-[var(--air-muted)] sm:text-lg">
-          Search trusted campus listings. Log in to see and browse all available items.
-        </p>
-
-        <div className="mt-8 w-full max-w-[620px]">
-          <SearchBar
-            value={searchInput}
-            onChange={setSearchInput}
-            onSubmit={handleLoggedOutSearch}
-            placeholder="Search for textbooks, dorm items, and electronics"
-          />
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="mx-auto w-full max-w-[1160px] px-4 py-6 sm:py-8">
       <section className="mb-6 sm:mb-8">
@@ -159,8 +135,14 @@ export default function HomePage() {
         <p className="mt-2 text-base text-[var(--air-muted)] sm:text-lg">
           Browse what GMU students are selling around campus right now.
         </p>
+        {!session && (
+          <p className="mt-2 text-sm text-[var(--air-muted)]">
+            <a href="/sign-in?redirect=/" className="font-medium text-[var(--mason-green)] hover:underline">Sign in</a> to use filters, save listings, message sellers, and post items.
+          </p>
+        )}
       </section>
 
+      {session ? (
       <div className="ui-surface mb-6 space-y-4 p-4 sm:mb-8 sm:p-5">
         <SearchBar
           value={searchInput}
@@ -290,10 +272,11 @@ export default function HomePage() {
           </button>
         </div>
       </div>
+      ) : null}
 
       {!loading && (
         <div className="mb-5 text-sm text-[var(--air-muted)]">
-          {listings.length} listings - {savedCount} saved
+          {listings.length} listings{session ? ` - ${savedCount} saved` : ''}
         </div>
       )}
 

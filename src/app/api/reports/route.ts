@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { dataAccess } from '@/lib/data'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { REPORT_REASONS, REPORT_STATUSES, ReportReason, ReportStatus } from '@/lib/types'
+import {
+  listingsFindById,
+  reportsListAll,
+  reportsCreate,
+  reportsUpdateStatus,
+  adminActivityCreate,
+} from '@/lib/data/firestoreDataAccess'
 
 export async function GET(request: NextRequest) {
   const session = getSessionFromRequest(request)
@@ -12,7 +18,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
   }
 
-  return NextResponse.json(dataAccess.reports.listAll())
+  try {
+    const reports = await reportsListAll()
+    return NextResponse.json(reports)
+  } catch {
+    return NextResponse.json({ error: 'Failed to load reports' }, { status: 500 })
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -38,7 +49,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Notes must be 500 characters or less' }, { status: 400 })
     }
 
-    const listing = dataAccess.listings.findById(listingId)
+    const listing = await listingsFindById(listingId)
     if (!listing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
@@ -46,7 +57,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'You cannot report your own listing' }, { status: 400 })
     }
 
-    const report = dataAccess.reports.create({
+    const report = await reportsCreate({
       listingId: listing.id,
       sellerId: listing.sellerId,
       reportedByUserId: session.userId,
@@ -82,12 +93,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid report status' }, { status: 400 })
     }
 
-    const updated = dataAccess.reports.updateStatus(reportId, status)
+    const updated = await reportsUpdateStatus(reportId, status)
     if (!updated) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 })
     }
 
-    dataAccess.adminActivity.create({
+    await adminActivityCreate({
       actorUserId: session.userId,
       actorDisplayName: session.displayName,
       action:

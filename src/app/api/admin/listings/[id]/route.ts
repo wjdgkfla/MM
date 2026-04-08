@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
-import { dataAccess } from '@/lib/data'
 import { LISTING_MODERATION_STATES, LISTING_STATUSES, ListingModerationState, ListingStatus } from '@/lib/types'
+import {
+  listingsFindById,
+  listingsUpdateModerationState,
+  listingsUpdateStatus,
+  listingsRemove,
+  adminActivityCreate,
+} from '@/lib/data/firestoreDataAccess'
 
 export async function PATCH(
   request: NextRequest,
@@ -16,7 +22,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    const existing = dataAccess.listings.findById(params.id)
+    const existing = await listingsFindById(params.id)
     if (!existing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
@@ -29,7 +35,7 @@ export async function PATCH(
       if (!LISTING_MODERATION_STATES.includes(moderationState)) {
         return NextResponse.json({ error: 'Invalid moderation state' }, { status: 400 })
       }
-      const result = dataAccess.listings.updateModerationState(existing.id, moderationState)
+      const result = await listingsUpdateModerationState(existing.id, moderationState)
       if (!result) {
         return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
       }
@@ -42,7 +48,7 @@ export async function PATCH(
           ? 'listing-flagged'
           : 'listing-unhidden'
 
-      dataAccess.adminActivity.create({
+      await adminActivityCreate({
         actorUserId: session.userId,
         actorDisplayName: session.displayName,
         action,
@@ -57,12 +63,12 @@ export async function PATCH(
       if (!LISTING_STATUSES.includes(status)) {
         return NextResponse.json({ error: 'Invalid listing status' }, { status: 400 })
       }
-      const result = dataAccess.listings.updateStatus(existing.id, status)
+      const result = await listingsUpdateStatus(existing.id, status)
       if (!result) {
         return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
       }
       updated = result
-      dataAccess.adminActivity.create({
+      await adminActivityCreate({
         actorUserId: session.userId,
         actorDisplayName: session.displayName,
         action: 'listing-status-changed',
@@ -91,17 +97,17 @@ export async function DELETE(
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    const existing = dataAccess.listings.findById(params.id)
+    const existing = await listingsFindById(params.id)
     if (!existing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
 
-    const removed = dataAccess.listings.remove(existing.id)
+    const removed = await listingsRemove(existing.id)
     if (!removed) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
 
-    dataAccess.adminActivity.create({
+    await adminActivityCreate({
       actorUserId: session.userId,
       actorDisplayName: session.displayName,
       action: 'listing-removed',

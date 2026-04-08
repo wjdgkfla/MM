@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ListingCard } from '@/components/ListingCard'
 import { useFavorites } from '@/lib/useFavorites'
 import { Listing } from '@/lib/types'
@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation'
 
 export default function SavedPage() {
   const router = useRouter()
-  const [listings, setListings] = useState<Listing[]>([])
+  const [savedListings, setSavedListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   const { session, loading: authLoading } = useAuthSession()
   const { savedIds, savedSet, toggleFavorite } = useFavorites(session?.userId)
@@ -21,17 +21,19 @@ export default function SavedPage() {
       setLoading(false)
       return
     }
+    if (savedIds.length === 0) {
+      setSavedListings([])
+      setLoading(false)
+      return
+    }
 
-    fetch('/api/listings')
+    setLoading(true)
+    fetch(`/api/listings?ids=${savedIds.join(',')}`)
       .then((res) => res.json())
-      .then((data: Listing[]) => setListings(Array.isArray(data) ? data : []))
+      .then((data: Listing[]) => setSavedListings(Array.isArray(data) ? data : []))
+      .catch(() => setSavedListings([]))
       .finally(() => setLoading(false))
-  }, [session])
-
-  const savedListings = useMemo(() => {
-    const byId = new Map(listings.map((listing) => [listing.id, listing]))
-    return savedIds.map((id) => byId.get(id)).filter((listing): listing is Listing => Boolean(listing))
-  }, [listings, savedIds])
+  }, [session, savedIds])
 
   if (authLoading) {
     return <div className="max-w-6xl mx-auto px-4 py-10 text-sm text-gray-500">Loading…</div>

@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { dataAccess } from '@/lib/data'
 import { resolveSessionRole } from '@/lib/auth/devAdmin'
 import { isGmuEmail } from '@/lib/validators'
 import { AuthSession } from '@/lib/auth/types'
 import { setSessionCookie } from '@/lib/auth/session'
 import { getFirebaseAdminAuth } from '@/lib/firebase/admin'
-import { syncUserToFirebase } from '@/lib/firebase/users'
+import { usersUpsert } from '@/lib/data/firestoreDataAccess'
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Sign-up is limited to GMU emails' }, { status: 400 })
     }
 
-    const user = dataAccess.users.upsert({
+    const user = await usersUpsert({
       email,
       displayName,
       role: resolveSessionRole(email),
@@ -52,18 +51,11 @@ export async function POST(request: NextRequest) {
       issuedAt: new Date().toISOString(),
     }
 
-    await syncUserToFirebase({
-      id: user.id,
-      email: user.gmuEmail,
-      displayName: user.displayName,
-      role: user.role,
-      gmuVerified: user.gmuEmailVerified,
-    })
-
-    const response = NextResponse.json({ session, note: 'Demo sign-up completed with local dev persistence.' })
+    const response = NextResponse.json({ session })
     setSessionCookie(response, session)
     return response
-  } catch {
+  } catch (err) {
+    console.error('POST /api/auth/sign-up error:', err)
     return NextResponse.json({ error: 'Failed to sign up' }, { status: 500 })
   }
 }

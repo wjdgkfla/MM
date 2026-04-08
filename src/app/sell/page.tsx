@@ -37,12 +37,27 @@ function filesToDataUrls(files: File[]) {
   )
 }
 
+async function uploadImages(files: File[]): Promise<string[]> {
+  const formData = new FormData()
+  for (const file of files) {
+    formData.append('files', file)
+  }
+  const res = await fetch('/api/upload', { method: 'POST', body: formData })
+  if (!res.ok) {
+    const payload = await res.json().catch(() => null)
+    throw new Error(payload?.error || 'Image upload failed')
+  }
+  const data = await res.json()
+  return Array.isArray(data?.urls) ? data.urls : []
+}
+
 export default function SellPage() {
   const router = useRouter()
   const { session, loading: authLoading } = useAuthSession()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const [imageFiles, setImageFiles] = useState<File[]>([])
   const [form, setForm] = useState<SellFormState>({
     title: '',
     price: '',
@@ -73,12 +88,14 @@ export default function SellPage() {
     const files = Array.from(event.target.files || []).slice(0, 4)
     if (files.length === 0) {
       setImagePreviews([])
+      setImageFiles([])
       return
     }
 
     try {
       const urls = await filesToDataUrls(files)
       setImagePreviews(urls)
+      setImageFiles(files)
     } catch {
       setError('Could not load selected images. Please try different files.')
     }
@@ -112,6 +129,15 @@ export default function SellPage() {
     setSubmitting(true)
 
     try {
+      let finalImageUrls: string[] = []
+      if (imageFiles.length > 0) {
+        try {
+          finalImageUrls = await uploadImages(imageFiles)
+        } catch {
+          finalImageUrls = imagePreviews
+        }
+      }
+
       const res = await fetch('/api/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -121,7 +147,7 @@ export default function SellPage() {
           description: form.description.trim(),
           price: Number(form.price),
           tags: parsedTags,
-          imageUrls: imagePreviews,
+          imageUrls: finalImageUrls,
           courseCode: form.courseCode.trim(),
           professorName: form.professorName.trim(),
           edition: form.edition.trim(),
@@ -183,7 +209,7 @@ export default function SellPage() {
             onChange={handleImageChange}
             className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#006633] file:px-3 file:py-2 file:text-white"
           />
-          <p className="mt-1 text-xs text-gray-500">Up to 4 images. Stored as local mock data until backend storage is added.</p>
+          <p className="mt-1 text-xs text-gray-500">Up to 4 images (5MB each). Uploaded to Firebase Storage.</p>
           {imagePreviews.length > 0 ? (
             <div className="mt-3 grid grid-cols-4 gap-2">
               {imagePreviews.map((src, index) => (

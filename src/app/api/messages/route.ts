@@ -1,42 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { dataAccess } from '@/lib/data'
 import { getSessionFromRequest } from '@/lib/auth/session'
+import {
+  listingsFindById,
+  messagesListByListing,
+  messagesListThread,
+  messagesCreate,
+  conversationsListByUser,
+} from '@/lib/data/firestoreDataAccess'
 
 export async function GET(request: NextRequest) {
-  const session = getSessionFromRequest(request)
-  const { searchParams } = new URL(request.url)
-  const listingId = searchParams.get('listingId')
-  const userId = searchParams.get('userId')
-  const peerId = searchParams.get('peerId')
+  try {
+    const session = getSessionFromRequest(request)
+    const { searchParams } = new URL(request.url)
+    const listingId = searchParams.get('listingId')
+    const userId = searchParams.get('userId')
+    const peerId = searchParams.get('peerId')
 
-  if (listingId && userId && peerId) {
-    if (!session || session.userId !== userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (listingId && userId && peerId) {
+      if (!session || session.userId !== userId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      const thread = await messagesListThread(listingId, userId, peerId)
+      return NextResponse.json(thread)
     }
-    const thread = dataAccess.messages.listThread(listingId, userId, peerId)
-    return NextResponse.json(thread)
+
+    if (listingId) {
+      if (!userId) {
+        return NextResponse.json({ error: 'userId required for listing messages' }, { status: 400 })
+      }
+      if (!session || session.userId !== userId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      const messages = await messagesListByListing(listingId, userId)
+      return NextResponse.json(messages)
+    }
+
+    if (userId) {
+      if (!session || session.userId !== userId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      const inbox = await conversationsListByUser(userId)
+      return NextResponse.json(inbox)
+    }
+
+    return NextResponse.json({ error: 'Pass listingId or userId' }, { status: 400 })
+  } catch (err) {
+    console.error('GET /api/messages error:', err)
+    return NextResponse.json({ error: 'Failed to load messages' }, { status: 500 })
   }
-
-  if (listingId) {
-    if (!userId) {
-      return NextResponse.json({ error: 'userId required for listing messages' }, { status: 400 })
-    }
-    if (!session || session.userId !== userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    const messages = dataAccess.messages.listByListing(listingId, userId)
-    return NextResponse.json(messages)
-  }
-
-  if (userId) {
-    if (!session || session.userId !== userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    const inbox = dataAccess.conversations.listByUser(userId)
-    return NextResponse.json(inbox)
-  }
-
-  return NextResponse.json({ error: 'Pass listingId or userId' }, { status: 400 })
 }
 
 export async function POST(request: NextRequest) {
@@ -53,12 +64,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const listing = dataAccess.listings.findById(String(listingId))
+    const listing = await listingsFindById(String(listingId))
     if (!listing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
 
-    const message = dataAccess.messages.create({
+    const message = await messagesCreate({
       listingId: String(listingId),
       fromUserId: String(session.userId),
       toUserId: String(toUserId),

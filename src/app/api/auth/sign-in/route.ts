@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { dataAccess } from '@/lib/data'
 import { isGmuEmail } from '@/lib/validators'
 import { AuthSession } from '@/lib/auth/types'
 import { setSessionCookie } from '@/lib/auth/session'
 import { resolveSessionRole } from '@/lib/auth/devAdmin'
 import { getFirebaseAdminAuth } from '@/lib/firebase/admin'
 import { syncUserToFirebase } from '@/lib/firebase/users'
+import { usersFindByEmail, usersUpsert } from '@/lib/data/firestoreDataAccess'
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,12 +35,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only GMU emails are allowed (@gmu.edu or @masonlive.gmu.edu)' }, { status: 400 })
     }
 
-    const existing = dataAccess.users.findByEmail(email)
+    const existing = await usersFindByEmail(email)
     if (existing?.accountState === 'suspended') {
       return NextResponse.json({ error: 'This account is currently suspended' }, { status: 403 })
     }
 
-    const user = dataAccess.users.upsert({
+    const user = await usersUpsert({
       email,
       displayName: existing?.displayName || tokenDisplayName || email.split('@')[0],
       role: existing?.role || resolveSessionRole(email),
@@ -55,18 +55,11 @@ export async function POST(request: NextRequest) {
       issuedAt: new Date().toISOString(),
     }
 
-    await syncUserToFirebase({
-      id: user.id,
-      email: user.gmuEmail,
-      displayName: user.displayName,
-      role: user.role,
-      gmuVerified: user.gmuEmailVerified,
-    })
-
     const response = NextResponse.json({ session })
     setSessionCookie(response, session)
     return response
-  } catch {
+  } catch (err) {
+    console.error('POST /api/auth/sign-in error:', err)
     return NextResponse.json({ error: 'Failed to sign in' }, { status: 500 })
   }
 }

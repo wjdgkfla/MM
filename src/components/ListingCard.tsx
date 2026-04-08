@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import Image from 'next/image'
 import Link from 'next/link'
@@ -50,6 +50,7 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
           fill
           className="object-cover"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          unoptimized={coverImage.startsWith('data:') || coverImage.includes('storage.googleapis.com') || coverImage.includes('firebasestorage.googleapis.com')}
         />
       </div>
 

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
-import { dataAccess } from '@/lib/data'
 import { UserAccountState, UserRole } from '@/lib/types'
+import {
+  usersFindById,
+  usersUpdateRole,
+  usersUpdateAccountState,
+  adminActivityCreate,
+} from '@/lib/data/firestoreDataAccess'
 
 export async function PATCH(
   request: NextRequest,
@@ -16,7 +21,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    const user = dataAccess.users.findById(params.id)
+    const user = await usersFindById(params.id)
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
@@ -33,12 +38,12 @@ export async function PATCH(
         return NextResponse.json({ error: 'You cannot remove your own admin role' }, { status: 400 })
       }
 
-      const roleUpdated = dataAccess.users.updateRole(user.id, role)
+      const roleUpdated = await usersUpdateRole(user.id, role)
       if (!roleUpdated) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 })
       }
       updated = roleUpdated
-      dataAccess.adminActivity.create({
+      await adminActivityCreate({
         actorUserId: session.userId,
         actorDisplayName: session.displayName,
         action: role === 'admin' ? 'user-role-promoted' : 'user-role-demoted',
@@ -57,12 +62,12 @@ export async function PATCH(
         return NextResponse.json({ error: 'You cannot suspend your own account' }, { status: 400 })
       }
 
-      const stateUpdated = dataAccess.users.updateAccountState(user.id, accountState)
+      const stateUpdated = await usersUpdateAccountState(user.id, accountState)
       if (!stateUpdated) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 })
       }
       updated = stateUpdated
-      dataAccess.adminActivity.create({
+      await adminActivityCreate({
         actorUserId: session.userId,
         actorDisplayName: session.displayName,
         action: accountState === 'suspended' ? 'user-suspended' : 'user-activated',

@@ -209,7 +209,7 @@ export default function ItemPage() {
       <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr] lg:gap-8">
         <section>
           <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 aspect-[4/3]">
-            <Image src={selectedImage} alt={listing.title} fill className="object-cover" priority />
+            <Image src={selectedImage} alt={listing.title} fill className="object-cover" priority unoptimized={selectedImage.startsWith('data:') || selectedImage.startsWith('https://storage.googleapis.com')} />
           </div>
 
           {gallery.length > 1 ? (
@@ -223,7 +223,7 @@ export default function ItemPage() {
                     index === activeImage ? 'border-[#006633]' : 'border-gray-200'
                   }`}
                 >
-                  <Image src={image} alt={`${listing.title} ${index + 1}`} fill className="object-cover" />
+                  <Image src={image} alt={`${listing.title} ${index + 1}`} fill className="object-cover" unoptimized={image.startsWith('data:') || image.startsWith('https://storage.googleapis.com')} />
                 </button>
               ))}
             </div>

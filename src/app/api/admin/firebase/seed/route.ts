@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { dataAccess } from '@/lib/data'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '@/lib/firebase/admin'
+import { db as localDb } from '@/lib/db'
 
 function toDateOrNull(value: string) {
   const date = new Date(value)
@@ -27,19 +27,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to initialize Firebase Admin.' }, { status: 500 })
     }
 
-    const users = dataAccess.users.findAll()
-    const listings = dataAccess.listings.findMany()
-    const reports = dataAccess.reports.listAll()
-    const adminActivity = dataAccess.adminActivity.listAll()
-
-    const messageMap = new Map<string, ReturnType<typeof dataAccess.messages.listByListing>[number]>()
+    const users = localDb.users.getAll()
+    const listings = localDb.listings.getAll()
+    const messages: ReturnType<typeof localDb.messages.getByListing>[number][] = []
+    const messageSet = new Set<string>()
     for (const listing of listings) {
-      const listingMessages = dataAccess.messages.listByListing(listing.id)
-      for (const message of listingMessages) {
-        messageMap.set(message.id, message)
+      for (const msg of localDb.messages.getByListing(listing.id)) {
+        if (!messageSet.has(msg.id)) {
+          messageSet.add(msg.id)
+          messages.push(msg)
+        }
       }
     }
-    const messages = Array.from(messageMap.values())
+    const reports = localDb.reports.getAll()
+    const adminActivity = localDb.adminActivity.getAll()
 
     const writes: Promise<unknown>[] = []
 

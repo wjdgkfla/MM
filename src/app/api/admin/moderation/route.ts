@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
-import { dataAccess } from '@/lib/data'
+import {
+  listingsFindMany,
+  usersFindAll,
+  reportsListAll,
+  adminActivityListAll,
+} from '@/lib/data/firestoreDataAccess'
 
 export async function GET(request: NextRequest) {
   const session = getSessionFromRequest(request)
@@ -11,10 +16,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
   }
 
-  return NextResponse.json({
-    listings: dataAccess.listings.findMany(),
-    users: dataAccess.users.findAll(),
-    reports: dataAccess.reports.listAll(),
-    activity: dataAccess.adminActivity.listAll(),
-  })
+  try {
+    const [listings, users, reports, activity] = await Promise.all([
+      listingsFindMany(),
+      usersFindAll(),
+      reportsListAll(),
+      adminActivityListAll(),
+    ])
+
+    return NextResponse.json({ listings, users, reports, activity })
+  } catch (err) {
+    console.error('GET /api/admin/moderation error:', err)
+    return NextResponse.json({ error: 'Failed to load moderation data' }, { status: 500 })
+  }
 }

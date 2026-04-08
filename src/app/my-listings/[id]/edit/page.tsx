@@ -47,6 +47,20 @@ function filesToDataUrls(files: File[]) {
   )
 }
 
+async function uploadImages(files: File[]): Promise<string[]> {
+  const formData = new FormData()
+  for (const file of files) {
+    formData.append('files', file)
+  }
+  const res = await fetch('/api/upload', { method: 'POST', body: formData })
+  if (!res.ok) {
+    const payload = await res.json().catch(() => null)
+    throw new Error(payload?.error || 'Image upload failed')
+  }
+  const data = await res.json()
+  return Array.isArray(data?.urls) ? data.urls : []
+}
+
 const EMPTY_FORM: EditFormState = {
   title: '',
   price: '',
@@ -74,6 +88,7 @@ export default function EditListingPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const [imageFiles, setImageFiles] = useState<File[]>([])
 
   const parsedTags = useMemo(
     () =>
@@ -147,12 +162,14 @@ export default function EditListingPage() {
     const files = Array.from(event.target.files || []).slice(0, 4)
     if (files.length === 0) {
       setImagePreviews(listing?.imageUrls || [])
+      setImageFiles([])
       return
     }
 
     try {
       const urls = await filesToDataUrls(files)
       setImagePreviews(urls)
+      setImageFiles(files)
     } catch {
       setError('Could not load selected images. Please try different files.')
     }
@@ -172,6 +189,15 @@ export default function EditListingPage() {
 
     setSubmitting(true)
     try {
+      let finalImageUrls = imagePreviews
+      if (imageFiles.length > 0) {
+        try {
+          finalImageUrls = await uploadImages(imageFiles)
+        } catch {
+          // Keep existing previews if upload fails
+        }
+      }
+
       const res = await fetch(`/api/listings/${listing.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -182,7 +208,7 @@ export default function EditListingPage() {
           pickupNotes: form.pickupNotes.trim(),
           price: Number(form.price),
           tags: parsedTags,
-          imageUrls: imagePreviews,
+          imageUrls: finalImageUrls,
           courseCode: form.courseCode.trim(),
           professorName: form.professorName.trim(),
           edition: form.edition.trim(),

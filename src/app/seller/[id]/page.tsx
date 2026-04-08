@@ -1,18 +1,18 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { dataAccess } from '@/lib/data'
 import { ListingCard } from '@/components/ListingCard'
 import { SellerTrustCard } from '@/components/SellerTrustCard'
 import { formatPostedDate, formatRecency } from '@/lib/time'
+import { usersFindById, listingsFindBySellerId } from '@/lib/data/firestoreDataAccess'
 
-export default function SellerProfilePage({ params }: { params: { id: string } }) {
-  const seller = dataAccess.users.findById(params.id)
+export default async function SellerProfilePage({ params }: { params: { id: string } }) {
+  const seller = await usersFindById(params.id)
 
   if (!seller) {
     notFound()
   }
 
-  const allSellerListings = dataAccess.listings.findBySellerId(seller.id)
+  const allSellerListings = await listingsFindBySellerId(seller.id)
   const activeListings = allSellerListings.filter(
     (listing) => listing.moderationState !== 'hidden' && listing.status !== 'sold'
   )

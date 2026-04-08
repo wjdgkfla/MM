@@ -1,6 +1,7 @@
 import { App, cert, getApps, initializeApp } from 'firebase-admin/app'
 import { Auth, getAuth } from 'firebase-admin/auth'
 import { Firestore, getFirestore } from 'firebase-admin/firestore'
+import { getStorage, Storage } from 'firebase-admin/storage'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -60,25 +61,47 @@ function getFirebaseAdminApp(): App | null {
   const clientEmail = envClientEmail || fromFile?.clientEmail || ''
   const privateKey = (envPrivateKey ? envPrivateKey.replace(/\\n/g, '\n') : fromFile?.privateKey) || ''
 
+  const storageBucket = readEnv('FIREBASE_STORAGE_BUCKET') || `${projectId}.firebasestorage.app`
+
   return initializeApp({
     credential: cert({
       projectId,
       clientEmail,
       privateKey,
     }),
+    storageBucket,
   })
 }
 
+let _adminDb: Firestore | null = null
+
 export function getFirebaseAdminDb(): Firestore | null {
+  if (_adminDb) return _adminDb
   const app = getFirebaseAdminApp()
   if (!app) return null
-  return getFirestore(app)
+  const db = getFirestore(app)
+  try {
+    // Silently omit undefined fields (e.g. courseCode, profileImageUrl) instead of
+    // throwing. settings() can only be called once per instance; the try/catch handles
+    // Next.js hot-reload re-imports where _adminDb resets but the Firestore singleton persists.
+    db.settings({ ignoreUndefinedProperties: true })
+  } catch {
+    // Already initialized — settings were applied on the previous call, still active.
+  }
+  _adminDb = db
+  return _adminDb
 }
 
 export function getFirebaseAdminAuth(): Auth | null {
   const app = getFirebaseAdminApp()
   if (!app) return null
   return getAuth(app)
+}
+
+export function getFirebaseAdminStorage(): Storage | null {
+  const app = getFirebaseAdminApp()
+  if (!app) return null
+  return getStorage(app)
 }
 
 export async function getFirebaseAdminStatus() {

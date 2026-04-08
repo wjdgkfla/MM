@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { dataAccess } from '@/lib/data'
 import {
   CAMPUS_LOCATIONS,
   CATEGORIES,
@@ -13,14 +12,20 @@ import {
   PickupZone,
 } from '@/lib/types'
 import { getSessionFromRequest } from '@/lib/auth/session'
+import {
+  listingsFindById,
+  listingsUpdateStatus,
+  listingsUpdate,
+  listingsRemove,
+  usersFindById,
+  listingsCountBySellerId,
+} from '@/lib/data/firestoreDataAccess'
 
 const canTransitionStatus = (from: ListingStatus, to: ListingStatus) => {
   if (from === to) return true
-
   if (from === 'available') return to === 'reserved'
   if (from === 'reserved') return to === 'available' || to === 'sold'
   if (from === 'sold') return to === 'available'
-
   return false
 }
 
@@ -28,25 +33,30 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = getSessionFromRequest(request)
-  const listing = dataAccess.listings.findById(params.id)
+  try {
+    const session = getSessionFromRequest(request)
+    const listing = await listingsFindById(params.id)
 
-  if (!listing) {
-    return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+    if (!listing) {
+      return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+    }
+
+    const canViewHidden =
+      listing.moderationState !== 'hidden' ||
+      Boolean(session && (session.role === 'admin' || session.userId === listing.sellerId))
+
+    if (!canViewHidden) {
+      return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+    }
+
+    const seller = await usersFindById(listing.sellerId)
+    const sellerListingCount = await listingsCountBySellerId(listing.sellerId)
+
+    return NextResponse.json({ listing, seller: seller || null, sellerListingCount })
+  } catch (err) {
+    console.error('GET /api/listings/[id] error:', err)
+    return NextResponse.json({ error: 'Failed to load listing' }, { status: 500 })
   }
-
-  const canViewHidden =
-    listing.moderationState !== 'hidden' ||
-    Boolean(session && (session.role === 'admin' || session.userId === listing.sellerId))
-
-  if (!canViewHidden) {
-    return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
-  }
-
-  const seller = dataAccess.users.findById(listing.sellerId)
-  const sellerListingCount = dataAccess.listings.countBySellerId(listing.sellerId)
-
-  return NextResponse.json({ listing, seller, sellerListingCount })
 }
 
 export async function PATCH(
@@ -59,7 +69,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     }
 
-    const existing = dataAccess.listings.findById(params.id)
+    const existing = await listingsFindById(params.id)
     if (!existing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
@@ -82,8 +92,7 @@ export async function PATCH(
       )
     }
 
-    const listing = dataAccess.listings.updateStatus(params.id, nextStatus)
-
+    const listing = await listingsUpdateStatus(params.id, nextStatus)
     return NextResponse.json(listing)
   } catch {
     return NextResponse.json({ error: 'Failed to update listing status' }, { status: 500 })
@@ -100,7 +109,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     }
 
-    const existing = dataAccess.listings.findById(params.id)
+    const existing = await listingsFindById(params.id)
     if (!existing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
@@ -126,7 +135,7 @@ export async function PUT(
           .slice(0, 5)
       : existing.tags
     const imageUrls = Array.isArray(body?.imageUrls)
-      ? body.imageUrls.filter((value: unknown) => typeof value === 'string' && value.trim().length > 0)
+      ? body.imageUrls.filter((value: unknown) => typeof value === 'string' && (value as string).trim().length > 0)
       : existing.imageUrls
     const courseCode =
       typeof body?.courseCode === 'string'
@@ -170,7 +179,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid pickup zone' }, { status: 400 })
     }
 
-    const listing = dataAccess.listings.update(params.id, {
+    const listing = await listingsUpdate(params.id, {
       title,
       description,
       price,
@@ -207,7 +216,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     }
 
-    const existing = dataAccess.listings.findById(params.id)
+    const existing = await listingsFindById(params.id)
     if (!existing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
@@ -216,7 +225,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Only the seller can delete this listing' }, { status: 403 })
     }
 
-    const deleted = dataAccess.listings.remove(params.id)
+    const deleted = await listingsRemove(params.id)
     if (!deleted) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
