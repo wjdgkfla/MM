@@ -29,6 +29,10 @@ mason-market-firebase-adminsdk-*.json
 *.swp
 *.swo
 
+# AI agent artifacts
+.claude
+.codex
+
 # OS
 .DS_Store
 Thumbs.db
