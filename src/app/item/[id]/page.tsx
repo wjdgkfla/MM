@@ -119,6 +119,7 @@ export default function ItemPage() {
   const listingIsSaved = isSaved(listing.id)
   const signInRedirect = `/sign-in?redirect=${encodeURIComponent(`/item/${listing.id}`)}`
   const isOwnListing = Boolean(session && session.userId === listing.sellerId)
+  const isSoldListing = listing.status === 'sold'
   const sellerStatusActions = statusActionsByCurrentStatus[listing.status]
 
   const handleStatusChange = async (nextStatus: Listing['status']) => {
@@ -274,15 +275,19 @@ export default function ItemPage() {
               >
                 {listingIsSaved ? 'Saved ♥' : 'Save ♡'}
               </button>
-              {session ? (
+              {isSoldListing && !isOwnListing ? (
+                <button type="button" disabled className="ui-btn-primary cursor-not-allowed text-center opacity-60">
+                  Listing sold
+                </button>
+              ) : session ? (
                 isOwnListing ? (
                   <Link href="/messages" className="ui-btn-primary text-center">
                     View buyer messages
                   </Link>
                 ) : (
-                <Link href={`/messages?listingId=${listing.id}`} className="ui-btn-primary text-center">
-                  Message seller
-                </Link>
+                  <Link href={`/messages?listingId=${listing.id}`} className="ui-btn-primary text-center">
+                    Message seller
+                  </Link>
                 )
               ) : (
                 <Link href={signInRedirect} className="ui-btn-primary text-center">
@@ -291,7 +296,11 @@ export default function ItemPage() {
               )}
             </div>
 
-            <p className="mt-2 text-xs text-gray-500">Use messages for availability, meetup timing, and price discussion.</p>
+            <p className="mt-2 text-xs text-gray-500">
+              {isSoldListing && !isOwnListing
+                ? 'This listing is marked sold and no longer accepts buyer messages.'
+                : 'Use messages for availability, meetup timing, and price discussion.'}
+            </p>
             {actionError ? <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{actionError}</p> : null}
           </div>
 

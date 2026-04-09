@@ -26,6 +26,57 @@ function toISOString(value: unknown): string {
   return new Date().toISOString()
 }
 
+function buildConversationId(listingId: string, userA: string, userB: string): string {
+  return `${listingId}:${[userA, userB].sort().join(':')}`
+}
+
+async function upsertConversationFromMessage(input: {
+  listingId: string
+  fromUserId: string
+  toUserId: string
+  body: string
+  createdAt: Date
+}) {
+  const db = getDb()
+  const listing = await listingsFindById(input.listingId)
+  if (!listing) return
+
+  const sellerId = listing.sellerId
+  const buyerId = input.fromUserId === sellerId ? input.toUserId : input.fromUserId
+  const conversationId = buildConversationId(input.listingId, buyerId, sellerId)
+
+  const [buyer, seller] = await Promise.all([usersFindById(buyerId), usersFindById(sellerId)])
+
+  const participants: Record<string, { name: string; profileImg: string | null }> = {
+    [buyerId]: {
+      name: buyer?.displayName || buyerId,
+      profileImg: buyer?.profileImageUrl || null,
+    },
+    [sellerId]: {
+      name: seller?.displayName || listing.sellerProfile.displayName || sellerId,
+      profileImg: seller?.profileImageUrl || listing.sellerProfile.profileImageUrl || null,
+    },
+  }
+
+  const conversationRef = db.collection('conversations').doc(conversationId)
+  await conversationRef.set(
+    {
+      id: conversationId,
+      productId: input.listingId,
+      buyerId,
+      sellerId,
+      lastMessage: input.body,
+      unreadCount: FieldValue.increment(1),
+      createdAt: input.createdAt,
+      updatedAt: input.createdAt,
+      isActive: true,
+      participants,
+      participantIds: [buyerId, sellerId],
+    },
+    { merge: true }
+  )
+}
+
 function docToListing(data: FirebaseFirestore.DocumentData): Listing {
   return {
     id: data.id,
@@ -123,7 +174,7 @@ function docToAdminActivity(data: FirebaseFirestore.DocumentData): AdminActivity
 
 function getDb() {
   const db = getFirebaseAdminDb()
-  if (!db) throw new Error('Firebase Admin Firestore is not available')
+  if (!db) throw new Error('Firebase Admin Firestore is not available.')
   return db
 }
 
@@ -132,9 +183,7 @@ function getDb() {
 
 export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]> {
   const db = getDb()
-  let ref: FirebaseFirestore.Query = db.collection('listings').orderBy('createdAt', 'desc')
-
-  const snap = await ref.get()
+  const snap = await db.collection('listings').orderBy('createdAt', 'desc').get()
   let results = snap.docs.map((doc) => docToListing({ id: doc.id, ...doc.data() }))
 
   if (query?.category) results = results.filter((l) => l.category === query.category)
@@ -312,8 +361,6 @@ export async function usersUpsert(input: {
   const role = input.role || 'student'
 
   const existing = await usersFindByEmail(normalized)
-  const nowIso = new Date().toISOString()
-
   if (existing) {
     const ref = db.collection('users').doc(existing.id)
     await ref.update({
@@ -398,8 +445,18 @@ export async function messagesListByListing(listingId: string, userId?: string):
 
 export async function messagesListThread(listingId: string, userA: string, userB: string): Promise<Message[]> {
   const db = getDb()
-  const snap = await db.collection('messages').where('listingId', '==', listingId).get()
-  const messages = snap.docs
+  const conversationId = buildConversationId(listingId, userA, userB)
+
+  const canonicalSnap = await db.collection('messages').where('conversationId', '==', conversationId).get()
+  if (!canonicalSnap.empty) {
+    return canonicalSnap.docs
+      .map((d) => docToMessage({ id: d.id, ...d.data() }))
+      .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
+  }
+
+  // Backward compatibility for legacy rows created before `conversationId` was introduced.
+  const legacySnap = await db.collection('messages').where('listingId', '==', listingId).get()
+  return legacySnap.docs
     .map((d) => docToMessage({ id: d.id, ...d.data() }))
     .filter(
       (m) =>
@@ -407,18 +464,26 @@ export async function messagesListThread(listingId: string, userA: string, userB
         (m.fromUserId === userB && m.toUserId === userA)
     )
     .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
-  return messages
 }
 
 export async function messagesCreate(input: Omit<Message, 'id' | 'createdAt'>): Promise<Message> {
   const db = getDb()
   const ref = db.collection('messages').doc()
+  const createdAt = new Date()
   const data = {
     ...input,
+    conversationId: buildConversationId(input.listingId, input.fromUserId, input.toUserId),
     id: ref.id,
-    createdAt: new Date(),
+    createdAt,
   }
   await ref.set(data)
+  await upsertConversationFromMessage({
+    listingId: input.listingId,
+    fromUserId: input.fromUserId,
+    toUserId: input.toUserId,
+    body: input.body,
+    createdAt,
+  })
   return docToMessage({ ...data })
 }
 
@@ -521,6 +586,37 @@ export async function favoritesRemove(userId: string, listingId: string): Promis
 // ─── Conversations (derived from messages) ─────────────────────────────────
 
 export async function conversationsListByUser(userId: string) {
+  const db = getDb()
+  const snap = await db
+    .collection('conversations')
+    .where('participantIds', 'array-contains', userId)
+    .where('isActive', '==', true)
+    .orderBy('updatedAt', 'desc')
+    .get()
+
+  if (!snap.empty) {
+    return snap.docs
+      .map((doc) => ({ __docId: doc.id, ...(doc.data() as FirebaseFirestore.DocumentData) }))
+      .map((data: FirebaseFirestore.DocumentData & { __docId: string }) => {
+        const buyerId = String(data.buyerId || '')
+        const sellerId = String(data.sellerId || '')
+        const participantIdsRaw = Array.isArray(data.participantIds)
+          ? data.participantIds.filter((id: unknown) => typeof id === 'string')
+          : [buyerId, sellerId].filter(Boolean)
+        const uniqueParticipants = Array.from(new Set(participantIdsRaw)).slice(0, 2)
+        if (uniqueParticipants.length < 2) return null
+
+        return {
+          id: String(data.id || data.__docId),
+          listingId: String(data.productId || data.listingId || ''),
+          participantIds: uniqueParticipants.sort() as [string, string],
+          lastMessagePreview: String(data.lastMessage || ''),
+          lastMessageAt: toISOString(data.updatedAt || data.createdAt),
+        }
+      })
+      .filter((row): row is { id: string; listingId: string; participantIds: [string, string]; lastMessagePreview: string; lastMessageAt: string } => Boolean(row))
+  }
+
   const messages = await messagesGetInboxByUser(userId)
   return messages
     .map((message) => {

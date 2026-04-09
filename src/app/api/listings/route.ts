@@ -38,8 +38,24 @@ export async function GET(request: NextRequest) {
   const sort = (searchParams.get('sort') || 'newest') as 'newest' | 'price-asc' | 'price-desc'
 
   const ids = searchParams.get('ids')
+  const usingProtectedQuery =
+    Boolean(category) ||
+    Boolean(search) ||
+    Boolean(campusLocation) ||
+    Boolean(pickupZone) ||
+    Boolean(condition) ||
+    Boolean(status) ||
+    Boolean(minPrice) ||
+    Boolean(maxPrice) ||
+    freeOnly === 'true' ||
+    Boolean(courseTag) ||
+    sort !== 'newest'
 
   try {
+    if (!session && usingProtectedQuery) {
+      return NextResponse.json({ error: 'Sign in required for filters and search' }, { status: 401 })
+    }
+
     if (mine === 'true') {
       if (!session) {
         return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
@@ -49,6 +65,9 @@ export async function GET(request: NextRequest) {
     }
 
     if (ids) {
+      if (!session) {
+        return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
+      }
       const idList = ids
         .split(',')
         .map((id) => id.trim())
@@ -57,7 +76,7 @@ export async function GET(request: NextRequest) {
       if (idList.length === 0) return NextResponse.json([])
       let listings = await listingsFindByIds(idList)
       if (session?.role !== 'admin') {
-        listings = listings.filter((l) => l.moderationState !== 'hidden')
+        listings = listings.filter((l) => l.moderationState !== 'hidden' && l.status !== 'sold')
       }
       return NextResponse.json(listings)
     }
@@ -83,7 +102,7 @@ export async function GET(request: NextRequest) {
     let listings = await listingsFindMany(query)
 
     if (session?.role !== 'admin') {
-      listings = listings.filter((listing) => listing.moderationState !== 'hidden')
+      listings = listings.filter((listing) => listing.moderationState !== 'hidden' && listing.status !== 'sold')
     }
 
     return NextResponse.json(listings)

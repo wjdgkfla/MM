@@ -193,10 +193,10 @@ export function AdminModerationClient({
       const counts = body?.counts
       if (counts) {
         setInfo(
-          `Seeded Firebase: ${counts.users} users, ${counts.listings} listings, ${counts.messages} messages, ${counts.reports} reports, ${counts.adminActivity} admin activity entries.`
+          `Firebase snapshot: ${counts.users} users, ${counts.listings} listings, ${counts.messages} messages, ${counts.reports} reports, ${counts.adminActivity} admin activity entries.`
         )
       } else {
-        setInfo('Firebase seed completed.')
+        setInfo('Firebase check completed.')
       }
     } catch (seedError) {
       setError(seedError instanceof Error ? seedError.message : 'Failed to seed Firebase')

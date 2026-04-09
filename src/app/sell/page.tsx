@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Category, Condition, CampusLocation, PickupZone } from '@/lib/types'
@@ -56,6 +57,7 @@ export default function SellPage() {
   const { session, loading: authLoading } = useAuthSession()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [uploadWarning, setUploadWarning] = useState('')
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [form, setForm] = useState<SellFormState>({
@@ -119,6 +121,7 @@ export default function SellPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setUploadWarning('')
 
     const validationError = validate()
     if (validationError) {
@@ -134,7 +137,9 @@ export default function SellPage() {
         try {
           finalImageUrls = await uploadImages(imageFiles)
         } catch {
-          finalImageUrls = imagePreviews
+          // Keep listing creation working even if Storage upload fails.
+          finalImageUrls = []
+          setUploadWarning('Images could not be uploaded, so this listing was posted without photos.')
         }
       }
 
@@ -213,7 +218,9 @@ export default function SellPage() {
           {imagePreviews.length > 0 ? (
             <div className="mt-3 grid grid-cols-4 gap-2">
               {imagePreviews.map((src, index) => (
-                <img key={`${src}-${index}`} src={src} alt={`Preview ${index + 1}`} className="aspect-square w-full rounded-lg border border-gray-200 object-cover" />
+                <div key={`${src}-${index}`} className="relative aspect-square w-full overflow-hidden rounded-lg border border-gray-200">
+                  <Image src={src} alt={`Preview ${index + 1}`} fill className="object-cover" unoptimized />
+                </div>
               ))}
             </div>
           ) : null}
@@ -400,6 +407,7 @@ export default function SellPage() {
         </div>
 
         {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+        {uploadWarning ? <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{uploadWarning}</p> : null}
 
         <button
           type="submit"

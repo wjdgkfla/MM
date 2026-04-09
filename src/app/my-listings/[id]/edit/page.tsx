@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
@@ -288,7 +289,9 @@ export default function EditListingPage() {
           {imagePreviews.length > 0 ? (
             <div className="mt-3 grid grid-cols-4 gap-2">
               {imagePreviews.map((src, index) => (
-                <img key={`${src}-${index}`} src={src} alt={`Preview ${index + 1}`} className="aspect-square w-full rounded-lg border border-gray-200 object-cover" />
+                <div key={`${src}-${index}`} className="relative aspect-square w-full overflow-hidden rounded-lg border border-gray-200">
+                  <Image src={src} alt={`Preview ${index + 1}`} fill className="object-cover" unoptimized />
+                </div>
               ))}
             </div>
           ) : null}

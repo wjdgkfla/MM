@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '@/lib/firebase/admin'
-import { db as localDb } from '@/lib/db'
-
-function toDateOrNull(value: string) {
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? null : date
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,96 +21,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to initialize Firebase Admin.' }, { status: 500 })
     }
 
-    const users = localDb.users.getAll()
-    const listings = localDb.listings.getAll()
-    const messages: ReturnType<typeof localDb.messages.getByListing>[number][] = []
-    const messageSet = new Set<string>()
-    for (const listing of listings) {
-      for (const msg of localDb.messages.getByListing(listing.id)) {
-        if (!messageSet.has(msg.id)) {
-          messageSet.add(msg.id)
-          messages.push(msg)
-        }
-      }
-    }
-    const reports = localDb.reports.getAll()
-    const adminActivity = localDb.adminActivity.getAll()
-
-    const writes: Promise<unknown>[] = []
-
-    for (const user of users) {
-      writes.push(
-        db.collection('users').doc(user.id).set(
-          {
-            ...user,
-            joinedAt: toDateOrNull(user.joinedAt),
-            lastActiveAt: toDateOrNull(user.lastActiveAt),
-            updatedAt: new Date(),
-          },
-          { merge: true }
-        )
-      )
-    }
-
-    for (const listing of listings) {
-      writes.push(
-        db.collection('listings').doc(listing.id).set(
-          {
-            ...listing,
-            createdAt: toDateOrNull(listing.createdAt),
-            updatedAt: toDateOrNull(listing.updatedAt),
-          },
-          { merge: true }
-        )
-      )
-    }
-
-    for (const message of messages) {
-      writes.push(
-        db.collection('messages').doc(message.id).set(
-          {
-            ...message,
-            createdAt: toDateOrNull(message.createdAt),
-          },
-          { merge: true }
-        )
-      )
-    }
-
-    for (const report of reports) {
-      writes.push(
-        db.collection('reports').doc(report.id).set(
-          {
-            ...report,
-            createdAt: toDateOrNull(report.createdAt),
-          },
-          { merge: true }
-        )
-      )
-    }
-
-    for (const activity of adminActivity) {
-      writes.push(
-        db.collection('adminActivity').doc(activity.id).set(
-          {
-            ...activity,
-            createdAt: toDateOrNull(activity.createdAt),
-          },
-          { merge: true }
-        )
-      )
-    }
-
-    await Promise.all(writes)
+    const [usersCount, listingsCount, messagesCount, reportsCount, adminActivityCount] = await Promise.all([
+      db.collection('users').count().get(),
+      db.collection('listings').count().get(),
+      db.collection('messages').count().get(),
+      db.collection('reports').count().get(),
+      db.collection('adminActivity').count().get(),
+    ])
 
     return NextResponse.json({
       ok: true,
+      mode: 'firebase-only',
+      message: 'Firebase-only mode is active. Local seed data is disabled.',
       counts: {
-        users: users.length,
-        listings: listings.length,
-        messages: messages.length,
-        reports: reports.length,
-        adminActivity: adminActivity.length,
+        users: usersCount.data().count,
+        listings: listingsCount.data().count,
+        messages: messagesCount.data().count,
+        reports: reportsCount.data().count,
+        adminActivity: adminActivityCount.data().count,
       },
     })
   } catch {

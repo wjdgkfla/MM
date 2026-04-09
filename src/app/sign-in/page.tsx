@@ -15,7 +15,7 @@ export default function SignInPage() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  const useDemoAdmin = (adminEmail: string) => {
+  const handleDemoAdminClick = (adminEmail: string) => {
     setEmail(adminEmail)
   }
 
@@ -100,7 +100,7 @@ export default function SignInPage() {
               <button
                 key={adminEmail}
                 type="button"
-                onClick={() => useDemoAdmin(adminEmail)}
+                onClick={() => handleDemoAdminClick(adminEmail)}
                 className="rounded-full border border-amber-300 bg-white px-2.5 py-1 font-medium text-amber-900"
               >
                 {adminEmail}
