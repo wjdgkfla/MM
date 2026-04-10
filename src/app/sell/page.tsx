@@ -136,10 +136,12 @@ export default function SellPage() {
       if (imageFiles.length > 0) {
         try {
           finalImageUrls = await uploadImages(imageFiles)
-        } catch {
-          // Keep listing creation working even if Storage upload fails.
-          finalImageUrls = []
-          setUploadWarning('Images could not be uploaded, so this listing was posted without photos.')
+        } catch (uploadErr) {
+          // Stop submission and tell the user — don't silently post without photos.
+          const msg = uploadErr instanceof Error ? uploadErr.message : 'Image upload failed'
+          setError(`${msg}. Please remove the images or try again before posting.`)
+          setSubmitting(false)
+          return
         }
       }
 

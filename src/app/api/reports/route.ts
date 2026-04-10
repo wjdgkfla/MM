@@ -6,6 +6,7 @@ import {
   reportsListAll,
   reportsCreate,
   reportsUpdateStatus,
+  reportsFindByUserAndListing,
   adminActivityCreate,
   usersFindById,
 } from '@/lib/data/firestoreDataAccess'
@@ -61,6 +62,11 @@ export async function POST(request: NextRequest) {
     }
     if (listing.sellerId === session.userId) {
       return NextResponse.json({ error: 'You cannot report your own listing' }, { status: 400 })
+    }
+
+    const existingReport = await reportsFindByUserAndListing(session.userId, listingId)
+    if (existingReport) {
+      return NextResponse.json({ error: 'You have already reported this listing' }, { status: 409 })
     }
 
     const report = await reportsCreate({

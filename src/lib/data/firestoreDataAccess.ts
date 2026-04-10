@@ -509,6 +509,19 @@ export async function reportsListAll(): Promise<Report[]> {
   return snap.docs.map((d) => docToReport({ id: d.id, ...d.data() }))
 }
 
+export async function reportsFindByUserAndListing(userId: string, listingId: string): Promise<Report | null> {
+  const db = getDb()
+  const snap = await db
+    .collection('reports')
+    .where('reportedByUserId', '==', userId)
+    .where('listingId', '==', listingId)
+    .limit(1)
+    .get()
+  if (snap.empty) return null
+  const doc = snap.docs[0]
+  return docToReport({ id: doc.id, ...doc.data() })
+}
+
 export async function reportsCreate(input: CreateReportInput): Promise<Report> {
   const db = getDb()
   const ref = db.collection('reports').doc()

@@ -92,25 +92,24 @@ export default function SignInPage() {
           </button>
         </form>
 
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-900">
-          <p className="font-semibold">Admin testing</p>
-          <p className="mt-1">Quick-fill admin email (you still need the matching Firebase Auth password):</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {DEV_ADMIN_EMAILS.map((adminEmail) => (
-              <button
-                key={adminEmail}
-                type="button"
-                onClick={() => handleDemoAdminClick(adminEmail)}
-                className="rounded-full border border-amber-300 bg-white px-2.5 py-1 font-medium text-amber-900"
-              >
-                {adminEmail}
-              </button>
-            ))}
+        {process.env.NODE_ENV !== 'production' ? (
+          <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 text-xs text-gray-600">
+            <p className="font-semibold text-gray-700">Dev quick-fill</p>
+            <p className="mt-1">Click to fill the email field (you still need the Firebase Auth password):</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {DEV_ADMIN_EMAILS.map((adminEmail) => (
+                <button
+                  key={adminEmail}
+                  type="button"
+                  onClick={() => handleDemoAdminClick(adminEmail)}
+                  className="rounded-full border border-gray-300 bg-white px-2.5 py-1 font-medium text-gray-700"
+                >
+                  {adminEmail}
+                </button>
+              ))}
+            </div>
           </div>
-          <p className="mt-2 text-[11px]">
-            Auth now uses Firebase email/password and server-side token verification.
-          </p>
-        </div>
+        ) : null}
 
         <p className="mt-4 text-sm text-gray-600">
           New here?{' '}

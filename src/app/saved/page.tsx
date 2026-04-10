@@ -28,9 +28,12 @@ export default function SavedPage() {
     }
 
     setLoading(true)
-    fetch(`/api/listings?ids=${savedIds.join(',')}`)
+    fetch(`/api/listings?ids=${savedIds.join(',')}`, { credentials: 'include' })
       .then((res) => res.json())
-      .then((data: Listing[]) => setSavedListings(Array.isArray(data) ? data : []))
+      .then((data: Listing[]) => {
+        const fetched = Array.isArray(data) ? data : []
+        setSavedListings(fetched)
+      })
       .catch(() => setSavedListings([]))
       .finally(() => setLoading(false))
   }, [session, savedIds])
@@ -78,6 +81,12 @@ export default function SavedPage() {
           </Link>
         </div>
       ) : (
+        <>
+        {savedIds.length > savedListings.length ? (
+          <p className="mt-4 text-xs text-gray-500">
+            {savedIds.length - savedListings.length} saved item{savedIds.length - savedListings.length > 1 ? 's are' : ' is'} no longer available and {savedIds.length - savedListings.length > 1 ? 'have' : 'has'} been removed from view.
+          </p>
+        ) : null}
         <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {savedListings.map((listing) => (
             <ListingCard
@@ -88,6 +97,7 @@ export default function SavedPage() {
             />
           ))}
         </div>
+        </>
       )}
     </div>
   )

@@ -23,6 +23,13 @@ export default function SignUpPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     setError('')
+
+    const trimmedEmail = email.trim().toLowerCase()
+    if (!trimmedEmail.endsWith('@gmu.edu') && !trimmedEmail.endsWith('@masonlive.gmu.edu')) {
+      setError('Only GMU email addresses are allowed (@gmu.edu or @masonlive.gmu.edu)')
+      return
+    }
+
     setSubmitting(true)
 
     try {

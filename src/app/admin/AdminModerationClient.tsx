@@ -260,7 +260,7 @@ export function AdminModerationClient({
             disabled={busyKey === 'seed-firebase'}
             className="ui-btn-secondary"
           >
-            {busyKey === 'seed-firebase' ? 'Seeding Firebase...' : 'Seed Firebase Data'}
+            {busyKey === 'seed-firebase' ? 'Checking...' : 'Check Firebase Data'}
           </button>
         </div>
       </div>
