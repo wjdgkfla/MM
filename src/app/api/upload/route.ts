@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { getFirebaseAdminStorage, isFirebaseAdminConfigured } from '@/lib/firebase/admin'
+import { usersFindById } from '@/lib/data/firestoreDataAccess'
 
 export async function POST(request: NextRequest) {
   try {
     const session = getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
+    }
+
+    const sessionUser = await usersFindById(session.userId)
+    if (sessionUser?.accountState === 'suspended') {
+      return NextResponse.json({ error: 'Your account is suspended' }, { status: 403 })
     }
 
     if (!isFirebaseAdminConfigured()) {
@@ -61,6 +67,10 @@ export async function POST(request: NextRequest) {
       await blob.makePublic()
       const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`
       uploadedUrls.push(publicUrl)
+    }
+
+    if (uploadedUrls.length === 0) {
+      return NextResponse.json({ error: 'No valid image files were provided' }, { status: 400 })
     }
 
     return NextResponse.json({ urls: uploadedUrls })

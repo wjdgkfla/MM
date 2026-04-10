@@ -78,6 +78,11 @@ export async function PATCH(
       return NextResponse.json({ error: 'Only the seller can update listing status' }, { status: 403 })
     }
 
+    const sessionUser = await usersFindById(session.userId)
+    if (sessionUser?.accountState === 'suspended') {
+      return NextResponse.json({ error: 'Your account is suspended' }, { status: 403 })
+    }
+
     const body = await request.json()
     const nextStatus = body.status as ListingStatus
 
@@ -116,6 +121,11 @@ export async function PUT(
 
     if (existing.sellerId !== session.userId) {
       return NextResponse.json({ error: 'Only the seller can edit this listing' }, { status: 403 })
+    }
+
+    const sessionUser = await usersFindById(session.userId)
+    if (sessionUser?.accountState === 'suspended') {
+      return NextResponse.json({ error: 'Your account is suspended' }, { status: 403 })
     }
 
     const body = await request.json()

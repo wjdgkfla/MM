@@ -6,6 +6,7 @@ import {
   messagesListThread,
   messagesCreate,
   conversationsListByUser,
+  usersFindById,
 } from '@/lib/data/firestoreDataAccess'
 
 export async function GET(request: NextRequest) {
@@ -55,6 +56,11 @@ export async function POST(request: NextRequest) {
     const session = getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
+    }
+
+    const sessionUser = await usersFindById(session.userId)
+    if (sessionUser?.accountState === 'suspended') {
+      return NextResponse.json({ error: 'Your account is suspended' }, { status: 403 })
     }
 
     const body = await request.json()

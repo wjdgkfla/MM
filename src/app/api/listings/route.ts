@@ -197,6 +197,9 @@ export async function POST(request: NextRequest) {
     const shouldKeepTextbookFields = category === 'textbooks'
 
     const seller = await usersFindById(session.userId)
+    if (seller?.accountState === 'suspended') {
+      return NextResponse.json({ error: 'Your account is suspended' }, { status: 403 })
+    }
     const sellerProfile = seller
       ? {
           displayName: seller.displayName,
