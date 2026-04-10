@@ -241,7 +241,17 @@ export default function ItemPage() {
             </div>
 
             <h1 className="text-2xl font-bold text-gray-900 leading-tight">{listing.title}</h1>
-            <p className="mt-2 text-3xl sm:text-[2rem] font-bold text-[#006633]">{priceLabel}</p>
+            <div className="mt-2 flex items-center gap-3">
+              <p className="text-3xl sm:text-[2rem] font-bold text-[#006633]">{priceLabel}</p>
+              {listing.favoriteCount > 0 ? (
+                <span className="flex items-center gap-1 text-sm text-gray-400">
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+                    <path fill="currentColor" d="M12.1 20.3c-.1 0-.2 0-.3-.1C7 17.4 4 14.8 4 11.5 4 8.8 6 7 8.5 7c1.5 0 2.8.7 3.6 1.8C13 7.7 14.3 7 15.8 7 18.3 7 20.3 8.8 20.3 11.5c0 3.3-3 5.9-7.8 8.7-.2.1-.3.1-.4.1z"/>
+                  </svg>
+                  {listing.favoriteCount} {listing.favoriteCount === 1 ? 'person' : 'people'} saved this
+                </span>
+              ) : null}
+            </div>
             <p className="mt-2 text-sm text-gray-600">Condition: {CONDITION_LABELS[listing.condition]}</p>
 
             <div className="mt-4 space-y-1 text-sm text-gray-600">
@@ -365,7 +375,7 @@ export default function ItemPage() {
           <div className="ui-surface p-5 sm:p-6">
             <h2 className="text-base font-semibold text-gray-900">Trust & safety</h2>
             <ul className="mt-3 space-y-2 text-sm text-gray-700">
-              <li>GMU-only marketplace with campus verification placeholders.</li>
+              <li>GMU-only marketplace. Only verified university emails can post or message.</li>
               <li>
                 {isCampusMeetupRecommended(listing.pickupZone)
                   ? 'Campus meetup recommended for first-time exchanges.'

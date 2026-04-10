@@ -581,11 +581,21 @@ export async function favoritesAdd(userId: string, listingId: string): Promise<v
   const db = getDb()
   const ref = db.collection('favorites').doc(userId)
   const doc = await ref.get()
+  const existing: string[] = doc.exists ? (doc.data()?.listingIds ?? []) : []
+
+  // Only increment if not already saved — prevents double-counting
+  if (existing.includes(listingId)) return
+
   if (!doc.exists) {
     await ref.set({ listingIds: [listingId] })
   } else {
     await ref.update({ listingIds: FieldValue.arrayUnion(listingId) })
   }
+
+  // Increment the public interest count on the listing (당근마켓-style)
+  await db.collection('listings').doc(listingId)
+    .update({ favoriteCount: FieldValue.increment(1) })
+    .catch(() => {}) // listing may have been deleted; ignore
 }
 
 export async function favoritesRemove(userId: string, listingId: string): Promise<void> {
@@ -593,7 +603,18 @@ export async function favoritesRemove(userId: string, listingId: string): Promis
   const ref = db.collection('favorites').doc(userId)
   const doc = await ref.get()
   if (!doc.exists) return
+
+  const existing: string[] = doc.data()?.listingIds ?? []
+
+  // Only decrement if it was actually saved
+  if (!existing.includes(listingId)) return
+
   await ref.update({ listingIds: FieldValue.arrayRemove(listingId) })
+
+  // Decrement the public interest count (당근마켓-style)
+  await db.collection('listings').doc(listingId)
+    .update({ favoriteCount: FieldValue.increment(-1) })
+    .catch(() => {}) // listing may have been deleted; ignore
 }
 
 // ─── Conversations (derived from messages) ─────────────────────────────────

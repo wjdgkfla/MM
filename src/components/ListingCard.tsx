@@ -7,6 +7,7 @@ import { CATEGORY_LABELS, LOCATION_LABELS, PICKUP_ZONE_LABELS } from '@/lib/type
 import { StatusBadge } from '@/components/StatusBadge'
 import { formatRecency } from '@/lib/time'
 import { TrustCues } from '@/components/TrustCues'
+import { CONDITION_LABELS } from '@/lib/types'
 
 interface ListingCardProps {
   listing: Listing
@@ -67,11 +68,21 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
         <p className="mt-1 text-xs text-[var(--air-muted)]">
           {LOCATION_LABELS[listing.campusLocation]} - {PICKUP_ZONE_LABELS[listing.pickupZone]}
         </p>
-        <p className="mt-1 line-clamp-1 text-xs text-gray-500">Meetup zone set for safer handoff.</p>
+        <p className="mt-1 line-clamp-1 text-xs text-gray-500">{CONDITION_LABELS[listing.condition]} · {PICKUP_ZONE_LABELS[listing.pickupZone]}</p>
 
         <div className="mt-3 flex items-center justify-between gap-2 text-xs text-[var(--air-muted)]">
           <span className="rounded-full bg-[var(--air-chip)] px-2 py-1">{CATEGORY_LABELS[listing.category]}</span>
-          <span>{recencyLabel}</span>
+          <div className="flex items-center gap-2">
+            {listing.favoriteCount > 0 ? (
+              <span className="flex items-center gap-0.5 text-[var(--air-muted)]">
+                <svg viewBox="0 0 24 24" className="h-3 w-3" aria-hidden="true">
+                  <path fill="currentColor" d="M12.1 20.3c-.1 0-.2 0-.3-.1C7 17.4 4 14.8 4 11.5 4 8.8 6 7 8.5 7c1.5 0 2.8.7 3.6 1.8C13 7.7 14.3 7 15.8 7 18.3 7 20.3 8.8 20.3 11.5c0 3.3-3 5.9-7.8 8.7-.2.1-.3.1-.4.1z"/>
+                </svg>
+                {listing.favoriteCount}
+              </span>
+            ) : null}
+            <span>{recencyLabel}</span>
+          </div>
         </div>
 
         <div className="mt-2">

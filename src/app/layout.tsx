@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
@@ -18,6 +18,9 @@ export const metadata: Metadata = {
     title: 'Mason Market | GMU Student Marketplace',
     description: 'Buy and sell textbooks, electronics, furniture, and more — safely on campus at GMU.',
   },
+}
+
+export const viewport: Viewport = {
   themeColor: '#006633',
 }
 

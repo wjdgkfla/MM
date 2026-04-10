@@ -411,13 +411,18 @@ export default function SellPage() {
         {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
         {uploadWarning ? <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{uploadWarning}</p> : null}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="ui-btn-primary w-full"
-        >
-          {submitting ? 'Posting...' : 'Post listing'}
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="ui-btn-primary flex-1"
+          >
+            {submitting ? 'Posting...' : 'Post listing'}
+          </button>
+          <a href="/my-listings" className="ui-btn-secondary">
+            Cancel
+          </a>
+        </div>
       </form>
     </div>
   )

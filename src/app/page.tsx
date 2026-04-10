@@ -206,7 +206,7 @@ export default function HomePage() {
               onChange={(e) => setStatus(e.target.value as ListingStatus | '')}
               className="ui-select"
             >
-              <option value="">All Status</option>
+              <option value="">Any status</option>
               {LISTING_STATUSES.map((itemStatus) => (
                 <option key={itemStatus} value={itemStatus}>
                   {STATUS_LABELS[itemStatus]}
