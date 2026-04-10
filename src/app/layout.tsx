@@ -4,8 +4,21 @@ import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 
 export const metadata: Metadata = {
-  title: 'Mason Market | Buy & Sell - George Mason University',
-  description: 'The student marketplace for George Mason University. Buy and sell textbooks, electronics, furniture, and more.',
+  title: 'Mason Market | Buy & Sell at George Mason University',
+  description: 'The trusted student marketplace for George Mason University. Buy and sell textbooks, electronics, furniture, and more — safely on campus.',
+  metadataBase: new URL('https://mason-market.vercel.app'),
+  openGraph: {
+    title: 'Mason Market | GMU Student Marketplace',
+    description: 'Buy and sell textbooks, electronics, furniture, and more — safely on campus at George Mason University.',
+    type: 'website',
+    siteName: 'Mason Market',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Mason Market | GMU Student Marketplace',
+    description: 'Buy and sell textbooks, electronics, furniture, and more — safely on campus at GMU.',
+  },
+  themeColor: '#006633',
 }
 
 export default function RootLayout({
