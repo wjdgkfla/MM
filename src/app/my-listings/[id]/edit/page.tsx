@@ -190,12 +190,17 @@ export default function EditListingPage() {
 
     setSubmitting(true)
     try {
-      let finalImageUrls = imagePreviews
+      // Default to the listing's existing server-side image URLs.
+      // imagePreviews holds local data: URLs (preview only) and must never be saved to the DB.
+      let finalImageUrls = listing.imageUrls
       if (imageFiles.length > 0) {
         try {
           finalImageUrls = await uploadImages(imageFiles)
-        } catch {
-          // Keep existing previews if upload fails
+        } catch (uploadErr) {
+          const msg = uploadErr instanceof Error ? uploadErr.message : 'Image upload failed'
+          setError(`${msg}. Please try again or remove the images before saving.`)
+          setSubmitting(false)
+          return
         }
       }
 
