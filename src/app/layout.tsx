@@ -4,6 +4,7 @@ import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 
 export const metadata: Metadata = {
+  manifest: '/manifest.json',
   title: 'Mason Market | Buy & Sell at George Mason University',
   description: 'The trusted student marketplace for George Mason University. Buy and sell textbooks, electronics, furniture, and more — safely on campus.',
   metadataBase: new URL('https://mason-market.vercel.app'),

@@ -17,6 +17,7 @@ import {
   listingsUpdateStatus,
   listingsUpdate,
   listingsRemove,
+  listingsIncrementViewCount,
   usersFindById,
   listingsCountBySellerId,
 } from '@/lib/data/firestoreDataAccess'
@@ -49,8 +50,13 @@ export async function GET(
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
 
-    const seller = await usersFindById(listing.sellerId)
-    const sellerListingCount = await listingsCountBySellerId(listing.sellerId)
+    const [seller, sellerListingCount] = await Promise.all([
+      usersFindById(listing.sellerId),
+      listingsCountBySellerId(listing.sellerId),
+    ])
+
+    // Fire-and-forget view count increment (don't await — keeps response fast)
+    listingsIncrementViewCount(params.id)
 
     return NextResponse.json({ listing, seller: seller || null, sellerListingCount })
   } catch (err) {

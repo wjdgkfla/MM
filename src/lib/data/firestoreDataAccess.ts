@@ -6,6 +6,9 @@ import {
   ListingModerationState,
   ListingStatus,
   Message,
+  Rating,
+  RatingScore,
+  RatingTag,
   Report,
   ReportStatus,
   User,
@@ -108,6 +111,7 @@ function docToListing(data: FirebaseFirestore.DocumentData): Listing {
     bundleNotes: data.bundleNotes || undefined,
     tags: Array.isArray(data.tags) ? data.tags : [],
     favoriteCount: Number(data.favoriteCount) || 0,
+    viewCount: Number(data.viewCount) || 0,
     isFavorited: data.isFavorited || false,
     createdAt: toISOString(data.createdAt),
     updatedAt: toISOString(data.updatedAt),
@@ -141,6 +145,21 @@ function docToMessage(data: FirebaseFirestore.DocumentData): Message {
     fromUserId: data.fromUserId || '',
     toUserId: data.toUserId || '',
     body: data.body || '',
+    type: data.type === 'offer' ? 'offer' : 'text',
+    offerAmount: data.offerAmount !== undefined ? Number(data.offerAmount) : undefined,
+    offerStatus: data.offerStatus || (data.type === 'offer' ? 'pending' : undefined),
+    createdAt: toISOString(data.createdAt),
+  }
+}
+
+function docToRating(data: FirebaseFirestore.DocumentData): Rating {
+  return {
+    id: data.id,
+    sellerId: data.sellerId || '',
+    buyerId: data.buyerId || '',
+    listingId: data.listingId || '',
+    score: data.score === -1 ? -1 : 1,
+    tags: Array.isArray(data.tags) ? data.tags : [],
     createdAt: toISOString(data.createdAt),
   }
 }
@@ -669,4 +688,70 @@ export async function conversationsListByUser(userId: string) {
       lastMessagePreview: message.body,
       lastMessageAt: message.createdAt,
     }))
+}
+
+// ─── View Count ────────────────────────────────────────────────────────────
+
+export async function listingsIncrementViewCount(id: string): Promise<void> {
+  const db = getDb()
+  await db.collection('listings').doc(id)
+    .update({ viewCount: FieldValue.increment(1) })
+    .catch(() => {}) // listing may have been deleted
+}
+
+// ─── Ratings ───────────────────────────────────────────────────────────────
+
+export async function ratingsCreate(input: {
+  sellerId: string
+  buyerId: string
+  listingId: string
+  score: RatingScore
+  tags: RatingTag[]
+}): Promise<Rating> {
+  const db = getDb()
+  const now = new Date()
+  const ref = db.collection('ratings').doc()
+  const data = { ...input, id: ref.id, createdAt: now }
+  await ref.set(data)
+  return docToRating({ ...data, createdAt: now })
+}
+
+export async function ratingsFindBySellerId(sellerId: string): Promise<Rating[]> {
+  const db = getDb()
+  const snap = await db
+    .collection('ratings')
+    .where('sellerId', '==', sellerId)
+    .orderBy('createdAt', 'desc')
+    .get()
+  return snap.docs.map((doc) => docToRating({ id: doc.id, ...doc.data() }))
+}
+
+export async function ratingsFindByBuyerAndListing(
+  buyerId: string,
+  listingId: string
+): Promise<Rating | null> {
+  const db = getDb()
+  const snap = await db
+    .collection('ratings')
+    .where('buyerId', '==', buyerId)
+    .where('listingId', '==', listingId)
+    .limit(1)
+    .get()
+  if (snap.empty) return null
+  const doc = snap.docs[0]
+  return docToRating({ id: doc.id, ...doc.data() })
+}
+
+// ─── Offer responses ───────────────────────────────────────────────────────
+
+export async function messagesUpdateOfferStatus(
+  messageId: string,
+  status: 'accepted' | 'declined'
+): Promise<Message | null> {
+  const db = getDb()
+  const ref = db.collection('messages').doc(messageId)
+  const doc = await ref.get()
+  if (!doc.exists) return null
+  await ref.update({ offerStatus: status })
+  return docToMessage({ id: doc.id, ...doc.data(), offerStatus: status })
 }

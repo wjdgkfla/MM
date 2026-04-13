@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Listing, Message } from '@/lib/types'
 import { formatRecency } from '@/lib/time'
 import { Conversation } from '@/lib/data/contracts'
@@ -44,6 +44,7 @@ export default function MessagesPage() {
   const [loadingInbox, setLoadingInbox] = useState(true)
   const [loadingThread, setLoadingThread] = useState(false)
   const [sending, setSending] = useState(false)
+  const didAutoSend = useRef(false)
 
   const selectedConversation = useMemo(
     () => conversations.find((conversation) => conversation.key === selectedKey) || null,
@@ -119,6 +120,24 @@ export default function MessagesPage() {
 
         setConversations(merged)
         setSelectedKey(merged[0]?.key || null)
+
+        // Auto-send "Still available?" if navigated here via that button
+        const isQuickAvailable = params.get('quick') === 'available'
+        if (isQuickAvailable && listingIdFromDetail && merged[0] && !didAutoSend.current) {
+          didAutoSend.current = true
+          const conv = merged.find((c) => c.listingId === listingIdFromDetail)
+          if (conv && conv.peerId) {
+            await fetch('/api/messages', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                listingId: conv.listingId,
+                toUserId: conv.peerId,
+                body: 'Hi, is this still available?',
+              }),
+            }).catch(() => {})
+          }
+        }
       } catch {
         setConversations([])
       } finally {
@@ -189,6 +208,21 @@ export default function MessagesPage() {
       setDraft('')
     } finally {
       setSending(false)
+    }
+  }
+
+  const handleOfferResponse = async (messageId: string, status: 'accepted' | 'declined') => {
+    try {
+      const res = await fetch(`/api/messages/${messageId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offerStatus: status }),
+      })
+      if (!res.ok) return
+      const updated = (await res.json()) as Message
+      setThread((current) => current.map((m) => (m.id === messageId ? updated : m)))
+    } catch {
+      // silently fail; thread refreshes on next load
     }
   }
 
@@ -270,6 +304,30 @@ export default function MessagesPage() {
                     <div className="space-y-2">
                       {thread.map((message) => {
                         const fromCurrentUser = message.fromUserId === currentUserId
+                        if (message.type === 'offer') {
+                          return (
+                            <div key={message.id} className={`max-w-[90%] ${fromCurrentUser ? 'ml-auto' : 'mr-auto'}`}>
+                              <div className={`rounded-xl border-2 p-3 ${
+                                message.offerStatus === 'accepted' ? 'border-[#006633] bg-[#006633]/5' :
+                                message.offerStatus === 'declined' ? 'border-red-200 bg-red-50' :
+                                'border-amber-200 bg-amber-50'
+                              }`}>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Offer</p>
+                                <p className="mt-1 text-2xl font-bold text-gray-900">${message.offerAmount}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">{message.body}</p>
+                                {message.offerStatus === 'pending' && !fromCurrentUser && (
+                                  <div className="mt-2 flex gap-2">
+                                    <button type="button" onClick={() => handleOfferResponse(message.id, 'accepted')} className="rounded-lg bg-[#006633] px-3 py-1 text-xs font-semibold text-white hover:bg-[#004d26]">Accept</button>
+                                    <button type="button" onClick={() => handleOfferResponse(message.id, 'declined')} className="rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50">Decline</button>
+                                  </div>
+                                )}
+                                {message.offerStatus === 'accepted' && <p className="mt-2 text-xs font-semibold text-[#006633]">✓ Offer accepted</p>}
+                                {message.offerStatus === 'declined' && <p className="mt-2 text-xs font-semibold text-red-600">✗ Offer declined</p>}
+                                {message.offerStatus === 'pending' && fromCurrentUser && <p className="mt-2 text-xs text-amber-700">Waiting for response…</p>}
+                              </div>
+                            </div>
+                          )
+                        }
                         return (
                           <div
                             key={message.id}

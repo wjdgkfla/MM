@@ -242,8 +242,6 @@ export async function POST(request: NextRequest) {
       sellerProfile,
       imageUrls: parsedImageUrls,
       tags: parsedTags,
-      favoriteCount: 0,
-      isFavorited: false,
       status: 'available',
     })
 

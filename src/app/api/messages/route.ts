@@ -64,10 +64,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { listingId, toUserId, body: messageBody } = body
+    const { listingId, toUserId, body: messageBody, type, offerAmount } = body
 
     if (!listingId || !toUserId || !messageBody) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    const isOffer = type === 'offer'
+    if (isOffer && (typeof offerAmount !== 'number' || offerAmount <= 0)) {
+      return NextResponse.json({ error: 'offerAmount must be a positive number' }, { status: 400 })
     }
 
     const listing = await listingsFindById(String(listingId))
@@ -89,6 +94,9 @@ export async function POST(request: NextRequest) {
       fromUserId: String(session.userId),
       toUserId: String(toUserId),
       body: String(messageBody),
+      type: isOffer ? 'offer' : 'text',
+      offerAmount: isOffer ? Number(offerAmount) : undefined,
+      offerStatus: isOffer ? 'pending' : undefined,
     })
 
     return NextResponse.json(message)

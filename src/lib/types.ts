@@ -82,6 +82,7 @@ export interface Listing {
   bundleNotes?: string
   tags: string[]
   favoriteCount: number
+  viewCount?: number
   isFavorited?: boolean
   createdAt: string
   updatedAt: string
@@ -105,13 +106,47 @@ export interface User {
   listingCount: number
 }
 
+export type MessageType = 'text' | 'offer'
+export type OfferStatus = 'pending' | 'accepted' | 'declined'
+
 export interface Message {
   id: string
   listingId: string
   fromUserId: string
   toUserId: string
   body: string
+  type?: MessageType
+  offerAmount?: number
+  offerStatus?: OfferStatus
   createdAt: string
+}
+
+export const RATING_TAGS = [
+  'fast-response',
+  'item-as-described',
+  'safe-meetup',
+  'good-communication',
+  'easy-transaction',
+] as const
+export type RatingTag = (typeof RATING_TAGS)[number]
+export type RatingScore = 1 | -1
+
+export interface Rating {
+  id: string
+  sellerId: string
+  buyerId: string
+  listingId: string
+  score: RatingScore
+  tags: RatingTag[]
+  createdAt: string
+}
+
+export const RATING_TAG_LABELS: Record<RatingTag, string> = {
+  'fast-response': 'Fast response',
+  'item-as-described': 'Item as described',
+  'safe-meetup': 'Safe meetup',
+  'good-communication': 'Good communication',
+  'easy-transaction': 'Easy transaction',
 }
 
 export interface SessionUser {

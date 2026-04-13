@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ListingCard } from '@/components/ListingCard'
 import { SellerTrustCard } from '@/components/SellerTrustCard'
+import { SellerRating } from '@/components/SellerRating'
 import { formatPostedDate, formatRecency } from '@/lib/time'
 import { usersFindById, listingsFindBySellerId } from '@/lib/data/firestoreDataAccess'
 
@@ -44,9 +45,14 @@ export default async function SellerProfilePage({ params }: { params: { id: stri
             <p className="mt-1 text-sm font-semibold text-gray-900">{formatRecency(seller.lastActiveAt)}</p>
           </div>
           <div className="rounded-xl bg-gray-50 p-3">
-            <p className="text-xs text-gray-500">Transactions (placeholder)</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">{soldCount} completed listings</p>
+            <p className="text-xs text-gray-500">Completed listings</p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">{soldCount} sold</p>
           </div>
+        </div>
+
+        <div className="mt-5 border-t border-gray-100 pt-5">
+          <h2 className="mb-3 text-sm font-semibold text-gray-900">Manner temperature</h2>
+          <SellerRating sellerId={seller.id} />
         </div>
       </div>
 

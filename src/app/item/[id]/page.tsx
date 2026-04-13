@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { SellerTrustCard } from '@/components/SellerTrustCard'
+import { SellerRating } from '@/components/SellerRating'
+import { RatingForm } from '@/components/RatingForm'
 import { StatusBadge } from '@/components/StatusBadge'
 import { TrustCues } from '@/components/TrustCues'
 import {
@@ -52,6 +54,10 @@ export default function ItemPage() {
   const [loading, setLoading] = useState(true)
   const [actionBusy, setActionBusy] = useState(false)
   const [actionError, setActionError] = useState('')
+  const [showOfferModal, setShowOfferModal] = useState(false)
+  const [offerAmount, setOfferAmount] = useState('')
+  const [offerSending, setOfferSending] = useState(false)
+  const [offerFeedback, setOfferFeedback] = useState('')
   const [showReportForm, setShowReportForm] = useState(false)
   const [reportReason, setReportReason] = useState<ReportReason>('scam-concern')
   const [reportNotes, setReportNotes] = useState('')
@@ -164,6 +170,39 @@ export default function ItemPage() {
     }
   }
 
+  const handleMakeOffer = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!session) { router.push(signInRedirect); return }
+    const amount = Number(offerAmount)
+    if (!amount || amount <= 0) { setOfferFeedback('Enter a valid offer amount.'); return }
+    setOfferSending(true)
+    setOfferFeedback('')
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          listingId: listing.id,
+          toUserId: listing.sellerId,
+          body: `I'd like to offer $${amount} for this item.`,
+          type: 'offer',
+          offerAmount: amount,
+        }),
+      })
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null)
+        throw new Error(payload?.error || 'Could not send offer')
+      }
+      setShowOfferModal(false)
+      setOfferAmount('')
+      router.push(`/messages?listingId=${listing.id}`)
+    } catch (err) {
+      setOfferFeedback(err instanceof Error ? err.message : 'Could not send offer')
+    } finally {
+      setOfferSending(false)
+    }
+  }
+
   const handleSubmitReport = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!session) {
@@ -251,6 +290,14 @@ export default function ItemPage() {
                   {listing.favoriteCount} {listing.favoriteCount === 1 ? 'person' : 'people'} saved this
                 </span>
               ) : null}
+              {(listing.viewCount ?? 0) > 0 ? (
+                <span className="flex items-center gap-1 text-sm text-gray-400">
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+                    <path fill="currentColor" d="M12 5C7 5 2.7 8.1 1 12.5 2.7 16.9 7 20 12 20s9.3-3.1 11-7.5C21.3 8.1 17 5 12 5zm0 12.5c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8a3 3 0 100 6 3 3 0 000-6z"/>
+                  </svg>
+                  {listing.viewCount ?? 0} {listing.viewCount === 1 ? 'view' : 'views'}
+                </span>
+              ) : null}
             </div>
             <p className="mt-2 text-sm text-gray-600">Condition: {CONDITION_LABELS[listing.condition]}</p>
 
@@ -295,8 +342,8 @@ export default function ItemPage() {
                     View buyer messages
                   </Link>
                 ) : (
-                  <Link href={`/messages?listingId=${listing.id}`} className="ui-btn-primary text-center">
-                    Message seller
+                  <Link href={`/messages?listingId=${listing.id}&quick=available`} className="ui-btn-primary text-center">
+                    Still available?
                   </Link>
                 )
               ) : (
@@ -305,6 +352,20 @@ export default function ItemPage() {
                 </Link>
               )}
             </div>
+            {!isSoldListing && !isOwnListing && session ? (
+              <div className="mt-2 flex gap-2">
+                <Link href={`/messages?listingId=${listing.id}`} className="flex-1 rounded-xl border border-[#006633]/40 py-2 text-center text-sm font-medium text-[#006633] hover:bg-[#006633]/5">
+                  Message seller
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setShowOfferModal(true)}
+                  className="flex-1 rounded-xl border border-[#FFB81C]/60 py-2 text-center text-sm font-medium text-[#8a6300] hover:bg-[#FFB81C]/10"
+                >
+                  Make an offer
+                </button>
+              </div>
+            ) : null}
 
             <p className="mt-2 text-xs text-gray-500">
               {isSoldListing && !isOwnListing
@@ -462,9 +523,59 @@ export default function ItemPage() {
               </Link>
             </div>
             <SellerTrustCard seller={seller} sellerListingCount={sellerListingCount} />
+            <div className="mt-3">
+              <SellerRating sellerId={listing.sellerId} compact />
+            </div>
           </div>
+
+          {isSoldListing && !isOwnListing && session ? (
+            <div>
+              <h2 className="mb-3 text-base font-semibold text-gray-900">Rate your experience</h2>
+              <RatingForm sellerId={listing.sellerId} listingId={listing.id} />
+            </div>
+          ) : null}
         </section>
       </div>
+
+      {showOfferModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-bold text-gray-900">Make an offer</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              Listed at{' '}
+              <span className="font-semibold text-[#006633]">{priceLabel}</span>. Enter your offer below.
+            </p>
+            <form onSubmit={handleMakeOffer} className="mt-4 space-y-4">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={offerAmount}
+                  onChange={(e) => setOfferAmount(e.target.value)}
+                  placeholder="0"
+                  className="ui-input pl-7"
+                  autoFocus
+                />
+              </div>
+              {offerFeedback ? <p className="text-xs text-red-600">{offerFeedback}</p> : null}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowOfferModal(false); setOfferFeedback('') }}
+                  className="ui-btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+                <button type="submit" disabled={offerSending} className="ui-btn-primary flex-1">
+                  {offerSending ? 'Sending…' : 'Send offer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

@@ -26,7 +26,7 @@ export type ListingQuery = {
   sort?: 'newest' | 'price-asc' | 'price-desc'
 }
 
-export type CreateListingInput = Omit<Listing, 'id' | 'createdAt' | 'updatedAt'>
+export type CreateListingInput = Omit<Listing, 'id' | 'createdAt' | 'updatedAt' | 'favoriteCount' | 'isFavorited'>
 export type UpdateListingInput = Partial<
   Pick<
     Listing,

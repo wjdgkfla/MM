@@ -104,6 +104,7 @@ export default function SellPage() {
   }
 
   const validate = () => {
+    if (imageFiles.length === 0) return 'At least 1 photo is required to post a listing.'
     if (form.title.trim().length < 5) return 'Title should be at least 5 characters.'
     if (form.description.trim().length < 15) return 'Description should be at least 15 characters.'
     if (form.pickupNotes.trim().length < 6) return 'Pickup notes should be at least 6 characters.'
@@ -208,7 +209,7 @@ export default function SellPage() {
 
       <form onSubmit={handleSubmit} className="ui-surface space-y-5 p-4 sm:p-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Photos (optional)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Photos <span className="text-red-500">*</span></label>
           <input
             type="file"
             accept="image/*"
@@ -216,7 +217,7 @@ export default function SellPage() {
             onChange={handleImageChange}
             className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#006633] file:px-3 file:py-2 file:text-white"
           />
-          <p className="mt-1 text-xs text-gray-500">Up to 4 images (5MB each). Uploaded to Firebase Storage.</p>
+          <p className="mt-1 text-xs text-gray-500">At least 1 photo required. Up to 4 images (5MB each).</p>
           {imagePreviews.length > 0 ? (
             <div className="mt-3 grid grid-cols-4 gap-2">
               {imagePreviews.map((src, index) => (
