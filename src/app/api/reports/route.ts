@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
   try {
     const reports = await reportsListAll()
     return NextResponse.json(reports)
-  } catch {
+  } catch (err) {
+    console.error('GET /api/reports error:', err)
     return NextResponse.json({ error: 'Failed to load reports' }, { status: 500 })
   }
 }
@@ -79,7 +80,8 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(report, { status: 201 })
-  } catch {
+  } catch (err) {
+    console.error('POST /api/reports error:', err)
     return NextResponse.json({ error: 'Failed to submit report' }, { status: 500 })
   }
 }
@@ -125,7 +127,8 @@ export async function PATCH(request: NextRequest) {
     })
 
     return NextResponse.json(updated)
-  } catch {
+  } catch (err) {
+    console.error('PATCH /api/reports error:', err)
     return NextResponse.json({ error: 'Failed to update report' }, { status: 500 })
   }
 }

@@ -105,7 +105,8 @@ export async function PATCH(
 
     const listing = await listingsUpdateStatus(params.id, nextStatus)
     return NextResponse.json(listing)
-  } catch {
+  } catch (err) {
+    console.error('PATCH /api/listings/[id] error:', err)
     return NextResponse.json({ error: 'Failed to update listing status' }, { status: 500 })
   }
 }
@@ -217,7 +218,8 @@ export async function PUT(
     }
 
     return NextResponse.json(listing)
-  } catch {
+  } catch (err) {
+    console.error('PUT /api/listings/[id] error:', err)
     return NextResponse.json({ error: 'Failed to update listing' }, { status: 500 })
   }
 }
@@ -247,7 +249,8 @@ export async function DELETE(
     }
 
     return NextResponse.json({ ok: true })
-  } catch {
+  } catch (err) {
+    console.error('DELETE /api/listings/[id] error:', err)
     return NextResponse.json({ error: 'Failed to delete listing' }, { status: 500 })
   }
 }

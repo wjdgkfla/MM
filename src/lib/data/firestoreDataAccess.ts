@@ -202,17 +202,38 @@ function getDb() {
 
 export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]> {
   const db = getDb()
-  const snap = await db.collection('listings').orderBy('createdAt', 'desc').get()
+
+  // Push equality filters to Firestore to avoid loading the entire collection.
+  // Text search (search, courseTag) and range filters (price) cannot be pushed to
+  // Firestore without composite indexes or a search service, so they are applied
+  // in JS after a pre-filtered fetch.
+  let ref: FirebaseFirestore.Query = db.collection('listings')
+
+  // Equality filters — each reduces the rows Firestore returns
+  if (query?.category) ref = ref.where('category', '==', query.category)
+  if (query?.campusLocation) ref = ref.where('campusLocation', '==', query.campusLocation)
+  if (query?.condition) ref = ref.where('condition', '==', query.condition)
+  if (query?.status) ref = ref.where('status', '==', query.status)
+  if (query?.pickupZone) ref = ref.where('pickupZone', '==', query.pickupZone)
+  // moderationState: always hide hidden listings from public queries
+  ref = ref.where('moderationState', 'in', ['visible', 'flagged'])
+
+  // Only sort by createdAt when there are no inequality/price-sort overrides.
+  // Firestore requires the sort field to match any inequality filter field.
+  const needsPriceSort = query?.sort === 'price-asc' || query?.sort === 'price-desc'
+  if (!needsPriceSort) {
+    ref = ref.orderBy('createdAt', 'desc')
+  }
+
+  const snap = await ref.get()
   let results = snap.docs.map((doc) => docToListing({ id: doc.id, ...doc.data() }))
 
-  if (query?.category) results = results.filter((l) => l.category === query.category)
-  if (query?.campusLocation) results = results.filter((l) => l.campusLocation === query.campusLocation)
-  if (query?.pickupZone) results = results.filter((l) => l.pickupZone === query.pickupZone)
-  if (query?.condition) results = results.filter((l) => l.condition === query.condition)
-  if (query?.status) results = results.filter((l) => l.status === query.status)
+  // JS-level filters for things Firestore can't do without extra indexes/services
   if (query?.freeOnly) results = results.filter((l) => l.price === 0)
-  if (query?.minPrice !== undefined && query.minPrice >= 0) results = results.filter((l) => l.price >= query.minPrice!)
-  if (query?.maxPrice !== undefined && query.maxPrice >= 0) results = results.filter((l) => l.price <= query.maxPrice!)
+  if (query?.minPrice !== undefined && query.minPrice >= 0)
+    results = results.filter((l) => l.price >= query.minPrice!)
+  if (query?.maxPrice !== undefined && query.maxPrice >= 0)
+    results = results.filter((l) => l.price <= query.maxPrice!)
 
   if (query?.search) {
     const term = query.search.toLowerCase().trim()
@@ -239,6 +260,9 @@ export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]>
 
   if (query?.sort === 'price-asc') results.sort((a, b) => a.price - b.price)
   else if (query?.sort === 'price-desc') results.sort((a, b) => b.price - a.price)
+  else if (!needsPriceSort) {
+    // createdAt desc already applied at Firestore level — no JS sort needed
+  }
 
   return results
 }
@@ -599,41 +623,52 @@ export async function favoritesListByUser(userId: string): Promise<string[]> {
 export async function favoritesAdd(userId: string, listingId: string): Promise<void> {
   const db = getDb()
   const ref = db.collection('favorites').doc(userId)
-  const doc = await ref.get()
-  const existing: string[] = doc.exists ? (doc.data()?.listingIds ?? []) : []
 
-  // Only increment if not already saved — prevents double-counting
-  if (existing.includes(listingId)) return
+  // Use a Firestore transaction so the existence check and the counter increment
+  // are atomic — eliminates the race condition from check-then-write.
+  await db.runTransaction(async (tx) => {
+    const doc = await tx.get(ref)
+    const existing: string[] = doc.exists ? (doc.data()?.listingIds ?? []) : []
 
-  if (!doc.exists) {
-    await ref.set({ listingIds: [listingId] })
-  } else {
-    await ref.update({ listingIds: FieldValue.arrayUnion(listingId) })
-  }
+    // Already saved — nothing to do (idempotent)
+    if (existing.includes(listingId)) return
 
-  // Increment the public interest count on the listing (당근마켓-style)
-  await db.collection('listings').doc(listingId)
-    .update({ favoriteCount: FieldValue.increment(1) })
-    .catch(() => {}) // listing may have been deleted; ignore
+    if (!doc.exists) {
+      tx.set(ref, { listingIds: [listingId] })
+    } else {
+      tx.update(ref, { listingIds: FieldValue.arrayUnion(listingId) })
+    }
+
+    // Atomically increment the public interest count (당근마켓-style)
+    const listingRef = db.collection('listings').doc(listingId)
+    tx.update(listingRef, { favoriteCount: FieldValue.increment(1) })
+  }).catch((err) => {
+    console.error('favoritesAdd transaction error:', err)
+  })
 }
 
 export async function favoritesRemove(userId: string, listingId: string): Promise<void> {
   const db = getDb()
   const ref = db.collection('favorites').doc(userId)
-  const doc = await ref.get()
-  if (!doc.exists) return
 
-  const existing: string[] = doc.data()?.listingIds ?? []
+  // Use a Firestore transaction to keep the check and decrement atomic.
+  await db.runTransaction(async (tx) => {
+    const doc = await tx.get(ref)
+    if (!doc.exists) return
 
-  // Only decrement if it was actually saved
-  if (!existing.includes(listingId)) return
+    const existing: string[] = doc.data()?.listingIds ?? []
 
-  await ref.update({ listingIds: FieldValue.arrayRemove(listingId) })
+    // Not actually saved — nothing to do
+    if (!existing.includes(listingId)) return
 
-  // Decrement the public interest count (당근마켓-style)
-  await db.collection('listings').doc(listingId)
-    .update({ favoriteCount: FieldValue.increment(-1) })
-    .catch(() => {}) // listing may have been deleted; ignore
+    tx.update(ref, { listingIds: FieldValue.arrayRemove(listingId) })
+
+    // Atomically decrement the public interest count (당근마켓-style)
+    const listingRef = db.collection('listings').doc(listingId)
+    tx.update(listingRef, { favoriteCount: FieldValue.increment(-1) })
+  }).catch((err) => {
+    console.error('favoritesRemove transaction error:', err)
+  })
 }
 
 // ─── Conversations (derived from messages) ─────────────────────────────────
@@ -696,7 +731,7 @@ export async function listingsIncrementViewCount(id: string): Promise<void> {
   const db = getDb()
   await db.collection('listings').doc(id)
     .update({ viewCount: FieldValue.increment(1) })
-    .catch(() => {}) // listing may have been deleted
+    .catch((err) => console.error(`listingsIncrementViewCount(${id}) error:`, err))
 }
 
 // ─── Ratings ───────────────────────────────────────────────────────────────

@@ -45,6 +45,7 @@ export default function MessagesPage() {
   const [loadingThread, setLoadingThread] = useState(false)
   const [sending, setSending] = useState(false)
   const didAutoSend = useRef(false)
+  const isSendingRef = useRef(false)
 
   const selectedConversation = useMemo(
     () => conversations.find((conversation) => conversation.key === selectedKey) || null,
@@ -135,7 +136,7 @@ export default function MessagesPage() {
                 toUserId: conv.peerId,
                 body: 'Hi, is this still available?',
               }),
-            }).catch(() => {})
+            }).catch((err) => console.error('Auto-send "still available?" error:', err))
           }
         }
       } catch {
@@ -173,6 +174,10 @@ export default function MessagesPage() {
 
   const handleSend = async (messageBody: string) => {
     if (!selectedConversation || !messageBody.trim()) return
+    // Ref-level guard prevents duplicate sends from rapid double-clicks
+    // before the React state update (setSending) can propagate.
+    if (isSendingRef.current) return
+    isSendingRef.current = true
 
     setSending(true)
     try {
@@ -208,6 +213,7 @@ export default function MessagesPage() {
       setDraft('')
     } finally {
       setSending(false)
+      isSendingRef.current = false
     }
   }
 

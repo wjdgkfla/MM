@@ -30,11 +30,21 @@ export async function GET(
       return NextResponse.json({ error: 'buyerId is required' }, { status: 400 })
     }
 
+    // Verify requester is a participant in this conversation:
+    // must be either the listing seller OR the buyer in the thread.
+    const isSeller = session.userId === listing.sellerId
+    const isBuyer = session.userId === buyerId
+
+    if (!isSeller && !isBuyer) {
+      return NextResponse.json({ error: 'You are not a participant in this conversation' }, { status: 403 })
+    }
+
     const messages = viewerUserId
       ? await messagesListThread(params.id, listing.sellerId, buyerId)
       : await messagesListByListing(params.id, buyerId)
     return NextResponse.json(messages)
-  } catch {
+  } catch (err) {
+    console.error('GET /api/listings/[id]/messages error:', err)
     return NextResponse.json({ error: 'Failed to load messages' }, { status: 500 })
   }
 }
@@ -77,7 +87,8 @@ export async function POST(
     })
 
     return NextResponse.json(message)
-  } catch {
+  } catch (err) {
+    console.error('POST /api/listings/[id]/messages error:', err)
     return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
   }
 }

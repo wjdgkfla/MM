@@ -71,8 +71,13 @@ export async function POST(request: NextRequest) {
     }
 
     const isOffer = type === 'offer'
-    if (isOffer && (typeof offerAmount !== 'number' || offerAmount <= 0)) {
-      return NextResponse.json({ error: 'offerAmount must be a positive number' }, { status: 400 })
+    if (isOffer) {
+      if (typeof offerAmount !== 'number' || offerAmount <= 0) {
+        return NextResponse.json({ error: 'offerAmount must be a positive number' }, { status: 400 })
+      }
+      if (offerAmount > 100_000) {
+        return NextResponse.json({ error: 'offerAmount cannot exceed $100,000' }, { status: 400 })
+      }
     }
 
     const listing = await listingsFindById(String(listingId))
@@ -82,11 +87,19 @@ export async function POST(request: NextRequest) {
     if (listing.status === 'sold') {
       return NextResponse.json({ error: 'This listing is sold and no longer accepts new messages' }, { status: 409 })
     }
+
+    // Issue 6: Validate toUserId is actually the listing seller (prevents spoofed recipients)
     if (String(toUserId) !== listing.sellerId) {
       return NextResponse.json({ error: 'Messages can only be sent to the listing seller' }, { status: 400 })
     }
     if (listing.sellerId === session.userId) {
       return NextResponse.json({ error: 'You cannot message your own listing' }, { status: 400 })
+    }
+
+    // Issue 5: Verify the recipient user actually exists
+    const recipient = await usersFindById(String(toUserId))
+    if (!recipient) {
+      return NextResponse.json({ error: 'Recipient user not found' }, { status: 404 })
     }
 
     const message = await messagesCreate({
@@ -100,7 +113,8 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(message)
-  } catch {
+  } catch (err) {
+    console.error('POST /api/messages error:', err)
     return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
   }
 }
