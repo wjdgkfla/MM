@@ -38,9 +38,9 @@ export async function GET(request: NextRequest) {
   const sort = (searchParams.get('sort') || 'newest') as 'newest' | 'price-asc' | 'price-desc'
 
   const ids = searchParams.get('ids')
+  // Anonymous users can browse the feed and do basic search. Advanced filters still require sign-in.
   const usingProtectedQuery =
     Boolean(category) ||
-    Boolean(search) ||
     Boolean(campusLocation) ||
     Boolean(pickupZone) ||
     Boolean(condition) ||
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 
   try {
     if (!session && usingProtectedQuery) {
-      return NextResponse.json({ error: 'Sign in required for filters and search' }, { status: 401 })
+      return NextResponse.json({ error: 'Sign in required for filters' }, { status: 401 })
     }
 
     if (mine === 'true') {

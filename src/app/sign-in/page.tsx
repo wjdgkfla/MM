@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { DEV_ADMIN_EMAILS } from '@/lib/auth/devAdmin'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { getFirebaseClientAuth } from '@/lib/firebase/client'
+import { friendlyAuthError } from '@/lib/auth/authErrors'
 
 export default function SignInPage() {
   const router = useRouter()
@@ -48,7 +49,7 @@ export default function SignInPage() {
       router.push(redirect)
       router.refresh()
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Sign-in failed')
+      setError(friendlyAuthError(submitError, 'sign-in'))
     } finally {
       setSubmitting(false)
     }

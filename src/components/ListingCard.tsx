@@ -68,7 +68,7 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
         <p className="mt-1 text-xs text-[var(--air-muted)]">
           {LOCATION_LABELS[listing.campusLocation]} - {PICKUP_ZONE_LABELS[listing.pickupZone]}
         </p>
-        <p className="mt-1 line-clamp-1 text-xs text-gray-500">{CONDITION_LABELS[listing.condition]} · {PICKUP_ZONE_LABELS[listing.pickupZone]}</p>
+        <p className="mt-1 line-clamp-1 text-xs text-gray-500">{CONDITION_LABELS[listing.condition]}</p>
 
         <div className="mt-3 flex items-center justify-between gap-2 text-xs text-[var(--air-muted)]">
           <span className="rounded-full bg-[var(--air-chip)] px-2 py-1">{CATEGORY_LABELS[listing.category]}</span>

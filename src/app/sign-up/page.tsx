@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { getFirebaseClientAuth } from '@/lib/firebase/client'
+import { friendlyAuthError } from '@/lib/auth/authErrors'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -54,7 +55,7 @@ export default function SignUpPage() {
       router.push(redirect)
       router.refresh()
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Sign-up failed')
+      setError(friendlyAuthError(submitError, 'sign-up'))
     } finally {
       setSubmitting(false)
     }

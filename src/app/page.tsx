@@ -77,9 +77,10 @@ export default function HomePage() {
 
   useEffect(() => {
     const params = new URLSearchParams()
+    // Search is allowed for all visitors (including anonymous).
+    if (search) params.set('search', search)
     if (session) {
       if (category) params.set('category', category)
-      if (search) params.set('search', search)
       if (campusLocation) params.set('campusLocation', campusLocation)
       if (pickupZone) params.set('pickupZone', pickupZone)
       if (condition) params.set('condition', condition)
@@ -142,13 +143,16 @@ export default function HomePage() {
         )}
       </section>
 
-      {session ? (
-      <div className="ui-surface mb-6 space-y-4 p-4 sm:mb-8 sm:p-5">
+      <div className="mb-6 sm:mb-8">
         <SearchBar
           value={searchInput}
           onChange={setSearchInput}
           onSubmit={() => setSearch(searchInput.trim())}
         />
+      </div>
+
+      {session ? (
+      <div className="ui-surface mb-6 space-y-4 p-4 sm:mb-8 sm:p-5">
         <CategoryFilter selected={category} onSelect={setCategory} />
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
