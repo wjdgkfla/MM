@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mason Market - UI Modernization Examples</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f8f8f8;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 50px;
+            font-size: 32px;
+            color: #1a1a1a;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 80px;
+            align-items: start;
+        }
+
+        .comparison h2 {
+            grid-column: 1 / -1;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #006633;
+            border-bottom: 3px solid #006633;
+            padding-bottom: 10px;
+        }
+
+        .side {
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+        }
+
+        .side h3 {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        /* LISTING CARD STYLES */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .card-current {
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.2s;
+        }
+
+        .card-current:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        .card-current-image {
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .card-current-body {
+            padding: 16px;
+        }
+
+        .card-current-title {
+            font-weight: 600;
+            font-size: 14px;
+            line-height: 1.3;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-current-price {
+            font-size: 20px;
+            font-weight: bold;
+            color: #006633;
+            margin-bottom: 6px;
+        }
+
+        .card-current-meta {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .card-current-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: #999;
+            padding-top: 8px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        /* MODERN CARD STYLES */
+        .card-modern {
+            border-radius: 16px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-modern:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+        }
+
+        .card-modern-image-container {
+            position: relative;
+            aspect-ratio: 1;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+        }
+
+        .card-modern-image {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #bbb;
+            font-size: 12px;
+        }
+
+        .card-modern-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #ff6b6b;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-modern-seller {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.95);
+            padding: 6px 10px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            font-size: 11px;
+        }
+
+        .card-modern-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #006633 0%, #004d24 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 10px;
+        }
+
+        .card-modern-body {
+            padding: 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-modern-title {
+            font-weight: 600;
+            font-size: 14px;
+            line-height: 1.3;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-modern-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: #006633;
+            margin-bottom: 8px;
+        }
+
+        .card-modern-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .card-modern-tag {
+            background: #f0f0f0;
+            color: #666;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .card-modern-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: #999;
+            padding-top: 12px;
+            border-top: 1px solid #f5f5f5;
+        }
+
+        .card-modern-save {
+            cursor: pointer;
+            font-weight: 500;
+            color: #006633;
+            transition: all 0.2s;
+        }
+
+        .card-modern-save:hover {
+            color: #ff6b6b;
+        }
+
+        /* DARK MODE EXAMPLE */
+        .dark-example {
+            background: #1a1a1a;
+            color: #f5f5f5;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 40px 0;
+        }
+
+        .dark-example h3 {
+            color: #00aa55;
+            margin-bottom: 20px;
+        }
+
+        .dark-card {
+            background: #2a2a2a;
+            border-radius: 16px;
+            overflow: hidden;
+            padding: 0;
+            margin-bottom: 16px;
+        }
+
+        .dark-card-image {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: linear-gradient(135deg, #333 0%, #2a2a2a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .dark-card-body {
+            padding: 16px;
+        }
+
+        .dark-card-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #f5f5f5;
+            margin-bottom: 8px;
+        }
+
+        .dark-card-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: #00aa55;
+            margin-bottom: 8px;
+        }
+
+        .dark-card-meta {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* SKELETON COMPARISON */
+        .skeleton-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .skeleton-pulse {
+            background: #e0e0e0;
+            border-radius: 12px;
+            height: 200px;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .skeleton-shimmer {
+            background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+            background-size: 200% 100%;
+            border-radius: 12px;
+            height: 200px;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .description {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #666;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        .key-changes {
+            background: #e8f4ee;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #006633;
+        }
+
+        .key-changes h4 {
+            color: #006633;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .key-changes ul {
+            list-style: none;
+            font-size: 12px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .key-changes li:before {
+            content: "✓ ";
+            color: #006633;
+            font-weight: bold;
+            margin-right: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Mason Market - Modern UI Examples</h1>
+
+        <!-- LISTING CARD COMPARISON -->
+        <div class="comparison">
+            <h2>1. Listing Card Design</h2>
+
+            <div class="side">
+                <h3>Current Design</h3>
+                <div class="card-grid">
+                    <div class="card-current">
+                        <div class="card-current-image">Image 4:3</div>
+                        <div class="card-current-body">
+                            <div class="card-current-title">iPhone 15 Pro Max Case</div>
+                            <div class="card-current-price">$25</div>
+                            <div class="card-current-meta">
+                                Arlington - Dorm Area<br>
+                                Excellent condition
+                            </div>
+                            <div class="card-current-footer">
+                                <span>Electronics</span>
+                                <span>2 hours ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="description">
+                    ✓ Clean & minimal<br>
+                    ✓ Good spacing<br>
+                    ✓ Professional<br>
+                    ✗ Text-heavy (info below image)<br>
+                    ✗ No seller preview<br>
+                    ✗ No trending/urgency signals
+                </div>
+            </div>
+
+            <div class="side">
+                <h3>Modern Redesign</h3>
+                <div class="card-grid">
+                    <div class="card-modern">
+                        <div class="card-modern-image-container">
+                            <div class="card-modern-image">Image 1:1</div>
+                            <div class="card-modern-badge">NEW</div>
+                            <div class="card-modern-seller">
+                                <div class="card-modern-avatar">JD</div>
+                                <span>⭐ 4.8</span>
+                            </div>
+                        </div>
+                        <div class="card-modern-body">
+                            <div class="card-modern-title">iPhone 15 Pro Max Case</div>
+                            <div class="card-modern-price">$25</div>
+                            <div class="card-modern-tags">
+                                <span class="card-modern-tag">Dorm</span>
+                                <span class="card-modern-tag">Excellent</span>
+                            </div>
+                            <div class="card-modern-footer">
+                                <span>2 hours ago</span>
+                                <span class="card-modern-save">♡ Save</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="description">
+                    ✓ Image-dominant (larger, square)<br>
+                    ✓ Seller trust visible (avatar + rating)<br>
+                    ✓ "NEW" badge creates urgency<br>
+                    ✓ Tags instead of text lines<br>
+                    ✓ Better visual hierarchy<br>
+                    ✓ More hover interaction
+                </div>
+            </div>
+        </div>
+
+        <!-- DARK MODE EXAMPLE -->
+        <div class="comparison">
+            <h2>2. Dark Mode Support</h2>
+
+            <div class="side">
+                <h3>Current (Light Only)</h3>
+                <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0;">
+                    <p style="color: #666; font-size: 12px;">Website only available in light mode. No user preference for dark mode.</p>
+                </div>
+                <div class="description">
+                    ✗ No dark mode toggle<br>
+                    ✗ Can't respect user preference<br>
+                    ✗ Harsh on eyes at night<br>
+                    ✗ Feels like v1 product
+                </div>
+            </div>
+
+            <div class="side">
+                <h3>Modern (With Dark Mode)</h3>
+                <div class="dark-example">
+                    <h3>Dark Mode Preview</h3>
+                    <div class="dark-card">
+                        <div class="dark-card-image">Image 1:1</div>
+                        <div class="dark-card-body">
+                            <div class="dark-card-title">Used Textbook - CS 101</div>
+                            <div class="dark-card-price">$45</div>
+                            <div class="dark-card-meta">Fairfax Campus • Good condition • 3 days ago</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="description">
+                    ✓ Respects user preference<br>
+                    ✓ Easier on eyes at night<br>
+                    ✓ Modern expectation<br>
+                    ✓ Increases engagement<br>
+                    ✓ Professional appearance
+                </div>
+            </div>
+        </div>
+
+        <!-- SKELETON LOADERS -->
+        <div class="comparison">
+            <h2>3. Skeleton Loading Animation</h2>
+
+            <div class="side">
+                <h3>Current (Pulse Effect)</h3>
+                <div class="skeleton-pulse"></div>
+                <div class="description">
+                    ✓ Shows loading state<br>
+                    ✗ Flat & dull<br>
+                    ✗ Looks less premium<br>
+                    ✗ Less engagement
+                </div>
+            </div>
+
+            <div class="side">
+                <h3>Modern (Shimmer Effect)</h3>
+                <div class="skeleton-shimmer"></div>
+                <div class="description">
+                    ✓ More premium feel<br>
+                    ✓ Direction gives context<br>
+                    ✓ Better perceived performance<br>
+                    ✓ Used by major apps (Instagram, LinkedIn)
+                </div>
+            </div>
+        </div>
+
+        <!-- LAYOUT IMPROVEMENTS -->
+        <div class="comparison">
+            <h2>4. Home Page Layout</h2>
+
+            <div class="side">
+                <h3>Current Structure</h3>
+                <div class="key-changes">
+                    <h4>Current Layout:</h4>
+                    <ul>
+                        <li>Title + subtitle</li>
+                        <li>Search bar (inside filter panel)</li>
+                        <li>Big filter panel (logged-in only)</li>
+                        <li>4-column listing grid</li>
+                        <li>Text-based cards</li>
+                    </ul>
+                </div>
+                <div class="description">
+                    ✓ Clean and organized<br>
+                    ✗ Filters take up space<br>
+                    ✗ Search hidden for anon users<br>
+                    ✗ Cards feel secondary to text
+                </div>
+            </div>
+
+            <div class="side">
+                <h3>Modern Structure</h3>
+                <div class="key-changes">
+                    <h4>Proposed Improvements:</h4>
+                    <ul>
+                        <li>Hero search bar (prominent, always visible)</li>
+                        <li>Collapsible filter sidebar (not full panel)</li>
+                        <li>Image-dominant 3-column grid on tablet, 4 on desktop</li>
+                        <li>Sticky header with search</li>
+                        <li>Category chips for quick filtering</li>
+                        <li>Trending/Featured section</li>
+                    </ul>
+                </div>
+                <div class="description">
+                    ✓ Search is hero element<br>
+                    ✓ Filters don't dominate<br>
+                    ✓ Better on mobile<br>
+                    ✓ More discoverable<br>
+                    ✓ Trending builds urgency
+                </div>
+            </div>
+        </div>
+
+        <!-- BUTTON & INTERACTION IMPROVEMENTS -->
+        <div class="comparison">
+            <h2>5. Interactive Elements</h2>
+
+            <div class="side">
+                <h3>Current Interactions</h3>
+                <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0;">
+                    <button style="background: #006633; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-right: 8px;">Message seller</button>
+                    <button style="background: white; color: #006633; border: 2px solid #006633; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer;">Save</button>
+                </div>
+                <div class="description">
+                    ✓ Clear call-to-action<br>
+                    ✓ Good contrast<br>
+                    ✗ No micro-interactions<br>
+                    ✗ No loading states<br>
+                    ✗ Hover feels static
+                </div>
+            </div>
+
+            <div class="side">
+                <h3>Modern Interactions</h3>
+                <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0;">
+                    <button style="background: #006633; color: white; border: none; padding: 12px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; margin-right: 8px; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,102,51,0.2);">Message seller</button>
+                    <button style="background: white; color: #ff6b6b; border: 2px solid #ff6b6b; padding: 10px 18px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">♥ Save</button>
+                </div>
+                <div class="description">
+                    ✓ Subtle shadows on hover<br>
+                    ✓ Heart icon for save<br>
+                    ✓ Smooth transitions<br>
+                    ✓ Color change on interaction<br>
+                    ✓ Better feedback to user
+                </div>
+            </div>
+        </div>
+
+        <!-- SUMMARY -->
+        <div style="background: #e8f4ee; padding: 30px; border-radius: 12px; margin-top: 60px; border-left: 4px solid #006633;">
+            <h2 style="color: #006633; margin-bottom: 20px;">Summary of Modern Improvements</h2>
+            <ul style="list-style: none; font-size: 14px; line-height: 2; color: #333;">
+                <li>✓ <strong>Image-first design:</strong> 1:1 square images instead of 4:3 (more eye-catching)</li>
+                <li>✓ <strong>Seller trust:</strong> Avatar + rating visible on cards (builds confidence)</li>
+                <li>✓ <strong>Urgency signals:</strong> "NEW", "TRENDING" badges (drives action)</li>
+                <li>✓ <strong>Dark mode:</strong> Respects user preference (modern expectation)</li>
+                <li>✓ <strong>Shimmer skeletons:</strong> Premium loading experience</li>
+                <li>✓ <strong>Better spacing:</strong> More breathing room between elements</li>
+                <li>✓ <strong>Micro-interactions:</strong> Smooth transitions, hover effects</li>
+                <li>✓ <strong>Sidebar filters:</strong> Less clutter, easier to use</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

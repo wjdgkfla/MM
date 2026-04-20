@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import {
-  listingsFindMany,
+  listingsListAllForAdmin,
   usersFindAll,
   reportsListAll,
   adminActivityListAll,
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const [listings, users, reports, activity] = await Promise.all([
-      listingsFindMany(),
+      listingsListAllForAdmin(),
       usersFindAll(),
       reportsListAll(),
       adminActivityListAll(),

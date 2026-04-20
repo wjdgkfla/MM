@@ -308,6 +308,16 @@ export async function listingsFindBySellerId(sellerId: string): Promise<Listing[
   return listings
 }
 
+export async function listingsListAllForAdmin(): Promise<Listing[]> {
+  const db = getDb()
+  // Admin moderation should stay usable even when Firestore composite indexes
+  // are not deployed yet, so fetch all and sort/filter in JS.
+  const snap = await db.collection('listings').get()
+  const listings = snap.docs.map((doc) => docToListing({ id: doc.id, ...doc.data() }))
+  listings.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+  return listings
+}
+
 export async function listingsCountBySellerId(sellerId: string): Promise<number> {
   const db = getDb()
   const snap = await db.collection('listings').where('sellerId', '==', sellerId).count().get()
