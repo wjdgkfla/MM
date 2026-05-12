@@ -56,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${geist.variable} ${instrumentSerif.variable} ${ibmPlexMono.variable}`}
     >
-      <body className="flex min-h-screen flex-col" style={{ background: 'var(--m-bg)', color: 'var(--m-ink)' }}>
+      <body className="flex min-h-screen flex-col">
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
