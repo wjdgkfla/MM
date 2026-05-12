@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -35,16 +36,15 @@ export function Header() {
       <div className="mx-auto flex h-[68px] max-w-[1280px] items-center gap-4 px-6">
 
         {/* Logo */}
-        <Link href="/" className="flex shrink-0 items-center gap-2.5">
-          <div
-            className="grid h-9 w-9 place-items-center font-display font-black text-white"
-            style={{ background: 'var(--m-ink)', borderRadius: 'var(--r-tile)', fontSize: 18, lineHeight: 1 }}
-          >
-            M
-          </div>
-          <span className="font-display hidden text-[19px] font-black tracking-tight sm:block" style={{ color: 'var(--m-ink)' }}>
-            Mason Market
-          </span>
+        <Link href="/" className="flex shrink-0 items-center">
+          <Image
+            src="/logo.png"
+            alt="Mason Market"
+            width={140}
+            height={48}
+            className="h-10 w-auto object-contain"
+            priority
+          />
         </Link>
 
         {/* Search */}
