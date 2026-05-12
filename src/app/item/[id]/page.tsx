@@ -113,9 +113,9 @@ export default function ItemPage() {
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="bg-gray-100 rounded-2xl aspect-[4/3] animate-pulse" />
-        <div className="mt-6 h-8 bg-gray-100 rounded animate-pulse w-2/3" />
-        <div className="mt-4 h-4 bg-gray-100 rounded animate-pulse w-1/3" />
+        <div className="bg-[var(--m-soft)] rounded-2xl aspect-[4/3] animate-pulse" />
+        <div className="mt-6 h-8 bg-[var(--m-soft)] rounded animate-pulse w-2/3" />
+        <div className="mt-4 h-4 bg-[var(--m-soft)] rounded animate-pulse w-1/3" />
       </div>
     )
   }
@@ -123,8 +123,8 @@ export default function ItemPage() {
   if (!listing) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <p className="text-gray-500 text-lg">Listing not found</p>
-        <Link href="/" className="mt-4 inline-block font-medium text-[#006633]">
+        <p className="text-[var(--m-muted)] text-lg">Listing not found</p>
+        <Link href="/" className="mt-4 inline-block font-medium text-[var(--m-green)]">
           Back to listings
         </Link>
       </div>
@@ -254,13 +254,13 @@ export default function ItemPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <Link href="/" className="mb-6 inline-block text-sm text-gray-500 hover:text-[#006633]">
+      <Link href="/" className="mb-6 inline-block text-sm text-[var(--m-muted)] hover:text-[var(--m-green)]">
         Back to Mason Market
       </Link>
 
-      <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr] lg:gap-8">
+      <div className="grid gap-6 lg:grid-cols-[1.15fr_400px] lg:gap-10">
         <section>
-          <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 aspect-[4/3]">
+          <div className="relative overflow-hidden rounded-2xl border bg-[var(--m-soft)] aspect-[4/3]" style={{ borderColor: 'var(--m-line)' }}>
             <Image src={selectedImage} alt={listing.title} fill className="object-cover" priority unoptimized={selectedImage.startsWith('data:')} />
           </div>
 
@@ -272,7 +272,7 @@ export default function ItemPage() {
                   key={`${image}-${index}`}
                   onClick={() => setActiveImage(index)}
                   className={`relative overflow-hidden rounded-xl border aspect-square ${
-                    index === activeImage ? 'border-[#006633]' : 'border-gray-200'
+                    index === activeImage ? 'border-[var(--m-green)]' : 'border-[var(--m-line)]'
                   }`}
                 >
                   <Image src={image} alt={`${listing.title} ${index + 1}`} fill className="object-cover" unoptimized={image.startsWith('data:')} />
@@ -280,185 +280,195 @@ export default function ItemPage() {
               ))}
             </div>
           ) : null}
+
+          <div className="mt-6 space-y-5">
+            <div>
+              <h1 className="font-display text-[26px] font-black leading-tight" style={{ color: 'var(--m-ink)' }}>
+                {listing.title}
+              </h1>
+              <p className="mt-2 text-sm text-[var(--m-muted)]">Condition: {CONDITION_LABELS[listing.condition]}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-[var(--m-soft)] px-2 py-1 text-xs text-[var(--m-ink)]">
+                  {CATEGORY_LABELS[listing.category]}
+                </span>
+                <StatusBadge status={listing.status} />
+              </div>
+            </div>
+
+            <div className="ui-surface p-5 sm:p-6">
+              <h2 className="text-base font-semibold text-[var(--m-ink)]">Item details</h2>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[var(--m-ink)]">{listing.description}</p>
+              {listing.category === 'textbooks' &&
+              (listing.courseCode || listing.professorName || listing.edition || listing.bundleNotes) ? (
+                <div className="mt-4 rounded-xl border bg-[var(--m-soft)] p-3" style={{ borderColor: 'var(--m-line)' }}>
+                  <p className="text-sm font-medium text-[var(--m-ink)]">Course material details</p>
+                  <div className="mt-2 space-y-1 text-sm text-[var(--m-ink)]">
+                    {listing.courseCode ? <p>Course: {listing.courseCode}</p> : null}
+                    {listing.professorName ? <p>Professor: {listing.professorName}</p> : null}
+                    {listing.edition ? <p>Edition: {listing.edition}</p> : null}
+                    {listing.bundleNotes ? <p>Bundle notes: {listing.bundleNotes}</p> : null}
+                  </div>
+                </div>
+              ) : null}
+              {listing.tags.length > 0 ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {listing.tags.map((tag) => (
+                    <span key={tag} className="rounded-full bg-[var(--m-green-soft)] px-2.5 py-1 text-xs text-[var(--m-ink)]">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="ui-surface p-5 sm:p-6">
+              <h2 className="text-base font-semibold text-[var(--m-ink)]">Trust & safety</h2>
+              <ul className="mt-3 space-y-2 text-sm text-[var(--m-ink)]">
+                <li>GMU-only marketplace. Only verified university emails can post or message.</li>
+                <li>
+                  {isCampusMeetupRecommended(listing.pickupZone)
+                    ? 'Campus meetup recommended for first-time exchanges.'
+                    : 'This listing uses off-campus meetup. Choose a busy public location.'}
+                </li>
+                <li>Check the item before payment and meet in visible public areas.</li>
+              </ul>
+
+              {!isOwnListing ? (
+                <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--m-line)' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!session) {
+                        router.push(signInRedirect)
+                        return
+                      }
+                      setShowReportForm((current) => !current)
+                    }}
+                    className="text-sm font-medium text-[var(--m-green)] hover:underline"
+                  >
+                    {showReportForm ? 'Cancel report' : 'Report this listing'}
+                  </button>
+
+                  {showReportForm ? (
+                    <form onSubmit={handleSubmitReport} className="mt-3 space-y-3 rounded-xl border bg-[var(--m-soft)] p-3" style={{ borderColor: 'var(--m-line)' }}>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[var(--m-ink)]">Reason</label>
+                        <select
+                          value={reportReason}
+                          onChange={(e) => setReportReason(e.target.value as ReportReason)}
+                          className="ui-input"
+                        >
+                          {(Object.keys(REPORT_REASON_LABELS) as ReportReason[]).map((reason) => (
+                            <option key={reason} value={reason}>
+                              {REPORT_REASON_LABELS[reason]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[var(--m-ink)]">Notes (optional)</label>
+                        <textarea
+                          rows={3}
+                          maxLength={500}
+                          value={reportNotes}
+                          onChange={(e) => setReportNotes(e.target.value)}
+                          placeholder="Share what looked suspicious or unsafe."
+                          className="ui-input resize-none"
+                        />
+                      </div>
+
+                      <label className="flex items-start gap-2 text-sm text-[var(--m-ink)]">
+                        <input
+                          type="checkbox"
+                          checked={includeSellerInReport}
+                          onChange={(e) => setIncludeSellerInReport(e.target.checked)}
+                          className="mt-1 h-4 w-4"
+                        />
+                        Also report seller behavior for moderator review.
+                      </label>
+
+                      <button type="submit" disabled={reportSubmitting} className="ui-btn-secondary">
+                        {reportSubmitting ? 'Submitting...' : 'Submit report'}
+                      </button>
+                    </form>
+                  ) : null}
+
+                  {reportFeedback ? (
+                    <p className={`mt-2 text-xs ${reportFeedback.startsWith('Thanks') ? 'text-[var(--m-green)]' : 'text-red-700'}`}>
+                      {reportFeedback}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h2 className="text-base font-semibold text-[var(--m-ink)]">Seller profile</h2>
+                <Link href={`/seller/${listing.sellerId}`} className="text-sm font-medium text-[var(--m-green)] hover:underline">
+                  View seller page
+                </Link>
+              </div>
+              <SellerTrustCard seller={seller} sellerListingCount={sellerListingCount} />
+              <div className="mt-3">
+                <SellerRating sellerId={listing.sellerId} compact />
+              </div>
+            </div>
+
+            {isSoldListing && !isOwnListing && session && hasConversation ? (
+              <div>
+                <h2 className="mb-3 text-base font-semibold text-[var(--m-ink)]">Rate your experience</h2>
+                <RatingForm sellerId={listing.sellerId} listingId={listing.id} />
+              </div>
+            ) : null}
+          </div>
         </section>
 
-        <section className="space-y-5">
-          <div className="ui-surface p-5 sm:p-6">
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700">
-                {CATEGORY_LABELS[listing.category]}
-              </span>
-              <StatusBadge status={listing.status} />
-            </div>
+        <section>
+          <div className="sticky top-[88px] space-y-3">
+            <div className="rounded-[var(--r-lg)] border bg-white p-6" style={{ borderColor: 'var(--m-line)' }}>
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <StatusBadge status={listing.status} />
+              </div>
 
-            <h1 className="text-2xl font-bold text-gray-900 leading-tight">{listing.title}</h1>
-            <div className="mt-2 flex items-center gap-3">
-              <p className="text-3xl sm:text-[2rem] font-bold text-[#006633]">{priceLabel}</p>
-              {listing.favoriteCount > 0 ? (
-                <span className="flex items-center gap-1 text-sm text-gray-400">
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-                    <path fill="currentColor" d="M12.1 20.3c-.1 0-.2 0-.3-.1C7 17.4 4 14.8 4 11.5 4 8.8 6 7 8.5 7c1.5 0 2.8.7 3.6 1.8C13 7.7 14.3 7 15.8 7 18.3 7 20.3 8.8 20.3 11.5c0 3.3-3 5.9-7.8 8.7-.2.1-.3.1-.4.1z"/>
-                  </svg>
-                  {listing.favoriteCount} {listing.favoriteCount === 1 ? 'person' : 'people'} saved this
-                </span>
-              ) : null}
-              {(listing.viewCount ?? 0) > 0 ? (
-                <span className="flex items-center gap-1 text-sm text-gray-400">
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-                    <path fill="currentColor" d="M12 5C7 5 2.7 8.1 1 12.5 2.7 16.9 7 20 12 20s9.3-3.1 11-7.5C21.3 8.1 17 5 12 5zm0 12.5c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8a3 3 0 100 6 3 3 0 000-6z"/>
-                  </svg>
-                  {listing.viewCount ?? 0} {listing.viewCount === 1 ? 'view' : 'views'}
-                </span>
-              ) : null}
-            </div>
-            <p className="mt-2 text-sm text-gray-600">Condition: {CONDITION_LABELS[listing.condition]}</p>
-
-            <div className="mt-4 space-y-1 text-sm text-gray-600">
-              <p>
-                Pickup: {LOCATION_LABELS[listing.campusLocation]} - {PICKUP_ZONE_LABELS[listing.pickupZone]}
+              <p className="font-display font-black text-[52px] leading-none tabular-nums" style={{ color: 'var(--m-ink)' }}>
+                {priceLabel}
               </p>
-              <p>{listing.pickupNotes}</p>
-              <p>
-                Posted {formatRecency(listing.createdAt)} ({formatPostedDate(listing.createdAt)})
-              </p>
-            </div>
-            <div className="mt-3">
-              <TrustCues listing={listing} />
-            </div>
 
-            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (!session) {
-                    router.push(signInRedirect)
-                    return
-                  }
-                  toggleFavorite(listing.id)
-                }}
-                className={`ui-btn-secondary ${
-                  listingIsSaved
-                    ? 'border-[#006633] bg-[#006633]/10 text-[#1d5a3a]'
-                    : ''
-                }`}
-              >
-                {listingIsSaved ? 'Saved ♥' : 'Save ♡'}
-              </button>
-              {isSoldListing && !isOwnListing ? (
-                <button type="button" disabled className="ui-btn-primary cursor-not-allowed text-center opacity-60">
-                  Listing sold
-                </button>
-              ) : session ? (
-                isOwnListing ? (
-                  <Link href="/messages" className="ui-btn-primary text-center">
-                    View buyer messages
-                  </Link>
-                ) : (
-                  <Link href={`/messages?listingId=${listing.id}&quick=available`} className="ui-btn-primary text-center">
-                    Still available?
-                  </Link>
-                )
-              ) : (
-                <Link href={signInRedirect} className="ui-btn-primary text-center">
-                  Sign in to message
-                </Link>
-              )}
-            </div>
-            {!isSoldListing && !isOwnListing && session ? (
-              <div className="mt-2 flex gap-2">
-                <Link href={`/messages?listingId=${listing.id}`} className="flex-1 rounded-xl border border-[#006633]/40 py-2 text-center text-sm font-medium text-[#006633] hover:bg-[#006633]/5">
-                  Message seller
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setShowOfferModal(true)}
-                  className="flex-1 rounded-xl border border-[#FFB81C]/60 py-2 text-center text-sm font-medium text-[#8a6300] hover:bg-[#FFB81C]/10"
-                >
-                  Make an offer
-                </button>
-              </div>
-            ) : null}
-
-            <p className="mt-2 text-xs text-gray-500">
-              {isSoldListing && !isOwnListing
-                ? 'This listing is marked sold and no longer accepts buyer messages.'
-                : 'Use messages for availability, meetup timing, and price discussion.'}
-            </p>
-            {actionError ? <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{actionError}</p> : null}
-          </div>
-
-          {isOwnListing ? (
-            <div className="ui-surface p-5 sm:p-6">
-              <h2 className="text-base font-semibold text-gray-900">Seller controls</h2>
-              <p className="mt-1 text-sm text-gray-600">Manage status, edit details, or remove this listing.</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Link href={`/my-listings/${listing.id}/edit`} className="ui-btn-secondary">
-                  Edit listing
-                </Link>
-                {sellerStatusActions.map((action) => (
-                  <button
-                    key={action.nextStatus}
-                    type="button"
-                    onClick={() => handleStatusChange(action.nextStatus)}
-                    disabled={actionBusy}
-                    className="ui-btn-secondary disabled:opacity-60"
-                  >
-                    {action.label}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={actionBusy}
-                  className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
-                >
-                  Archive/Delete
-                </button>
-              </div>
-              <p className="mt-3 text-xs text-gray-500">Tip: You can also manage all your listings from the My Listings page.</p>
-            </div>
-          ) : null}
-
-          <div className="ui-surface p-5 sm:p-6">
-            <h2 className="text-base font-semibold text-gray-900">Item details</h2>
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-gray-700">{listing.description}</p>
-            {listing.category === 'textbooks' &&
-            (listing.courseCode || listing.professorName || listing.edition || listing.bundleNotes) ? (
-              <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
-                <p className="text-sm font-medium text-gray-900">Course material details</p>
-                <div className="mt-2 space-y-1 text-sm text-gray-700">
-                  {listing.courseCode ? <p>Course: {listing.courseCode}</p> : null}
-                  {listing.professorName ? <p>Professor: {listing.professorName}</p> : null}
-                  {listing.edition ? <p>Edition: {listing.edition}</p> : null}
-                  {listing.bundleNotes ? <p>Bundle notes: {listing.bundleNotes}</p> : null}
-                </div>
-              </div>
-            ) : null}
-            {listing.tags.length > 0 ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {listing.tags.map((tag) => (
-                  <span key={tag} className="rounded-full bg-[#006633]/10 px-2.5 py-1 text-xs text-[#1c5a3a]">
-                    #{tag}
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                {listing.favoriteCount > 0 ? (
+                  <span className="flex items-center gap-1 text-sm text-[var(--m-muted)]">
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+                      <path fill="currentColor" d="M12.1 20.3c-.1 0-.2 0-.3-.1C7 17.4 4 14.8 4 11.5 4 8.8 6 7 8.5 7c1.5 0 2.8.7 3.6 1.8C13 7.7 14.3 7 15.8 7 18.3 7 20.3 8.8 20.3 11.5c0 3.3-3 5.9-7.8 8.7-.2.1-.3.1-.4.1z"/>
+                    </svg>
+                    {listing.favoriteCount} {listing.favoriteCount === 1 ? 'person' : 'people'} saved this
                   </span>
-                ))}
+                ) : null}
+                {(listing.viewCount ?? 0) > 0 ? (
+                  <span className="flex items-center gap-1 text-sm text-[var(--m-muted)]">
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+                      <path fill="currentColor" d="M12 5C7 5 2.7 8.1 1 12.5 2.7 16.9 7 20 12 20s9.3-3.1 11-7.5C21.3 8.1 17 5 12 5zm0 12.5c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8a3 3 0 100 6 3 3 0 000-6z"/>
+                    </svg>
+                    {listing.viewCount ?? 0} {listing.viewCount === 1 ? 'view' : 'views'}
+                  </span>
+                ) : null}
               </div>
-            ) : null}
-          </div>
 
-          <div className="ui-surface p-5 sm:p-6">
-            <h2 className="text-base font-semibold text-gray-900">Trust & safety</h2>
-            <ul className="mt-3 space-y-2 text-sm text-gray-700">
-              <li>GMU-only marketplace. Only verified university emails can post or message.</li>
-              <li>
-                {isCampusMeetupRecommended(listing.pickupZone)
-                  ? 'Campus meetup recommended for first-time exchanges.'
-                  : 'This listing uses off-campus meetup. Choose a busy public location.'}
-              </li>
-              <li>Check the item before payment and meet in visible public areas.</li>
-            </ul>
+              <div className="mt-4 space-y-1 text-sm text-[var(--m-muted)]">
+                <p>
+                  Pickup: {LOCATION_LABELS[listing.campusLocation]} - {PICKUP_ZONE_LABELS[listing.pickupZone]}
+                </p>
+                <p>{listing.pickupNotes}</p>
+                <p>
+                  Posted {formatRecency(listing.createdAt)} ({formatPostedDate(listing.createdAt)})
+                </p>
+              </div>
+              <div className="mt-3">
+                <TrustCues listing={listing} />
+              </div>
 
-            {!isOwnListing ? (
-              <div className="mt-4 border-t border-gray-100 pt-4">
+              <div className="mt-5 grid grid-cols-1 gap-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -466,100 +476,111 @@ export default function ItemPage() {
                       router.push(signInRedirect)
                       return
                     }
-                    setShowReportForm((current) => !current)
+                    toggleFavorite(listing.id)
                   }}
-                  className="text-sm font-medium text-[#006633] hover:underline"
+                  className={`ui-btn-secondary ${
+                    listingIsSaved
+                      ? 'border-[var(--m-green)] bg-[var(--m-green-soft)] text-[var(--m-ink)]'
+                      : ''
+                  }`}
                 >
-                  {showReportForm ? 'Cancel report' : 'Report this listing'}
+                  {listingIsSaved ? 'Saved ♥' : 'Save ♡'}
                 </button>
+                {isSoldListing && !isOwnListing ? (
+                  <button type="button" disabled className="w-full h-12 rounded-2xl text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-not-allowed opacity-60" style={{ background: 'var(--m-ink)' }}>
+                    Listing sold
+                  </button>
+                ) : session ? (
+                  isOwnListing ? (
+                    <Link href="/messages" className="w-full h-12 rounded-2xl text-white font-bold text-[14px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90" style={{ background: 'var(--m-ink)' }}>
+                      View buyer messages
+                    </Link>
+                  ) : (
+                    <Link href={`/messages?listingId=${listing.id}&quick=available`} className="w-full h-12 rounded-2xl text-white font-bold text-[14px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90" style={{ background: 'var(--m-ink)' }}>
+                      Still available?
+                    </Link>
+                  )
+                ) : (
+                  <Link href={signInRedirect} className="w-full h-12 rounded-2xl text-white font-bold text-[14px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90" style={{ background: 'var(--m-ink)' }}>
+                    Sign in to message
+                  </Link>
+                )}
+              </div>
+              {!isSoldListing && !isOwnListing && session ? (
+                <div className="mt-2 flex gap-2">
+                  <Link href={`/messages?listingId=${listing.id}`} className="flex-1 rounded-xl border border-[var(--m-green)]/40 py-2 text-center text-sm font-medium text-[var(--m-green)] hover:bg-[var(--m-green-soft)]">
+                    Message seller
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setShowOfferModal(true)}
+                    className="flex-1 rounded-xl border border-[#FFB81C]/60 py-2 text-center text-sm font-medium text-[#8a6300] hover:bg-[#FFB81C]/10"
+                  >
+                    Make an offer
+                  </button>
+                </div>
+              ) : null}
 
-                {showReportForm ? (
-                  <form onSubmit={handleSubmitReport} className="mt-3 space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">Reason</label>
-                      <select
-                        value={reportReason}
-                        onChange={(e) => setReportReason(e.target.value as ReportReason)}
-                        className="ui-input"
-                      >
-                        {(Object.keys(REPORT_REASON_LABELS) as ReportReason[]).map((reason) => (
-                          <option key={reason} value={reason}>
-                            {REPORT_REASON_LABELS[reason]}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+              <p className="mt-2 text-xs text-[var(--m-muted)]">
+                {isSoldListing && !isOwnListing
+                  ? 'This listing is marked sold and no longer accepts buyer messages.'
+                  : 'Use messages for availability, meetup timing, and price discussion.'}
+              </p>
+              {actionError ? <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{actionError}</p> : null}
+            </div>
 
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">Notes (optional)</label>
-                      <textarea
-                        rows={3}
-                        maxLength={500}
-                        value={reportNotes}
-                        onChange={(e) => setReportNotes(e.target.value)}
-                        placeholder="Share what looked suspicious or unsafe."
-                        className="ui-input resize-none"
-                      />
-                    </div>
+            <div className="rounded-[var(--r-lg)] p-5 text-white relative overflow-hidden" style={{ background: 'var(--m-green)' }}>
+              <p className="font-mono-label text-[10px] uppercase tracking-[0.16em] opacity-80">Pickup zone</p>
+              <p className="font-display text-[20px] font-black mt-0.5">{PICKUP_ZONE_LABELS[listing.pickupZone]}</p>
+              <p className="text-[12px] opacity-90 mt-1">{listing.pickupNotes}</p>
+            </div>
 
-                    <label className="flex items-start gap-2 text-sm text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={includeSellerInReport}
-                        onChange={(e) => setIncludeSellerInReport(e.target.checked)}
-                        className="mt-1 h-4 w-4"
-                      />
-                      Also report seller behavior for moderator review.
-                    </label>
-
-                    <button type="submit" disabled={reportSubmitting} className="ui-btn-secondary">
-                      {reportSubmitting ? 'Submitting...' : 'Submit report'}
+            {isOwnListing ? (
+              <div className="rounded-[var(--r-lg)] border bg-white p-6" style={{ borderColor: 'var(--m-line)' }}>
+                <h2 className="text-base font-semibold text-[var(--m-ink)]">Seller controls</h2>
+                <p className="mt-1 text-sm text-[var(--m-muted)]">Manage status, edit details, or remove this listing.</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link href={`/my-listings/${listing.id}/edit`} className="ui-btn-secondary">
+                    Edit listing
+                  </Link>
+                  {sellerStatusActions.map((action) => (
+                    <button
+                      key={action.nextStatus}
+                      type="button"
+                      onClick={() => handleStatusChange(action.nextStatus)}
+                      disabled={actionBusy}
+                      className="ui-btn-secondary disabled:opacity-60"
+                    >
+                      {action.label}
                     </button>
-                  </form>
-                ) : null}
-
-                {reportFeedback ? (
-                  <p className={`mt-2 text-xs ${reportFeedback.startsWith('Thanks') ? 'text-[#006633]' : 'text-red-700'}`}>
-                    {reportFeedback}
-                  </p>
-                ) : null}
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={actionBusy}
+                    className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+                  >
+                    Archive/Delete
+                  </button>
+                </div>
+                <p className="mt-3 text-xs text-[var(--m-muted)]">Tip: You can also manage all your listings from the My Listings page.</p>
               </div>
             ) : null}
           </div>
-
-          <div>
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <h2 className="text-base font-semibold text-gray-900">Seller profile</h2>
-              <Link href={`/seller/${listing.sellerId}`} className="text-sm font-medium text-[#006633] hover:underline">
-                View seller page
-              </Link>
-            </div>
-            <SellerTrustCard seller={seller} sellerListingCount={sellerListingCount} />
-            <div className="mt-3">
-              <SellerRating sellerId={listing.sellerId} compact />
-            </div>
-          </div>
-
-          {isSoldListing && !isOwnListing && session && hasConversation ? (
-            <div>
-              <h2 className="mb-3 text-base font-semibold text-gray-900">Rate your experience</h2>
-              <RatingForm sellerId={listing.sellerId} listingId={listing.id} />
-            </div>
-          ) : null}
         </section>
       </div>
 
       {showOfferModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-bold text-gray-900">Make an offer</h2>
-            <p className="mt-1 text-sm text-gray-600">
+            <h2 className="text-lg font-bold text-[var(--m-ink)]">Make an offer</h2>
+            <p className="mt-1 text-sm text-[var(--m-muted)]">
               Listed at{' '}
-              <span className="font-semibold text-[#006633]">{priceLabel}</span>. Enter your offer below.
+              <span className="font-semibold text-[var(--m-green)]">{priceLabel}</span>. Enter your offer below.
             </p>
             <form onSubmit={handleMakeOffer} className="mt-4 space-y-4">
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--m-muted)]">$</span>
                 <input
                   type="number"
                   min="1"
