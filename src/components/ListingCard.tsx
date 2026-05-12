@@ -21,12 +21,12 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
   return (
     <article className="cursor-pointer group">
       {/* Square photo */}
-      <div
-        className="relative aspect-square overflow-hidden bg-[var(--m-soft)]"
-        style={{ borderRadius: 'var(--r-card)' }}
-        onClick={() => { window.location.href = `/item/${listing.id}` }}
-      >
-        <Image
+      <Link href={`/item/${listing.id}`} className="block">
+        <div
+          className="relative aspect-square overflow-hidden bg-[var(--m-soft)]"
+          style={{ borderRadius: 'var(--r-card)' }}
+        >
+          <Image
           src={coverImage}
           alt={listing.title}
           fill
@@ -71,10 +71,11 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
             Free
           </div>
         )}
-      </div>
+        </div>
+      </Link>
 
       {/* Info below photo */}
-      <Link href={`/item/${listing.id}`} className="block pt-3" onClick={(e) => e.stopPropagation()}>
+      <Link href={`/item/${listing.id}`} className="block pt-3">
         <p className="min-h-[2.6em] line-clamp-2 text-[13px] leading-snug" style={{ color: 'var(--m-ink)' }}>
           {listing.title}
         </p>
