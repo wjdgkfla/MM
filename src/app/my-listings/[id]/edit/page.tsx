@@ -240,12 +240,12 @@ export default function EditListingPage() {
   }
 
   if (authLoading) {
-    return <div className="max-w-2xl mx-auto px-4 py-10 text-sm text-gray-500">Loading…</div>
+    return <div className="max-w-2xl mx-auto px-6 py-10 text-sm" style={{ color: 'var(--m-muted)' }}>Loading…</div>
   }
 
   if (!session) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto px-6 py-8">
         <AuthRequiredCard
           title="Sign in to edit listings"
           description="Only signed-in GMU users can edit their own listings."
@@ -257,18 +257,18 @@ export default function EditListingPage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="h-10 w-2/3 rounded bg-gray-100 animate-pulse" />
-        <div className="mt-4 h-80 rounded-2xl bg-gray-100 animate-pulse" />
+      <div className="max-w-2xl mx-auto px-6 py-8">
+        <div className="h-10 w-2/3 rounded bg-[var(--m-soft)] animate-pulse" />
+        <div className="mt-4 h-80 rounded-2xl bg-[var(--m-soft)] animate-pulse" />
       </div>
     )
   }
 
   if (!listing) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-10 text-center">
-        <p className="text-gray-700">Listing unavailable for editing.</p>
-        <Link href="/my-listings" className="mt-3 inline-block text-sm font-medium text-[#006633]">
+      <div className="max-w-2xl mx-auto px-6 py-10 text-center">
+        <p style={{ color: 'var(--m-ink)' }}>Listing unavailable for editing.</p>
+        <Link href="/my-listings" className="mt-3 inline-block text-sm font-medium" style={{ color: 'var(--m-green)' }}>
           Back to My Listings
         </Link>
       </div>
@@ -276,28 +276,28 @@ export default function EditListingPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-2xl mx-auto px-6 py-8">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-[#006633]">Edit listing</h1>
-        <Link href={`/item/${listing.id}`} className="text-sm font-medium text-gray-600 hover:text-[#006633]">
+        <h1 className="font-display text-2xl font-bold" style={{ color: 'var(--m-ink)' }}>Edit listing</h1>
+        <Link href={`/item/${listing.id}`} className="text-sm font-medium hover:underline" style={{ color: 'var(--m-muted)' }}>
           Cancel
         </Link>
       </div>
 
       <form onSubmit={handleSubmit} className="ui-surface mt-5 space-y-5 p-4 sm:p-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Photos (optional)</label>
+          <label className="block text-sm font-medium mb-2">Photos (optional)</label>
           <input
             type="file"
             accept="image/*"
             multiple
             onChange={handleImageChange}
-            className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#006633] file:px-3 file:py-2 file:text-white"
+            className="block w-full text-sm text-[var(--m-muted)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--m-pop)] file:px-3 file:py-2 file:text-white"
           />
           {imagePreviews.length > 0 ? (
             <div className="mt-3 grid grid-cols-4 gap-2">
               {imagePreviews.map((src, index) => (
-                <div key={`${src}-${index}`} className="relative aspect-square w-full overflow-hidden rounded-lg border border-gray-200">
+                <div key={`${src}-${index}`} className="relative aspect-square w-full overflow-hidden rounded-lg border border-[var(--m-line)]">
                   <Image src={src} alt={`Preview ${index + 1}`} fill className="object-cover" unoptimized />
                 </div>
               ))}
@@ -306,7 +306,7 @@ export default function EditListingPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+          <label className="block text-sm font-medium mb-2">Title *</label>
           <input
             type="text"
             required
@@ -318,7 +318,7 @@ export default function EditListingPage() {
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Price ($) *</label>
+            <label className="block text-sm font-medium mb-2">Price ($) *</label>
             <input
               type="number"
               required
@@ -331,7 +331,7 @@ export default function EditListingPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+            <label className="block text-sm font-medium mb-2">Category *</label>
             <select
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value as Category })}
@@ -346,7 +346,7 @@ export default function EditListingPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Condition *</label>
+            <label className="block text-sm font-medium mb-2">Condition *</label>
             <select
               value={form.condition}
               onChange={(e) => setForm({ ...form, condition: e.target.value as Condition })}
@@ -362,7 +362,7 @@ export default function EditListingPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+          <label className="block text-sm font-medium mb-2">Description *</label>
           <textarea
             required
             rows={5}
@@ -373,11 +373,11 @@ export default function EditListingPage() {
         </div>
 
         {form.category === 'textbooks' ? (
-          <div className="rounded-xl bg-gray-50 p-3 sm:p-4">
-            <p className="text-sm font-medium text-gray-800 mb-3">Course material details (optional)</p>
+          <div className="rounded-xl p-3 sm:p-4 bg-[var(--m-soft)]">
+            <p className="text-sm font-medium mb-3">Course material details (optional)</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Course code</label>
+                <label className="block text-sm font-medium mb-2">Course code</label>
                 <input
                   type="text"
                   value={form.courseCode}
@@ -387,7 +387,7 @@ export default function EditListingPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Professor</label>
+                <label className="block text-sm font-medium mb-2">Professor</label>
                 <input
                   type="text"
                   value={form.professorName}
@@ -397,7 +397,7 @@ export default function EditListingPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Edition</label>
+                <label className="block text-sm font-medium mb-2">Edition</label>
                 <input
                   type="text"
                   value={form.edition}
@@ -407,7 +407,7 @@ export default function EditListingPage() {
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Bundle notes</label>
+                <label className="block text-sm font-medium mb-2">Bundle notes</label>
                 <input
                   type="text"
                   value={form.bundleNotes}
@@ -422,7 +422,7 @@ export default function EditListingPage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Campus *</label>
+            <label className="block text-sm font-medium mb-2">Campus *</label>
             <select
               value={form.campusLocation}
               onChange={(e) => setForm({ ...form, campusLocation: e.target.value as CampusLocation })}
@@ -437,7 +437,7 @@ export default function EditListingPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Pickup zone *</label>
+            <label className="block text-sm font-medium mb-2">Pickup zone *</label>
             <select
               value={form.pickupZone}
               onChange={(e) => setForm({ ...form, pickupZone: e.target.value as PickupZone })}
@@ -453,7 +453,7 @@ export default function EditListingPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Pickup notes *</label>
+          <label className="block text-sm font-medium mb-2">Pickup notes *</label>
           <input
             type="text"
             required
@@ -464,14 +464,14 @@ export default function EditListingPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Tags (optional)</label>
+          <label className="block text-sm font-medium mb-2">Tags (optional)</label>
           <input
             type="text"
             value={form.tags}
             onChange={(e) => setForm({ ...form, tags: e.target.value })}
             className="ui-input"
           />
-          <p className="mt-1 text-xs text-gray-500">Comma-separated. Up to 5 tags.</p>
+          <p className="mt-1 text-xs text-[var(--m-muted)]">Comma-separated. Up to 5 tags.</p>
         </div>
 
         {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}

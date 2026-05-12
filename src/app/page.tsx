@@ -130,15 +130,15 @@ export default function HomePage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1160px] px-4 py-6 sm:py-8">
+    <div className="mx-auto w-full max-w-[1280px] px-6 py-6 sm:py-8">
       <section className="mb-6 sm:mb-8">
-        <h1 className="text-3xl font-bold tracking-[-0.02em] text-[var(--air-text)] sm:text-4xl">Mason Market</h1>
-        <p className="mt-2 text-base text-[var(--air-muted)] sm:text-lg">
+        <h1 className="text-3xl font-bold tracking-[-0.02em] sm:text-4xl" style={{ color: 'var(--m-ink)' }}>Mason Market</h1>
+        <p className="mt-2 text-base sm:text-lg" style={{ color: 'var(--m-muted)' }}>
           Browse what GMU students are selling around campus right now.
         </p>
         {!session && (
-          <p className="mt-2 text-sm text-[var(--air-muted)]">
-            <a href="/sign-in?redirect=/" className="font-medium text-[var(--mason-green)] hover:underline">Sign in</a> to use filters, save listings, message sellers, and post items.
+          <p className="mt-2 text-sm" style={{ color: 'var(--m-muted)' }}>
+            <a href="/sign-in?redirect=/" className="font-medium hover:underline" style={{ color: 'var(--m-green)' }}>Sign in</a> to use filters, save listings, message sellers, and post items.
           </p>
         )}
       </section>
@@ -259,12 +259,12 @@ export default function HomePage() {
             <SelectChevron />
           </div>
 
-          <label className="flex min-h-12 items-center gap-2 rounded-2xl border border-[var(--air-border)] bg-white px-3 py-3 text-sm text-[var(--air-text)]">
+          <label className="flex min-h-12 items-center gap-2 rounded-2xl border px-3 py-3 text-sm bg-white" style={{ borderColor: 'var(--m-line)', color: 'var(--m-ink)' }}>
             <input
               type="checkbox"
               checked={freeOnly}
               onChange={(e) => setFreeOnly(e.target.checked)}
-              className="h-4 w-4 accent-[var(--mason-green)]"
+              className="h-4 w-4 accent-[var(--m-pop)]"
             />
             Free items only
           </label>
@@ -278,36 +278,40 @@ export default function HomePage() {
       </div>
       ) : null}
 
-      {!loading && (
-        <div className="mb-5 text-sm text-[var(--air-muted)]">
-          {listings.length} listings{session ? ` - ${savedCount} saved` : ''}
-        </div>
-      )}
-
       {loading ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 md:grid-cols-4">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="aspect-[4/5] rounded-[20px] bg-gray-100 animate-pulse" />
+            <div key={i} className="aspect-square rounded-[20px] bg-[var(--m-soft)] animate-pulse" />
           ))}
         </div>
       ) : listings.length === 0 ? (
         <div className="py-16 text-center">
-          <div className="mx-auto max-w-md rounded-3xl border border-dashed border-[var(--air-border)] bg-white px-6 py-10">
-            <p className="text-lg font-medium text-[var(--air-text)]">No listings found</p>
-            <p className="mt-2 text-sm text-[var(--air-muted)]">Try another search or broaden your filters.</p>
+          <div className="mx-auto max-w-md rounded-3xl border border-dashed bg-white px-6 py-10" style={{ borderColor: 'var(--m-line)' }}>
+            <p className="text-lg font-medium" style={{ color: 'var(--m-ink)' }}>No listings found</p>
+            <p className="mt-2 text-sm" style={{ color: 'var(--m-muted)' }}>Try another search or broaden your filters.</p>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {listings.map((listing) => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-              isSaved={savedSet.has(listing.id)}
-              onToggleSave={handleToggleFavorite}
-            />
-          ))}
-        </div>
+        <>
+          <div className="mb-5 flex items-baseline justify-between">
+            <h2 className="text-[18px] font-bold tracking-tight" style={{ color: 'var(--m-ink)' }}>
+              Listings near Fairfax
+            </h2>
+            <p className="text-[12px]" style={{ color: 'var(--m-muted)' }}>
+              {listings.length} {listings.length === 1 ? 'item' : 'items'}
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+            {listings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                isSaved={savedSet.has(listing.id)}
+                onToggleSave={handleToggleFavorite}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

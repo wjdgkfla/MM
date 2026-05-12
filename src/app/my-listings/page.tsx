@@ -100,12 +100,12 @@ export default function MyListingsPage() {
   }
 
   if (authLoading) {
-    return <div className="max-w-4xl mx-auto px-4 py-10 text-sm text-gray-500">Loading…</div>
+    return <div className="max-w-[1280px] mx-auto px-6 py-10 text-sm" style={{ color: 'var(--m-muted)' }}>Loading…</div>
   }
 
   if (!session) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto px-6 py-8">
         <AuthRequiredCard
           title="Sign in to manage your listings"
           description="Listing management is available for signed-in GMU users."
@@ -116,11 +116,11 @@ export default function MyListingsPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="max-w-[1280px] mx-auto px-6 py-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#006633]">My Listings</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="font-display text-[36px] font-black" style={{ color: 'var(--m-ink)' }}>My posts</h1>
+          <p className="mt-1 text-sm" style={{ color: 'var(--m-muted)' }}>
             {totals.all} total • {totals.available} available • {totals.reserved} reserved • {totals.sold} sold
           </p>
         </div>
@@ -134,13 +134,13 @@ export default function MyListingsPage() {
       {loading ? (
         <div className="mt-6 space-y-3">
           {[...Array(3)].map((_, index) => (
-            <div key={index} className="h-28 rounded-2xl bg-gray-100 animate-pulse" />
+            <div key={index} className="h-28 rounded-2xl bg-[var(--m-soft)] animate-pulse" />
           ))}
         </div>
       ) : listings.length === 0 ? (
         <div className="ui-surface mt-6 p-8 text-center">
-          <p className="text-gray-700">You have no listings yet.</p>
-          <Link href="/sell" className="mt-3 inline-block text-sm font-medium text-[#006633]">
+          <p style={{ color: 'var(--m-ink)' }}>You have no listings yet.</p>
+          <Link href="/sell" className="mt-3 inline-block text-sm font-medium" style={{ color: 'var(--m-green)' }}>
             Create your first listing
           </Link>
         </div>
@@ -154,10 +154,10 @@ export default function MyListingsPage() {
               <div key={listing.id} className="ui-surface p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <Link href={`/item/${listing.id}`} className="text-base font-semibold text-gray-900 hover:text-[#006633]">
+                    <Link href={`/item/${listing.id}`} className="text-base font-semibold hover:underline" style={{ color: 'var(--m-ink)' }}>
                       {listing.title}
                     </Link>
-                    <p className="mt-1 text-sm text-gray-600">
+                    <p className="mt-1 text-sm" style={{ color: 'var(--m-muted)' }}>
                       {listing.price === 0 ? 'Free' : `$${listing.price}`} • {listing.campusLocation} • Updated{' '}
                       {formatRecency(listing.updatedAt)}
                     </p>
@@ -190,7 +190,7 @@ export default function MyListingsPage() {
                   </button>
                 </div>
 
-                <p className="mt-2 text-xs text-gray-500">Current status: {STATUS_LABELS[listing.status]}</p>
+                <p className="mt-2 text-xs" style={{ color: 'var(--m-muted)' }}>Current status: {STATUS_LABELS[listing.status]}</p>
               </div>
             )
           })}

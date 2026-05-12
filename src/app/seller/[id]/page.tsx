@@ -20,14 +20,14 @@ export default async function SellerProfilePage({ params }: { params: { id: stri
   const soldCount = allSellerListings.filter((listing) => listing.status === 'sold').length
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <Link href="/" className="text-sm text-gray-500 hover:text-[#006633]">
+    <div className="max-w-[1280px] mx-auto px-6 py-8">
+      <Link href="/" className="text-sm hover:underline" style={{ color: 'var(--m-muted)' }}>
         Back to Mason Market
       </Link>
 
       <div className="mt-4 ui-surface p-5 sm:p-6">
-        <h1 className="text-2xl font-bold text-[#006633]">Seller profile</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>{seller.displayName}</h1>
+        <p className="mt-1 text-sm" style={{ color: 'var(--m-muted)' }}>
           Trust details for {seller.displayName}. GMU verification and activity cues help buyers decide quickly.
         </p>
 
@@ -36,35 +36,35 @@ export default async function SellerProfilePage({ params }: { params: { id: stri
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl bg-gray-50 p-3">
-            <p className="text-xs text-gray-500">Joined</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">{formatPostedDate(seller.joinedAt)}</p>
+          <div className="rounded-xl p-3" style={{ background: 'var(--m-soft)' }}>
+            <p className="text-xs" style={{ color: 'var(--m-muted)' }}>Joined</p>
+            <p className="mt-1 text-sm font-semibold" style={{ color: 'var(--m-ink)' }}>{formatPostedDate(seller.joinedAt)}</p>
           </div>
-          <div className="rounded-xl bg-gray-50 p-3">
-            <p className="text-xs text-gray-500">Recently active</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">{formatRecency(seller.lastActiveAt)}</p>
+          <div className="rounded-xl p-3" style={{ background: 'var(--m-soft)' }}>
+            <p className="text-xs" style={{ color: 'var(--m-muted)' }}>Recently active</p>
+            <p className="mt-1 text-sm font-semibold" style={{ color: 'var(--m-ink)' }}>{formatRecency(seller.lastActiveAt)}</p>
           </div>
-          <div className="rounded-xl bg-gray-50 p-3">
-            <p className="text-xs text-gray-500">Completed listings</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">{soldCount} sold</p>
+          <div className="rounded-xl p-3" style={{ background: 'var(--m-soft)' }}>
+            <p className="text-xs" style={{ color: 'var(--m-muted)' }}>Completed listings</p>
+            <p className="mt-1 text-sm font-semibold" style={{ color: 'var(--m-ink)' }}>{soldCount} sold</p>
           </div>
         </div>
 
-        <div className="mt-5 border-t border-gray-100 pt-5">
-          <h2 className="mb-3 text-sm font-semibold text-gray-900">Manner temperature</h2>
+        <div className="mt-5 border-t pt-5" style={{ borderColor: 'var(--m-line)' }}>
+          <h2 className="mb-3 text-sm font-semibold" style={{ color: 'var(--m-ink)' }}>Manner temperature</h2>
           <SellerRating sellerId={seller.id} />
         </div>
       </div>
 
       <section className="mt-6">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-gray-900">Active listings</h2>
-          <p className="text-sm text-gray-600">{activeListings.length} active</p>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--m-ink)' }}>Active listings</h2>
+          <p className="text-sm" style={{ color: 'var(--m-muted)' }}>{activeListings.length} active</p>
         </div>
 
         {activeListings.length === 0 ? (
           <div className="ui-surface mt-4 p-8 text-center">
-            <p className="text-gray-600">No active listings right now.</p>
+            <p style={{ color: 'var(--m-muted)' }}>No active listings right now.</p>
           </div>
         ) : (
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

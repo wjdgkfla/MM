@@ -11,11 +11,11 @@ export default function AdminPage() {
 
   if (!session) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="ui-surface p-6 text-center">
-          <h1 className="text-2xl font-bold text-[#006633]">Admin access requires sign-in</h1>
-          <p className="mt-2 text-sm text-gray-600">Use the seeded demo admin account to review marketplace activity.</p>
-          <p className="mt-2 text-xs text-gray-500">Demo admin emails: {DEV_ADMIN_EMAILS.join(', ')}</p>
+          <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Admin access requires sign-in</h1>
+          <p className="mt-2 text-sm" style={{ color: 'var(--m-muted)' }}>Use the seeded demo admin account to review marketplace activity.</p>
+          <p className="mt-2 text-xs" style={{ color: 'var(--m-muted)' }}>Demo admin emails: {DEV_ADMIN_EMAILS.join(', ')}</p>
           <Link href="/sign-in?redirect=/admin" className="ui-btn-primary mt-4 inline-flex">
             Sign in
           </Link>
@@ -26,17 +26,17 @@ export default function AdminPage() {
 
   if (session.role !== 'admin') {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="ui-surface p-6 text-center">
-          <h1 className="text-2xl font-bold text-[#006633]">Admin only</h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Admin only</h1>
+          <p className="mt-2 text-sm" style={{ color: 'var(--m-muted)' }}>
             You are signed in as {session.displayName} ({session.email}) with the <span className="font-medium">{session.role}</span> role.
           </p>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm" style={{ color: 'var(--m-muted)' }}>
             This account can use marketplace features, but it does not have access to the admin moderation tools.
           </p>
-          <p className="mt-2 text-xs text-gray-500">For demo testing, sign out and use: {DEV_ADMIN_EMAILS.join(', ')}</p>
-          <Link href="/" className="mt-4 inline-block text-sm font-medium text-[#006633]">
+          <p className="mt-2 text-xs" style={{ color: 'var(--m-muted)' }}>For demo testing, sign out and use: {DEV_ADMIN_EMAILS.join(', ')}</p>
+          <Link href="/" className="mt-4 inline-block text-sm font-medium" style={{ color: 'var(--m-green)' }}>
             Back to browse feed
           </Link>
         </div>

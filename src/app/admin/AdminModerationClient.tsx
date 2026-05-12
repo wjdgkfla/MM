@@ -239,9 +239,9 @@ export function AdminModerationClient({
   const activity = payload?.activity || []
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-[#006633]">Admin moderation</h1>
-      <p className="mt-1 text-sm text-gray-600">
+    <div className="max-w-[1280px] mx-auto px-6 py-8">
+      <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Admin</h1>
+      <p className="mt-1 text-sm" style={{ color: 'var(--m-muted)' }}>
         Signed in as {adminName} ({adminEmail})
       </p>
       <div className="mt-3">
@@ -273,8 +273,8 @@ export function AdminModerationClient({
             onClick={() => setTab(item.id)}
             className={`rounded-xl px-3 py-2 text-sm font-medium ${
               tab === item.id
-                ? 'bg-[#006633] text-white'
-                : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                ? 'bg-[var(--m-pop)] text-white'
+                : 'border bg-white hover:bg-[var(--m-soft)]'
             }`}
           >
             {item.label}
@@ -288,7 +288,7 @@ export function AdminModerationClient({
       {loading ? (
         <div className="mt-6 space-y-3">
           {[...Array(4)].map((_, index) => (
-            <div key={index} className="h-16 rounded-xl bg-gray-100 animate-pulse" />
+            <div key={index} className="h-16 rounded-xl bg-[var(--m-soft)] animate-pulse" />
           ))}
         </div>
       ) : null}
@@ -296,32 +296,32 @@ export function AdminModerationClient({
       {!loading && tab === 'overview' ? (
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div className="ui-surface p-4">
-            <p className="text-xs uppercase text-gray-500">Listings</p>
-            <p className="mt-2 text-2xl font-bold text-gray-900">{listings.length}</p>
+            <p className="text-xs uppercase" style={{ color: 'var(--m-muted)' }}>Listings</p>
+            <p className="mt-2 text-2xl font-bold" style={{ color: 'var(--m-ink)' }}>{listings.length}</p>
           </div>
           <div className="ui-surface p-4">
-            <p className="text-xs uppercase text-gray-500">Users</p>
-            <p className="mt-2 text-2xl font-bold text-gray-900">{users.length}</p>
+            <p className="text-xs uppercase" style={{ color: 'var(--m-muted)' }}>Users</p>
+            <p className="mt-2 text-2xl font-bold" style={{ color: 'var(--m-ink)' }}>{users.length}</p>
           </div>
           <div className="ui-surface p-4">
-            <p className="text-xs uppercase text-gray-500">Open reports</p>
-            <p className="mt-2 text-2xl font-bold text-gray-900">{reportStats.open}</p>
+            <p className="text-xs uppercase" style={{ color: 'var(--m-muted)' }}>Open reports</p>
+            <p className="mt-2 text-2xl font-bold" style={{ color: 'var(--m-ink)' }}>{reportStats.open}</p>
           </div>
           <div className="ui-surface p-4">
-            <p className="text-xs uppercase text-gray-500">Flagged/hidden listings</p>
-            <p className="mt-2 text-2xl font-bold text-gray-900">
+            <p className="text-xs uppercase" style={{ color: 'var(--m-muted)' }}>Flagged/hidden listings</p>
+            <p className="mt-2 text-2xl font-bold" style={{ color: 'var(--m-ink)' }}>
               {listings.filter((item) => item.moderationState !== 'visible').length}
             </p>
           </div>
           <div className="ui-surface p-4">
-            <p className="text-xs uppercase text-gray-500">Suspended users</p>
-            <p className="mt-2 text-2xl font-bold text-gray-900">
+            <p className="text-xs uppercase" style={{ color: 'var(--m-muted)' }}>Suspended users</p>
+            <p className="mt-2 text-2xl font-bold" style={{ color: 'var(--m-ink)' }}>
               {users.filter((item) => item.accountState === 'suspended').length}
             </p>
           </div>
           <div className="ui-surface p-4">
-            <p className="text-xs uppercase text-gray-500">Recent admin activity</p>
-            <p className="mt-2 text-2xl font-bold text-gray-900">{activity.length}</p>
+            <p className="text-xs uppercase" style={{ color: 'var(--m-muted)' }}>Recent admin activity</p>
+            <p className="mt-2 text-2xl font-bold" style={{ color: 'var(--m-ink)' }}>{activity.length}</p>
           </div>
         </div>
       ) : null}
@@ -330,7 +330,7 @@ export function AdminModerationClient({
         <div className="ui-surface mt-6 overflow-x-auto p-4">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className="text-xs uppercase tracking-wide text-gray-500">
+              <tr className="text-xs uppercase tracking-wide text-[var(--m-muted)]">
                 <th className="pb-2 pr-4">Title</th>
                 <th className="pb-2 pr-4">Seller</th>
                 <th className="pb-2 pr-4">Status</th>
@@ -341,7 +341,7 @@ export function AdminModerationClient({
                 <th className="pb-2">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[var(--m-line)]">
               {listings.map((listing) => {
                 const seller = users.find((user) => user.id === listing.sellerId)
                 const reportState = reportStateByListing.get(listing.id)
@@ -354,19 +354,19 @@ export function AdminModerationClient({
                 return (
                   <tr key={listing.id}>
                     <td className="py-2 pr-4">
-                      <Link href={`/item/${listing.id}`} className="font-medium text-gray-900 hover:text-[#006633]">
+                      <Link href={`/item/${listing.id}`} className="font-medium text-[var(--m-ink)] hover:text-[var(--m-green)]">
                         {listing.title}
                       </Link>
                     </td>
-                    <td className="py-2 pr-4 text-gray-700">{seller?.displayName || listing.sellerId}</td>
-                    <td className="py-2 pr-4 text-gray-700">
+                    <td className="py-2 pr-4 text-[var(--m-muted)]">{seller?.displayName || listing.sellerId}</td>
+                    <td className="py-2 pr-4 text-[var(--m-muted)]">
                       <span className="capitalize">{listing.status}</span> /{' '}
                       <span className="capitalize">{listing.moderationState}</span>
                     </td>
-                    <td className="py-2 pr-4 text-gray-700">{listing.category}</td>
-                    <td className="py-2 pr-4 text-gray-700">{listing.campusLocation}</td>
-                    <td className="py-2 pr-4 text-gray-700">{formatDate(listing.createdAt)}</td>
-                    <td className="py-2 pr-4 text-gray-700">{reportLabel}</td>
+                    <td className="py-2 pr-4 text-[var(--m-muted)]">{listing.category}</td>
+                    <td className="py-2 pr-4 text-[var(--m-muted)]">{listing.campusLocation}</td>
+                    <td className="py-2 pr-4 text-[var(--m-muted)]">{formatDate(listing.createdAt)}</td>
+                    <td className="py-2 pr-4 text-[var(--m-muted)]">{reportLabel}</td>
                     <td className="py-2">
                       <div className="flex flex-wrap gap-1">
                         <button
@@ -378,7 +378,7 @@ export function AdminModerationClient({
                                 listing.moderationState === 'hidden' ? 'visible' : 'hidden',
                             })
                           }
-                          className="rounded-lg border border-gray-200 px-2 py-1 text-xs"
+                          className="rounded-lg border border-[var(--m-line)] px-2 py-1 text-xs"
                         >
                           {listing.moderationState === 'hidden' ? 'Unhide' : 'Hide'}
                         </button>
@@ -391,14 +391,14 @@ export function AdminModerationClient({
                                 listing.moderationState === 'flagged' ? 'visible' : 'flagged',
                             })
                           }
-                          className="rounded-lg border border-gray-200 px-2 py-1 text-xs"
+                          className="rounded-lg border border-[var(--m-line)] px-2 py-1 text-xs"
                         >
                           {listing.moderationState === 'flagged' ? 'Unflag' : 'Flag'}
                         </button>
                         <select
                           value={listing.status}
                           onChange={(e) => mutateListing(listing.id, { status: e.target.value as ListingStatus })}
-                          className="rounded-lg border border-gray-200 px-2 py-1 text-xs"
+                          className="rounded-lg border border-[var(--m-line)] px-2 py-1 text-xs"
                         >
                           <option value="available">available</option>
                           <option value="reserved">reserved</option>
@@ -412,7 +412,7 @@ export function AdminModerationClient({
                         >
                           Remove
                         </button>
-                        <Link href={`/item/${listing.id}`} className="rounded-lg border border-gray-200 px-2 py-1 text-xs">
+                        <Link href={`/item/${listing.id}`} className="rounded-lg border border-[var(--m-line)] px-2 py-1 text-xs">
                           Open
                         </Link>
                       </div>
@@ -429,7 +429,7 @@ export function AdminModerationClient({
         <div className="ui-surface mt-6 overflow-x-auto p-4">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className="text-xs uppercase tracking-wide text-gray-500">
+              <tr className="text-xs uppercase tracking-wide text-[var(--m-muted)]">
                 <th className="pb-2 pr-4">User</th>
                 <th className="pb-2 pr-4">Role</th>
                 <th className="pb-2 pr-4">Verification</th>
@@ -438,19 +438,19 @@ export function AdminModerationClient({
                 <th className="pb-2">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[var(--m-line)]">
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td className="py-2 pr-4 text-gray-800">
+                  <td className="py-2 pr-4 text-[var(--m-ink)]">
                     <p className="font-medium">{user.displayName}</p>
-                    <p className="text-xs text-gray-500">{user.gmuEmail}</p>
+                    <p className="text-xs text-[var(--m-muted)]">{user.gmuEmail}</p>
                   </td>
-                  <td className="py-2 pr-4 text-gray-700 capitalize">{user.role}</td>
-                  <td className="py-2 pr-4 text-gray-700">
+                  <td className="py-2 pr-4 text-[var(--m-muted)] capitalize">{user.role}</td>
+                  <td className="py-2 pr-4 text-[var(--m-muted)]">
                     {user.gmuEmailVerified ? 'GMU email verified' : 'Verification pending'}
                   </td>
-                  <td className="py-2 pr-4 text-gray-700">{user.listingCount}</td>
-                  <td className="py-2 pr-4 text-gray-700 capitalize">{user.accountState}</td>
+                  <td className="py-2 pr-4 text-[var(--m-muted)]">{user.listingCount}</td>
+                  <td className="py-2 pr-4 text-[var(--m-muted)] capitalize">{user.accountState}</td>
                   <td className="py-2">
                     <div className="flex flex-wrap gap-1">
                       <button
@@ -459,7 +459,7 @@ export function AdminModerationClient({
                         onClick={() =>
                           mutateUser(user.id, { role: user.role === 'admin' ? 'student' : 'admin' })
                         }
-                        className="rounded-lg border border-gray-200 px-2 py-1 text-xs"
+                        className="rounded-lg border border-[var(--m-line)] px-2 py-1 text-xs"
                       >
                         {user.role === 'admin' ? 'Remove admin' : 'Promote admin'}
                       </button>
@@ -471,7 +471,7 @@ export function AdminModerationClient({
                             accountState: user.accountState === 'suspended' ? 'active' : 'suspended',
                           })
                         }
-                        className="rounded-lg border border-gray-200 px-2 py-1 text-xs"
+                        className="rounded-lg border border-[var(--m-line)] px-2 py-1 text-xs"
                       >
                         {user.accountState === 'suspended' ? 'Activate' : 'Suspend'}
                       </button>
@@ -488,7 +488,7 @@ export function AdminModerationClient({
         <div className="ui-surface mt-6 overflow-x-auto p-4">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className="text-xs uppercase tracking-wide text-gray-500">
+              <tr className="text-xs uppercase tracking-wide text-[var(--m-muted)]">
                 <th className="pb-2 pr-4">Target</th>
                 <th className="pb-2 pr-4">Reason</th>
                 <th className="pb-2 pr-4">Created</th>
@@ -496,25 +496,25 @@ export function AdminModerationClient({
                 <th className="pb-2">Moderation actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[var(--m-line)]">
               {reports.map((report) => {
                 const listing = listings.find((item) => item.id === report.listingId)
                 const seller = users.find((item) => item.id === report.sellerId)
                 return (
                   <tr key={report.id}>
-                    <td className="py-2 pr-4 text-gray-800">
+                    <td className="py-2 pr-4 text-[var(--m-ink)]">
                       <p>
-                        <Link href={`/item/${report.listingId}`} className="font-medium text-gray-900 hover:text-[#006633]">
+                        <Link href={`/item/${report.listingId}`} className="font-medium text-[var(--m-ink)] hover:text-[var(--m-green)]">
                           {listing?.title || 'Listing removed'}
                         </Link>
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-[var(--m-muted)]">
                         {report.includeSeller ? `Seller + listing (${seller?.displayName || report.sellerId})` : 'Listing only'}
                       </p>
                     </td>
-                    <td className="py-2 pr-4 text-gray-700">{REPORT_REASON_LABELS[report.reason]}</td>
-                    <td className="py-2 pr-4 text-gray-700">{formatDate(report.createdAt)}</td>
-                    <td className="py-2 pr-4 capitalize text-gray-700">{report.status}</td>
+                    <td className="py-2 pr-4 text-[var(--m-muted)]">{REPORT_REASON_LABELS[report.reason]}</td>
+                    <td className="py-2 pr-4 text-[var(--m-muted)]">{formatDate(report.createdAt)}</td>
+                    <td className="py-2 pr-4 capitalize text-[var(--m-muted)]">{report.status}</td>
                     <td className="py-2">
                       <div className="flex flex-wrap gap-1">
                         {REPORT_STATUSES.map((status) => (
@@ -523,7 +523,7 @@ export function AdminModerationClient({
                             type="button"
                             disabled={busyKey === `report-${report.id}` || status === report.status}
                             onClick={() => mutateReport(report.id, status)}
-                            className="rounded-lg border border-gray-200 px-2 py-1 text-xs capitalize disabled:opacity-50"
+                            className="rounded-lg border border-[var(--m-line)] px-2 py-1 text-xs capitalize disabled:opacity-50"
                           >
                             {status}
                           </button>
@@ -542,7 +542,7 @@ export function AdminModerationClient({
         <div className="ui-surface mt-6 overflow-x-auto p-4">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className="text-xs uppercase tracking-wide text-gray-500">
+              <tr className="text-xs uppercase tracking-wide text-[var(--m-muted)]">
                 <th className="pb-2 pr-4">Time</th>
                 <th className="pb-2 pr-4">Admin</th>
                 <th className="pb-2 pr-4">Action</th>
@@ -550,16 +550,16 @@ export function AdminModerationClient({
                 <th className="pb-2">Notes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[var(--m-line)]">
               {activity.map((entry) => (
                 <tr key={entry.id}>
-                  <td className="py-2 pr-4 text-gray-700">{formatDate(entry.createdAt)}</td>
-                  <td className="py-2 pr-4 text-gray-700">{entry.actorDisplayName}</td>
-                  <td className="py-2 pr-4 text-gray-700">{entry.action}</td>
-                  <td className="py-2 pr-4 text-gray-700">
+                  <td className="py-2 pr-4 text-[var(--m-muted)]">{formatDate(entry.createdAt)}</td>
+                  <td className="py-2 pr-4 text-[var(--m-muted)]">{entry.actorDisplayName}</td>
+                  <td className="py-2 pr-4 text-[var(--m-muted)]">{entry.action}</td>
+                  <td className="py-2 pr-4 text-[var(--m-muted)]">
                     {entry.targetType}:{entry.targetId}
                   </td>
-                  <td className="py-2 text-gray-600">{entry.notes || '-'}</td>
+                  <td className="py-2 text-[var(--m-muted)]">{entry.notes || '-'}</td>
                 </tr>
               ))}
             </tbody>

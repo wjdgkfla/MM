@@ -23,12 +23,12 @@ export default function GlobalError({
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
         </div>
-        <h1 className="text-xl font-bold text-gray-900">Something went wrong</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <h1 className="font-display text-xl font-bold" style={{ color: 'var(--m-ink)' }}>Something went wrong</h1>
+        <p className="mt-2 text-sm" style={{ color: 'var(--m-muted)' }}>
           An unexpected error occurred. Try refreshing the page or going back to the feed.
         </p>
         {error.digest ? (
-          <p className="mt-2 font-mono text-xs text-gray-400">Error ID: {error.digest}</p>
+          <p className="mt-2 font-mono text-xs" style={{ color: 'var(--m-muted)' }}>Error ID: {error.digest}</p>
         ) : null}
         <div className="mt-6 flex justify-center gap-3">
           <button

@@ -56,14 +56,14 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 py-8">
-      <div className="ui-surface p-6">
-        <h1 className="text-2xl font-bold text-[#006633]">Sign in</h1>
-        <p className="mt-1 text-sm text-gray-600">Use your GMU email to access posting, messaging, and saving.</p>
+    <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
+      <div className="w-full max-w-[400px] rounded-[var(--r-lg)] border bg-white p-8" style={{ borderColor: 'var(--m-line)' }}>
+        <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Sign in</h1>
+        <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>Use your GMU email to access Mason Market.</p>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">GMU email</label>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>GMU email</label>
             <input
               type="email"
               required
@@ -74,7 +74,7 @@ export default function SignInPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>Password</label>
             <input
               type="password"
               required
@@ -94,8 +94,8 @@ export default function SignInPage() {
         </form>
 
         {process.env.NODE_ENV !== 'production' ? (
-          <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 text-xs text-gray-600">
-            <p className="font-semibold text-gray-700">Dev quick-fill</p>
+          <div className="mt-4 rounded-lg border px-3 py-3 text-xs" style={{ borderColor: 'var(--m-line)', background: 'var(--m-soft)', color: 'var(--m-muted)' }}>
+            <p className="font-semibold" style={{ color: 'var(--m-ink)' }}>Dev quick-fill</p>
             <p className="mt-1">Click to fill the email field (you still need the Firebase Auth password):</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {DEV_ADMIN_EMAILS.map((adminEmail) => (
@@ -103,7 +103,7 @@ export default function SignInPage() {
                   key={adminEmail}
                   type="button"
                   onClick={() => handleDemoAdminClick(adminEmail)}
-                  className="rounded-full border border-gray-300 bg-white px-2.5 py-1 font-medium text-gray-700"
+                  className="rounded-full border px-2.5 py-1 font-medium bg-white" style={{ borderColor: 'var(--m-line)', color: 'var(--m-ink)' }}
                 >
                   {adminEmail}
                 </button>
@@ -112,9 +112,9 @@ export default function SignInPage() {
           </div>
         ) : null}
 
-        <p className="mt-4 text-sm text-gray-600">
+        <p className="mt-4 text-sm" style={{ color: 'var(--m-muted)' }}>
           New here?{' '}
-          <Link href={`/sign-up?redirect=${encodeURIComponent(redirect)}`} className="font-medium text-[#006633]">
+          <Link href={`/sign-up?redirect=${encodeURIComponent(redirect)}`} className="font-medium" style={{ color: 'var(--m-green)' }}>
             Create account
           </Link>
         </p>

@@ -39,12 +39,12 @@ export default function SavedPage() {
   }, [session, savedIds])
 
   if (authLoading) {
-    return <div className="max-w-6xl mx-auto px-4 py-10 text-sm text-gray-500">Loading…</div>
+    return <div className="max-w-[1280px] mx-auto px-6 py-10 text-sm" style={{ color: 'var(--m-muted)' }}>Loading…</div>
   }
 
   if (!session) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto px-6 py-8">
         <AuthRequiredCard
           title="Sign in to view saved items"
           description="Saved listings are tied to your GMU account session."
@@ -63,31 +63,37 @@ export default function SavedPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
-      <h1 className="text-2xl font-bold text-[#006633]">Saved Items</h1>
-      <p className="mt-1 text-gray-600">Track listings you want to revisit between classes.</p>
+    <div className="max-w-[1280px] mx-auto px-6 py-6 sm:py-8">
+      <h1 className="font-display text-[36px] font-black" style={{ color: 'var(--m-ink)' }}>Saved finds</h1>
+      <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>
+        {savedListings.length} {savedListings.length === 1 ? 'item' : 'items'}
+      </p>
 
       {loading ? (
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-8 grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
           {[...Array(8)].map((_, index) => (
-            <div key={index} className="bg-gray-100 rounded-2xl aspect-[4/5] animate-pulse" />
+            <div key={index} className="aspect-square rounded-2xl bg-[var(--m-soft)] animate-pulse" />
           ))}
         </div>
       ) : savedListings.length === 0 ? (
-        <div className="mt-12 ui-surface border-dashed p-8 text-center">
-          <p className="text-gray-700 font-medium">No saved listings yet.</p>
-          <Link href="/" className="mt-3 inline-block text-sm font-medium text-[#006633]">
-            Browse Mason Market
+        <div className="mt-12 rounded-[var(--r-lg)] border p-16 text-center max-w-[480px] mx-auto" style={{ borderColor: 'var(--m-line)' }}>
+          <svg viewBox="0 0 24 24" className="mx-auto h-9 w-9 mb-3" fill="none" stroke="currentColor" strokeWidth="1.6" style={{ color: 'var(--m-pop)' }}>
+            <path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 0 0-7.1 7.1l8.8 8.9 8.8-8.9a5 5 0 0 0 0-7.1Z" />
+          </svg>
+          <p className="font-display text-[24px] font-black" style={{ color: 'var(--m-ink)' }}>Nothing saved yet</p>
+          <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>Tap the heart on a listing to save it here.</p>
+          <Link href="/" className="mt-5 inline-flex h-11 items-center rounded-full px-6 text-[13px] font-bold text-white" style={{ background: 'var(--m-pop)' }}>
+            Browse feed
           </Link>
         </div>
       ) : (
         <>
         {savedIds.length > savedListings.length ? (
-          <p className="mt-4 text-xs text-gray-500">
+          <p className="mt-4 text-xs" style={{ color: 'var(--m-muted)' }}>
             {savedIds.length - savedListings.length} saved item{savedIds.length - savedListings.length > 1 ? 's are' : ' is'} no longer available and {savedIds.length - savedListings.length > 1 ? 'have' : 'has'} been removed from view.
           </p>
         ) : null}
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-8 grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
           {savedListings.map((listing) => (
             <ListingCard
               key={listing.id}

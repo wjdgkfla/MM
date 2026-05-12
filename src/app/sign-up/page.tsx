@@ -62,14 +62,14 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 py-8">
-      <div className="ui-surface p-6">
-        <h1 className="text-2xl font-bold text-[#006633]">Create account</h1>
-        <p className="mt-1 text-sm text-gray-600">GMU-only access with Firebase email/password authentication.</p>
+    <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
+      <div className="w-full max-w-[400px] rounded-[var(--r-lg)] border bg-white p-8" style={{ borderColor: 'var(--m-line)' }}>
+        <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Create account</h1>
+        <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>GMU-only access with Firebase email/password authentication.</p>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Display name</label>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>Display name</label>
             <input
               type="text"
               required
@@ -81,7 +81,7 @@ export default function SignUpPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">GMU email</label>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>GMU email</label>
             <input
               type="email"
               required
@@ -93,7 +93,7 @@ export default function SignUpPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>Password</label>
             <input
               type="password"
               required
@@ -112,9 +112,9 @@ export default function SignUpPage() {
           </button>
         </form>
 
-        <p className="mt-4 text-sm text-gray-600">
+        <p className="mt-4 text-sm" style={{ color: 'var(--m-muted)' }}>
           Already have access?{' '}
-          <Link href={`/sign-in?redirect=${encodeURIComponent(redirect)}`} className="font-medium text-[#006633]">
+          <Link href={`/sign-in?redirect=${encodeURIComponent(redirect)}`} className="font-medium" style={{ color: 'var(--m-green)' }}>
             Sign in
           </Link>
         </p>
