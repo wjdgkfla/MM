@@ -3,15 +3,12 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { useFavorites } from '@/lib/useFavorites'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 
 export function Header() {
   const { session } = useAuthSession()
-  const { savedIds } = useFavorites(session?.userId)
   const pathname = usePathname()
   const router = useRouter()
-  const isHomePage = pathname === '/'
   const [headerSearch, setHeaderSearch] = useState('')
 
   const handleSignOut = async () => {
@@ -26,75 +23,113 @@ export function Header() {
     setHeaderSearch('')
   }
 
+  const navLinks = [
+    { href: '/', label: 'Browse' },
+    { href: '/saved', label: 'Saved' },
+    { href: '/messages', label: 'Messages' },
+    { href: '/my-listings', label: 'My posts' },
+  ]
+
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--air-border)] bg-white/95 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-[1160px] items-center justify-between gap-3 px-4 py-3 sm:py-4">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mason-green)] shadow-sm">
-            <span className="text-xl font-bold text-[var(--mason-gold)]">M</span>
+    <header className="sticky top-0 z-30 border-b bg-[var(--m-bg)]/85 backdrop-blur-xl" style={{ borderColor: 'var(--m-line)' }}>
+      <div className="mx-auto flex h-[68px] max-w-[1280px] items-center gap-4 px-6">
+
+        {/* Logo */}
+        <Link href="/" className="flex shrink-0 items-center gap-2.5">
+          <div
+            className="grid h-9 w-9 place-items-center font-display font-black text-white"
+            style={{ background: 'var(--m-ink)', borderRadius: 'var(--r-tile)', fontSize: 18, lineHeight: 1 }}
+          >
+            M
           </div>
-          <span className="hidden text-xl font-semibold tracking-[-0.02em] text-[var(--air-text)] sm:inline">
+          <span className="font-display hidden text-[19px] font-black tracking-tight sm:block" style={{ color: 'var(--m-ink)' }}>
             Mason Market
           </span>
         </Link>
 
-        <div className={`hidden flex-1 px-3 lg:justify-center ${isHomePage ? 'lg:hidden' : 'lg:flex'}`}>
-          <form onSubmit={handleHeaderSearch} className="flex h-12 w-full max-w-[560px] items-center rounded-full border border-[var(--air-border)] bg-white px-4 shadow-[var(--air-shadow)] transition-colors focus-within:border-[var(--mason-green)]/60">
-            <input
-              type="search"
-              value={headerSearch}
-              onChange={(e) => setHeaderSearch(e.target.value)}
-              placeholder="Search listings by item, category, or campus"
-              className="flex-1 bg-transparent text-sm text-[var(--air-text)] outline-none placeholder:text-[var(--air-muted)]"
-            />
-            <button type="submit" className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--mason-green)] text-white transition-colors hover:bg-[var(--mason-green-dark)]" aria-label="Search">
-              <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-                <path
-                  fill="currentColor"
-                  d="M10.5 3a7.5 7.5 0 015.96 12.05l4.24 4.24a1 1 0 11-1.42 1.42l-4.24-4.24A7.5 7.5 0 1110.5 3zm0 2a5.5 5.5 0 100 11 5.5 5.5 0 000-11z"
-                />
-              </svg>
-            </button>
-          </form>
-        </div>
+        {/* Search */}
+        <form
+          onSubmit={handleHeaderSearch}
+          className="flex flex-1 max-w-[480px] items-center gap-2 h-11 rounded-full border bg-white px-4 transition-colors focus-within:border-[var(--m-ink)]"
+          style={{ borderColor: 'var(--m-line)' }}
+        >
+          <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--m-muted)' }}>
+            <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            type="search"
+            value={headerSearch}
+            onChange={(e) => setHeaderSearch(e.target.value)}
+            placeholder="Search campus listings…"
+            className="flex-1 bg-transparent text-[13px] outline-none"
+            style={{ color: 'var(--m-ink)' }}
+          />
+        </form>
 
-        <div className="flex items-center gap-1 text-sm sm:gap-2">
+        {/* Nav — only when signed in */}
+        {session && (
+          <nav className="hidden lg:flex items-center gap-0.5">
+            {navLinks.map((item) => {
+              const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="relative flex h-9 items-center rounded-full px-3 text-[13px] font-semibold transition-colors"
+                  style={{ color: active ? 'var(--m-ink)' : 'var(--m-muted)' }}
+                >
+                  {item.label}
+                  {active && (
+                    <span
+                      className="absolute left-3 right-3 rounded-full"
+                      style={{ bottom: -10, height: 3, background: 'var(--m-ink)' }}
+                    />
+                  )}
+                </Link>
+              )
+            })}
+          </nav>
+        )}
+
+        {/* Right actions */}
+        <div className="ml-auto flex items-center gap-2">
           {session ? (
             <>
-              <Link href="/saved" className="rounded-full px-3 py-2 font-medium text-[var(--air-muted)] transition-colors hover:bg-[var(--air-chip)] hover:text-[var(--air-text)]">
-                Saved {savedIds.length > 0 ? `(${savedIds.length})` : ''}
-              </Link>
-              <Link href="/messages" className="rounded-full px-3 py-2 font-medium text-[var(--air-muted)] transition-colors hover:bg-[var(--air-chip)] hover:text-[var(--air-text)]">
-                Messages
-              </Link>
-              <Link href="/my-listings" className="hidden rounded-full px-3 py-2 font-medium text-[var(--air-muted)] transition-colors hover:bg-[var(--air-chip)] hover:text-[var(--air-text)] sm:inline-flex">
-                My Listings
-              </Link>
-              {session.role === 'admin' ? (
-                <Link href="/admin" className="hidden rounded-full px-3 py-2 font-medium text-[var(--air-muted)] transition-colors hover:bg-[var(--air-chip)] hover:text-[var(--air-text)] sm:inline-flex">
+              {session.role === 'admin' && (
+                <Link
+                  href="/admin"
+                  className="hidden h-9 items-center rounded-full px-3 text-[13px] font-semibold lg:flex"
+                  style={{ color: 'var(--m-muted)' }}
+                >
                   Admin
                 </Link>
-              ) : null}
-              <Link href="/sell" className="rounded-full bg-[var(--mason-green)] px-4 py-2 font-semibold text-white transition-colors hover:bg-[var(--mason-green-dark)]">
+              )}
+              <Link
+                href="/sell"
+                className="flex h-10 items-center gap-1.5 rounded-full px-4 text-[13px] font-bold text-white transition-opacity hover:opacity-90"
+                style={{ background: 'var(--m-pop)' }}
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
                 Sell
               </Link>
-              <div className="hidden items-center gap-2 rounded-full border border-[var(--air-border)] bg-white px-3 py-1.5 lg:flex">
-                <span className="max-w-24 truncate text-xs font-medium text-[var(--air-text)]">{session.displayName}</span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                    session.role === 'admin' ? 'bg-amber-100 text-amber-800' : 'bg-[#e8f4ee] text-[var(--mason-green)]'
-                  }`}
-                >
-                  {session.role === 'admin' ? 'Admin' : 'Student'}
-                </span>
-              </div>
-              <button type="button" onClick={handleSignOut} className="rounded-full px-3 py-2 font-medium text-[var(--air-muted)] transition-colors hover:bg-[var(--air-chip)] hover:text-[var(--air-text)]">
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="hidden h-9 items-center rounded-full px-3 text-[13px] font-semibold transition-colors lg:flex"
+                style={{ color: 'var(--m-muted)' }}
+              >
                 Sign out
               </button>
             </>
           ) : (
-            <Link href="/sign-in?redirect=/" className="rounded-full bg-[var(--mason-green)] px-4 py-2 font-semibold text-white transition-colors hover:bg-[var(--mason-green-dark)]">
-              Log in
+            <Link
+              href="/sign-in?redirect=/"
+              className="flex h-10 items-center rounded-full px-4 text-[13px] font-bold text-white transition-opacity hover:opacity-90"
+              style={{ background: 'var(--m-pop)' }}
+            >
+              Sign in
             </Link>
           )}
         </div>
