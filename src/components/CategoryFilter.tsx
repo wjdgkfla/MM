@@ -13,7 +13,7 @@ export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
       <button
         onClick={() => onSelect(null)}
         className={`ui-pill whitespace-nowrap ${
-          !selected ? 'ui-pill-active shadow-[var(--air-shadow)]' : 'ui-pill-neutral'
+          !selected ? 'ui-pill-active' : 'ui-pill-neutral'
         }`}
       >
         All
@@ -23,7 +23,7 @@ export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
           key={category}
           onClick={() => onSelect(category)}
           className={`ui-pill whitespace-nowrap ${
-            selected === category ? 'ui-pill-active shadow-[var(--air-shadow)]' : 'ui-pill-neutral'
+            selected === category ? 'ui-pill-active' : 'ui-pill-neutral'
           }`}
         >
           {CATEGORY_LABELS[category]}
