@@ -3,75 +3,88 @@
 @tailwind utilities;
 
 :root {
-  --mason-green: #006633;
-  --mason-green-dark: #00522a;
-  --mason-gold: #ffcc00;
-  --air-text: #222222;
-  --air-muted: #6a6a6a;
-  --air-border: #e8e8e8;
-  --air-chip: #f4f4f4;
-  --air-surface: #ffffff;
-  --air-shadow: rgba(0, 0, 0, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.04) 0 2px 6px, rgba(0, 0, 0, 0.1) 0 4px 8px;
-  --background: #ffffff;
-  --foreground: #222222;
+  /* Surfaces */
+  --m-bg:        #FFFFFF;
+  --m-soft:      #F6F6F4;
+  --m-soft-warm: #F1F0EC;
+  /* Ink */
+  --m-ink:       #111111;
+  --m-muted:     #767676;
+  --m-line:      #EEEEEE;
+  /* Brand */
+  --m-green:     #006B3C;
+  --m-green-soft:#E5EFE9;
+  --m-pop:       #006B3C;
+  --m-gold:      #C9A227;
+  /* Radii */
+  --r-pill: 9999px;
+  --r-card: 12px;
+  --r-md:   16px;
+  --r-lg:   24px;
+  --r-tile: 10px;
+}
+
+html, body {
+  background: var(--m-bg);
+  color: var(--m-ink);
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-geist, system-ui, -apple-system, sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-instrument-serif, Georgia, serif);
+}
+
+.font-mono-label {
+  font-family: var(--font-ibm-plex-mono, ui-monospace, monospace);
 }
 
 @layer components {
   .ui-surface {
     @apply rounded-3xl border bg-white;
-    border-color: var(--air-border);
-    box-shadow: var(--air-shadow);
+    border-color: var(--m-line);
   }
 
   .ui-input {
     @apply w-full rounded-2xl border bg-white px-4 py-3 text-sm transition-colors;
-    border-color: var(--air-border);
-    color: var(--air-text);
+    border-color: var(--m-line);
+    color: var(--m-ink);
     min-height: 48px;
   }
 
   .ui-input::placeholder {
-    color: var(--air-muted);
+    color: var(--m-muted);
   }
 
   .ui-input:focus {
-    @apply outline-none ring-2;
-    border-color: var(--mason-green);
-    --tw-ring-color: rgba(0, 102, 51, 0.16);
+    @apply outline-none;
+    border-color: var(--m-ink);
   }
 
   .ui-btn-primary {
-    @apply rounded-xl px-4 py-3 text-sm font-semibold text-white transition-colors;
-    background: var(--mason-green);
+    @apply rounded-xl px-4 py-3 text-sm font-semibold text-white transition-opacity;
+    background: var(--m-pop);
   }
 
   .ui-btn-primary:hover {
-    background: var(--mason-green-dark);
-  }
-
-  .ui-btn-primary:focus-visible {
-    @apply outline-none ring-2;
-    --tw-ring-color: rgba(0, 102, 51, 0.2);
+    opacity: 0.9;
   }
 
   .ui-btn-primary:disabled {
-    @apply disabled:cursor-not-allowed disabled:opacity-60;
+    @apply cursor-not-allowed opacity-60;
   }
 
   .ui-btn-secondary {
     @apply rounded-xl border bg-white px-4 py-3 text-sm font-medium transition-colors;
-    border-color: var(--air-border);
-    color: var(--air-text);
+    border-color: var(--m-line);
+    color: var(--m-ink);
   }
 
   .ui-btn-secondary:hover {
-    background: #f9f9f9;
+    background: var(--m-soft);
   }
 
   .ui-pill {
@@ -79,16 +92,16 @@ body {
   }
 
   .ui-pill-neutral {
-    background: var(--air-chip);
-    color: var(--air-text);
+    background: var(--m-soft);
+    color: var(--m-ink);
   }
 
   .ui-pill-neutral:hover {
-    background: #ededed;
+    background: var(--m-soft-warm);
   }
 
   .ui-pill-active {
-    background: var(--mason-green);
+    background: var(--m-ink);
     color: #ffffff;
   }
 
@@ -101,7 +114,8 @@ body {
   }
 
   .ui-select-icon {
-    @apply pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400;
+    @apply pointer-events-none absolute right-3 top-1/2 -translate-y-1/2;
+    color: var(--m-muted);
   }
 }
 
@@ -109,4 +123,7 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .tabular-nums { font-variant-numeric: tabular-nums; }
 }
