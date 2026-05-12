@@ -6,6 +6,7 @@ import {
   ratingsFindByBuyerAndListing,
   listingsFindById,
   usersFindById,
+  messagesExistsByUserAndListing,
 } from '@/lib/data/firestoreDataAccess'
 import { RATING_TAGS, RatingTag, RatingScore } from '@/lib/types'
 
@@ -50,6 +51,14 @@ export async function POST(request: NextRequest) {
     if (!listing) return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     if (listing.sellerId !== String(sellerId)) {
       return NextResponse.json({ error: 'Seller does not match listing' }, { status: 400 })
+    }
+
+    const hasMessaged = await messagesExistsByUserAndListing(session.userId, String(listingId))
+    if (!hasMessaged) {
+      return NextResponse.json(
+        { error: 'You can only rate sellers you have messaged about this listing' },
+        { status: 403 }
+      )
     }
 
     const existing = await ratingsFindByBuyerAndListing(session.userId, String(listingId))

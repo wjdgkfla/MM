@@ -122,21 +122,28 @@ export default function MessagesPage() {
         setConversations(merged)
         setSelectedKey(merged[0]?.key || null)
 
-        // Auto-send "Still available?" if navigated here via that button
+        // Auto-send "Still available?" if navigated here via that button.
+        // Fetch the thread first to avoid sending a duplicate if the user navigates back.
         const isQuickAvailable = params.get('quick') === 'available'
-        if (isQuickAvailable && listingIdFromDetail && merged[0] && !didAutoSend.current) {
+        if (isQuickAvailable && listingIdFromDetail && !didAutoSend.current) {
           didAutoSend.current = true
           const conv = merged.find((c) => c.listingId === listingIdFromDetail)
           if (conv && conv.peerId) {
-            await fetch('/api/messages', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                listingId: conv.listingId,
-                toUserId: conv.peerId,
-                body: 'Hi, is this still available?',
-              }),
-            }).catch((err) => console.error('Auto-send "still available?" error:', err))
+            const threadRes = await fetch(
+              `/api/messages?listingId=${conv.listingId}&userId=${currentUserId}&peerId=${conv.peerId}`
+            ).catch(() => null)
+            const existingThread = threadRes?.ok ? await threadRes.json().catch(() => []) : []
+            if (Array.isArray(existingThread) && existingThread.length === 0) {
+              await fetch('/api/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  listingId: conv.listingId,
+                  toUserId: conv.peerId,
+                  body: 'Hi, is this still available?',
+                }),
+              }).catch((err) => console.error('Auto-send "still available?" error:', err))
+            }
           }
         }
       } catch {

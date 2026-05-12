@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
       freeOnly: freeOnly === 'true' || undefined,
       courseTag: courseTag || undefined,
       sort,
+      showHidden: session?.role === 'admin',
     }
 
     let listings = await listingsFindMany(query)

@@ -55,8 +55,10 @@ export async function GET(
       listingsCountBySellerId(listing.sellerId),
     ])
 
-    // Fire-and-forget view count increment (don't await — keeps response fast)
-    listingsIncrementViewCount(params.id)
+    // Fire-and-forget view count increment — skip for the seller viewing their own listing
+    if (!session || session.userId !== listing.sellerId) {
+      listingsIncrementViewCount(params.id)
+    }
 
     return NextResponse.json({ listing, seller: seller || null, sellerListingCount })
   } catch (err) {

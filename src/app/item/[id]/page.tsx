@@ -58,6 +58,7 @@ export default function ItemPage() {
   const [offerAmount, setOfferAmount] = useState('')
   const [offerSending, setOfferSending] = useState(false)
   const [offerFeedback, setOfferFeedback] = useState('')
+  const [hasConversation, setHasConversation] = useState(false)
   const [showReportForm, setShowReportForm] = useState(false)
   const [reportReason, setReportReason] = useState<ReportReason>('scam-concern')
   const [reportNotes, setReportNotes] = useState('')
@@ -77,11 +78,21 @@ export default function ItemPage() {
         if (!res.ok) throw new Error('Not found')
         return res.json() as Promise<ListingDetailResponse>
       })
-      .then((data) => {
+      .then(async (data) => {
         setListing(data.listing)
         setSeller(data.seller)
         setSellerListingCount(data.sellerListingCount || 0)
         setActiveImage(0)
+        // Check if the current user has messaged about this listing (for RatingForm gate)
+        if (session?.userId && data.listing.status === 'sold' && session.userId !== data.listing.sellerId) {
+          const threadRes = await fetch(
+            `/api/messages?listingId=${data.listing.id}&userId=${session.userId}&peerId=${data.listing.sellerId}`
+          ).catch(() => null)
+          if (threadRes?.ok) {
+            const thread = await threadRes.json().catch(() => [])
+            setHasConversation(Array.isArray(thread) && thread.length > 0)
+          }
+        }
       })
       .catch(() => {
         setListing(null)
@@ -174,7 +185,8 @@ export default function ItemPage() {
     e.preventDefault()
     if (!session) { router.push(signInRedirect); return }
     const amount = Number(offerAmount)
-    if (!amount || amount <= 0) { setOfferFeedback('Enter a valid offer amount.'); return }
+    if (!amount || amount < 1) { setOfferFeedback('Enter a valid offer amount (minimum $1).'); return }
+    if (amount > 100000) { setOfferFeedback('Offer cannot exceed $100,000.'); return }
     setOfferSending(true)
     setOfferFeedback('')
     try {
@@ -528,7 +540,7 @@ export default function ItemPage() {
             </div>
           </div>
 
-          {isSoldListing && !isOwnListing && session ? (
+          {isSoldListing && !isOwnListing && session && hasConversation ? (
             <div>
               <h2 className="mb-3 text-base font-semibold text-gray-900">Rate your experience</h2>
               <RatingForm sellerId={listing.sellerId} listingId={listing.id} />
@@ -551,6 +563,7 @@ export default function ItemPage() {
                 <input
                   type="number"
                   min="1"
+                  max="100000"
                   step="1"
                   value={offerAmount}
                   onChange={(e) => setOfferAmount(e.target.value)}

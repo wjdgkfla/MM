@@ -24,6 +24,7 @@ export type ListingQuery = {
   freeOnly?: boolean
   courseTag?: string
   sort?: 'newest' | 'price-asc' | 'price-desc'
+  showHidden?: boolean
 }
 
 export type CreateListingInput = Omit<Listing, 'id' | 'createdAt' | 'updatedAt' | 'favoriteCount' | 'isFavorited'>

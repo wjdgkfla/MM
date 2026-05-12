@@ -112,7 +112,6 @@ function docToListing(data: FirebaseFirestore.DocumentData): Listing {
     tags: Array.isArray(data.tags) ? data.tags : [],
     favoriteCount: Number(data.favoriteCount) || 0,
     viewCount: Number(data.viewCount) || 0,
-    isFavorited: data.isFavorited || false,
     createdAt: toISOString(data.createdAt),
     updatedAt: toISOString(data.updatedAt),
   }
@@ -215,8 +214,10 @@ export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]>
   if (query?.condition) ref = ref.where('condition', '==', query.condition)
   if (query?.status) ref = ref.where('status', '==', query.status)
   if (query?.pickupZone) ref = ref.where('pickupZone', '==', query.pickupZone)
-  // moderationState: always hide hidden listings from public queries
-  ref = ref.where('moderationState', 'in', ['visible', 'flagged'])
+  // moderationState: hide hidden listings from public queries (admins can opt in to see all)
+  if (!query?.showHidden) {
+    ref = ref.where('moderationState', 'in', ['visible', 'flagged'])
+  }
 
   // Only sort by createdAt when there are no inequality/price-sort overrides.
   // Firestore requires the sort field to match any inequality filter field.
@@ -733,6 +734,16 @@ export async function conversationsListByUser(userId: string) {
       lastMessagePreview: message.body,
       lastMessageAt: message.createdAt,
     }))
+}
+
+export async function messagesExistsByUserAndListing(userId: string, listingId: string): Promise<boolean> {
+  const db = getDb()
+  const snap = await db.collection('messages')
+    .where('listingId', '==', listingId)
+    .where('fromUserId', '==', userId)
+    .limit(1)
+    .get()
+  return !snap.empty
 }
 
 // ─── View Count ────────────────────────────────────────────────────────────
