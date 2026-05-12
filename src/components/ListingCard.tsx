@@ -3,11 +3,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Listing } from '@/lib/types'
-import { CATEGORY_LABELS, LOCATION_LABELS, PICKUP_ZONE_LABELS } from '@/lib/types'
-import { StatusBadge } from '@/components/StatusBadge'
+import { PICKUP_ZONE_LABELS, LOCATION_LABELS } from '@/lib/types'
 import { formatRecency } from '@/lib/time'
-import { TrustCues } from '@/components/TrustCues'
-import { CONDITION_LABELS } from '@/lib/types'
 
 interface ListingCardProps {
   listing: Listing
@@ -20,74 +17,92 @@ const FALLBACK_IMAGE = '/listings/moving-boxes.svg'
 export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingCardProps) {
   const priceLabel = listing.price === 0 ? 'Free' : `$${listing.price}`
   const coverImage = listing.imageUrls[0] || FALLBACK_IMAGE
-  const recencyLabel = formatRecency(listing.createdAt)
 
   return (
-    <article className="overflow-hidden rounded-[20px] border border-[var(--air-border)] bg-white shadow-[var(--air-shadow)] transition-all hover:-translate-y-0.5 hover:shadow-lg">
-      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
-        {onToggleSave && (
-          <button
-            type="button"
-            onClick={() => onToggleSave(listing.id)}
-            aria-label={isSaved ? 'Unsave listing' : 'Save listing'}
-            className={`absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-white/70 shadow-sm transition-colors ${
-              isSaved ? 'bg-[var(--mason-green)] text-white' : 'bg-white/95 text-[var(--air-text)] hover:bg-white'
-            }`}
-          >
-            <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-              <path
-                fill={isSaved ? 'currentColor' : 'none'}
-                stroke="currentColor"
-                strokeWidth="1.8"
-                d="M12.1 20.3c-.1 0-.2 0-.3-.1C7 17.4 4 14.8 4 11.5 4 8.8 6 7 8.5 7c1.5 0 2.8.7 3.6 1.8C13 7.7 14.3 7 15.8 7 18.3 7 20.3 8.8 20.3 11.5c0 3.3-3 5.9-7.8 8.7-.2.1-.3.1-.4.1z"
-              />
-            </svg>
-          </button>
-        )}
-
+    <article className="cursor-pointer group">
+      {/* Square photo */}
+      <div
+        className="relative aspect-square overflow-hidden bg-[var(--m-soft)]"
+        style={{ borderRadius: 'var(--r-card)' }}
+        onClick={() => { window.location.href = `/item/${listing.id}` }}
+      >
         <Image
           src={coverImage}
           alt={listing.title}
           fill
-          className="object-cover"
+          className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           unoptimized={coverImage.startsWith('data:')}
         />
+
+        {/* Heart button */}
+        {onToggleSave && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onToggleSave(listing.id) }}
+            aria-label={isSaved ? 'Unsave listing' : 'Save listing'}
+            className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full transition-colors"
+            style={{
+              background: isSaved ? 'var(--m-pop)' : 'rgba(0,0,0,0.15)',
+              color: '#fff',
+            }}
+          >
+            <svg viewBox="0 0 24 24" className="h-[17px] w-[17px]" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8">
+              <path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 0 0-7.1 7.1l8.8 8.9 8.8-8.9a5 5 0 0 0 0-7.1Z" />
+            </svg>
+          </button>
+        )}
+
+        {/* Reserved scrim */}
+        {listing.status === 'reserved' && (
+          <div className="absolute inset-0 grid place-items-center bg-black/45">
+            <span className="rounded-full border border-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white">
+              Reserved
+            </span>
+          </div>
+        )}
+
+        {/* Free tag */}
+        {listing.price === 0 && listing.status !== 'reserved' && (
+          <div
+            className="absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
+            style={{ background: 'var(--m-green)' }}
+          >
+            Free
+          </div>
+        )}
       </div>
 
-      <Link href={`/item/${listing.id}`} className="block p-4">
-        <div className="flex items-start justify-between gap-3">
-          <p className="min-h-[2.6rem] line-clamp-2 text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[var(--air-text)]">
-            {listing.title}
-          </p>
-          <StatusBadge status={listing.status} />
-        </div>
-
-        <p className="mt-2 text-2xl font-bold tracking-[-0.02em] text-[var(--mason-green)]">{priceLabel}</p>
-
-        <p className="mt-1 text-xs text-[var(--air-muted)]">
-          {LOCATION_LABELS[listing.campusLocation]} - {PICKUP_ZONE_LABELS[listing.pickupZone]}
+      {/* Info below photo */}
+      <Link href={`/item/${listing.id}`} className="block pt-3" onClick={(e) => e.stopPropagation()}>
+        <p className="min-h-[2.6em] line-clamp-2 text-[13px] leading-snug" style={{ color: 'var(--m-ink)' }}>
+          {listing.title}
         </p>
-        <p className="mt-1 line-clamp-1 text-xs text-gray-500">{CONDITION_LABELS[listing.condition]}</p>
-
-        <div className="mt-3 flex items-center justify-between gap-2 text-xs text-[var(--air-muted)]">
-          <span className="rounded-full bg-[var(--air-chip)] px-2 py-1">{CATEGORY_LABELS[listing.category]}</span>
-          <div className="flex items-center gap-2">
-            {listing.favoriteCount > 0 ? (
-              <span className="flex items-center gap-0.5 text-[var(--air-muted)]">
-                <svg viewBox="0 0 24 24" className="h-3 w-3" aria-hidden="true">
-                  <path fill="currentColor" d="M12.1 20.3c-.1 0-.2 0-.3-.1C7 17.4 4 14.8 4 11.5 4 8.8 6 7 8.5 7c1.5 0 2.8.7 3.6 1.8C13 7.7 14.3 7 15.8 7 18.3 7 20.3 8.8 20.3 11.5c0 3.3-3 5.9-7.8 8.7-.2.1-.3.1-.4.1z"/>
+        <p className="mt-1 text-[15px] font-bold tabular-nums" style={{ color: 'var(--m-ink)' }}>
+          {priceLabel}
+        </p>
+        <div className="mt-1 flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--m-muted)' }}>
+          <span className="truncate">
+            {LOCATION_LABELS[listing.campusLocation]} · {PICKUP_ZONE_LABELS[listing.pickupZone]}
+          </span>
+          <span>·</span>
+          <span className="shrink-0">{formatRecency(listing.createdAt)}</span>
+        </div>
+        {(listing.favoriteCount > 0 || (listing.viewCount ?? 0) > 0) && (
+          <div className="mt-1.5 flex items-center gap-2.5 text-[11px]" style={{ color: 'var(--m-muted)' }}>
+            {listing.favoriteCount > 0 && (
+              <span className="flex items-center gap-0.5">
+                <svg viewBox="0 0 24 24" className="h-[11px] w-[11px]" fill="none" stroke="currentColor" strokeWidth="1.6">
+                  <path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 0 0-7.1 7.1l8.8 8.9 8.8-8.9a5 5 0 0 0 0-7.1Z" />
                 </svg>
                 {listing.favoriteCount}
               </span>
-            ) : null}
-            <span>{recencyLabel}</span>
+            )}
+            {(listing.viewCount ?? 0) > 0 && (
+              <span>{listing.viewCount} views</span>
+            )}
           </div>
-        </div>
-
-        <div className="mt-2">
-          <TrustCues listing={listing} compact />
-        </div>
+        )}
       </Link>
     </article>
   )
