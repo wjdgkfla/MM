@@ -1,20 +1,21 @@
-import { ListingStatus, STATUS_LABELS } from '@/lib/types'
+import { Listing } from '@/lib/types'
 
-interface StatusBadgeProps {
-  status: ListingStatus
+const BADGE_STYLES: Record<Listing['status'], string> = {
+  available: 'bg-[var(--m-green-soft)] text-[var(--m-green)]',
+  reserved:  'bg-amber-50 text-amber-700',
+  sold:      'bg-[var(--m-soft)] text-[var(--m-muted)]',
 }
 
-const statusStyles: Record<ListingStatus, string> = {
-  available: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  reserved: 'bg-amber-50 text-amber-700 border-amber-200',
-  sold: 'bg-slate-100 text-slate-700 border-slate-300',
+const BADGE_LABELS: Record<Listing['status'], string> = {
+  available: 'Available',
+  reserved: 'Reserved',
+  sold: 'Sold',
 }
 
-export function StatusBadge({ status }: StatusBadgeProps) {
+export function StatusBadge({ status }: { status: Listing['status'] }) {
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusStyles[status]}`}>
-      <span className="mr-1 h-1.5 w-1.5 rounded-full bg-current/80" />
-      {STATUS_LABELS[status]}
+    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${BADGE_STYLES[status]}`}>
+      {BADGE_LABELS[status]}
     </span>
   )
 }

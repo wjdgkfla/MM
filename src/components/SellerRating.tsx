@@ -18,7 +18,7 @@ function getMannerTemp(ratings: Rating[]): number {
 }
 
 function getTempColor(temp: number): string {
-  if (temp >= 80) return 'text-[#006633]'
+  if (temp >= 80) return 'text-[var(--m-green)]'
   if (temp >= 60) return 'text-blue-500'
   if (temp >= 40) return 'text-amber-500'
   return 'text-red-500'
@@ -63,16 +63,16 @@ export function SellerRating({ sellerId, compact = false }: SellerRatingProps) {
       <div className="flex items-center gap-4">
         <div>
           <span className={`text-3xl font-bold ${getTempColor(temp)}`}>{temp}°</span>
-          <p className="text-xs text-gray-500 mt-0.5">Manner temperature</p>
+          <p className="text-xs text-[var(--m-muted)] mt-0.5">Manner temperature</p>
         </div>
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-[var(--m-muted)]">
           {ratings.length > 0 ? (
             <p>
               {positiveCount} 👍 · {ratings.length - positiveCount} 👎
-              <span className="ml-1 text-gray-400">({ratings.length} {ratings.length === 1 ? 'review' : 'reviews'})</span>
+              <span className="ml-1 text-[var(--m-muted)]">({ratings.length} {ratings.length === 1 ? 'review' : 'reviews'})</span>
             </p>
           ) : (
-            <p className="text-gray-400">No ratings yet</p>
+            <p className="text-[var(--m-muted)]">No ratings yet</p>
           )}
         </div>
       </div>
@@ -81,7 +81,7 @@ export function SellerRating({ sellerId, compact = false }: SellerRatingProps) {
           {topTags.map(([tag, count]) => (
             <span
               key={tag}
-              className="rounded-full bg-[#006633]/10 px-2.5 py-1 text-xs text-[#1c5a3a]"
+              className="rounded-full bg-[var(--m-green-soft)] px-2.5 py-1 text-xs text-[var(--m-green)]"
             >
               {RATING_TAG_LABELS[tag]} ×{count}
             </span>

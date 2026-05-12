@@ -7,14 +7,15 @@ interface CategoryFilterProps {
   onSelect: (category: Category | null) => void
 }
 
+const ACTIVE_PILL = 'h-9 px-3.5 rounded-full border text-[13px] font-semibold transition shrink-0 inline-flex items-center gap-1.5 bg-[var(--m-ink)] text-white border-[var(--m-ink)]'
+const INACTIVE_PILL = 'h-9 px-3.5 rounded-full border text-[13px] font-semibold transition shrink-0 inline-flex items-center gap-1.5 bg-white text-[var(--m-ink)] border-[var(--m-line)] hover:border-[var(--m-ink)]'
+
 export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
       <button
         onClick={() => onSelect(null)}
-        className={`ui-pill whitespace-nowrap ${
-          !selected ? 'ui-pill-active' : 'ui-pill-neutral'
-        }`}
+        className={`whitespace-nowrap ${!selected ? ACTIVE_PILL : INACTIVE_PILL}`}
       >
         All
       </button>
@@ -22,9 +23,7 @@ export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
         <button
           key={category}
           onClick={() => onSelect(category)}
-          className={`ui-pill whitespace-nowrap ${
-            selected === category ? 'ui-pill-active' : 'ui-pill-neutral'
-          }`}
+          className={`whitespace-nowrap ${selected === category ? ACTIVE_PILL : INACTIVE_PILL}`}
         >
           {CATEGORY_LABELS[category]}
         </button>

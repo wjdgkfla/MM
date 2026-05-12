@@ -21,7 +21,7 @@ export function TrustCues({ listing, compact = false }: TrustCuesProps) {
   return (
     <div className={`flex flex-wrap gap-2 ${compact ? 'text-[11px]' : 'text-xs'}`}>
       {items.map((item) => (
-        <span key={item} className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700">
+        <span key={item} className="rounded-full bg-[var(--m-soft)] px-2.5 py-1 text-[var(--m-muted)]">
           {item}
         </span>
       ))}

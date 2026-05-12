@@ -51,24 +51,24 @@ export function RatingForm({ sellerId, listingId, onSuccess }: RatingFormProps) 
 
   if (done) {
     return (
-      <div className="rounded-xl border border-[#006633]/30 bg-[#006633]/5 p-4 text-center">
-        <p className="text-sm font-medium text-[#006633]">Thanks for your feedback!</p>
-        <p className="mt-1 text-xs text-gray-500">Your rating helps the Mason Market community.</p>
+      <div className="rounded-xl border border-[var(--m-green)]/30 bg-[var(--m-green-soft)] p-4 text-center">
+        <p className="text-sm font-medium text-[var(--m-green)]">Thanks for your feedback!</p>
+        <p className="mt-1 text-xs text-[var(--m-muted)]">Your rating helps the Mason Market community.</p>
       </div>
     )
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
-      <p className="text-sm font-semibold text-gray-900">Rate this seller</p>
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-[var(--m-line)] bg-[var(--m-soft)] p-4">
+      <p className="text-sm font-semibold text-[var(--m-ink)]">Rate this seller</p>
       <div className="flex gap-3">
         <button
           type="button"
           onClick={() => setScore(1)}
           className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-3 text-sm font-medium transition-colors ${
             score === 1
-              ? 'border-[#006633] bg-[#006633]/10 text-[#006633]'
-              : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+              ? 'border-[var(--m-green)] bg-[var(--m-green-soft)] text-[var(--m-green)]'
+              : 'border-[var(--m-line)] bg-white text-[var(--m-ink)] hover:border-[var(--m-ink)]'
           }`}
         >
           👍 Good
@@ -79,14 +79,14 @@ export function RatingForm({ sellerId, listingId, onSuccess }: RatingFormProps) 
           className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-3 text-sm font-medium transition-colors ${
             score === -1
               ? 'border-red-300 bg-red-50 text-red-700'
-              : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+              : 'border-[var(--m-line)] bg-white text-[var(--m-ink)] hover:border-[var(--m-ink)]'
           }`}
         >
           👎 Bad
         </button>
       </div>
       <div>
-        <p className="mb-2 text-xs font-medium text-gray-600">What stood out? (optional)</p>
+        <p className="mb-2 text-xs font-medium text-[var(--m-muted)]">What stood out? (optional)</p>
         <div className="flex flex-wrap gap-2">
           {RATING_TAGS.map((tag) => (
             <button
@@ -95,8 +95,8 @@ export function RatingForm({ sellerId, listingId, onSuccess }: RatingFormProps) 
               onClick={() => toggleTag(tag)}
               className={`rounded-full border px-3 py-1 text-xs transition-colors ${
                 selectedTags.includes(tag)
-                  ? 'border-[#006633] bg-[#006633]/10 text-[#006633]'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                  ? 'border-[var(--m-green)] bg-[var(--m-green-soft)] text-[var(--m-green)]'
+                  : 'border-[var(--m-line)] bg-white text-[var(--m-muted)] hover:border-[var(--m-ink)]'
               }`}
             >
               {RATING_TAG_LABELS[tag]}

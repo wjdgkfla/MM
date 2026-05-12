@@ -31,8 +31,8 @@ export function SearchBar({
       />
       <button
         type={onSubmit ? 'submit' : 'button'}
-        className={`absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[var(--mason-green)] text-white ${
-          onSubmit ? 'transition-colors hover:bg-[var(--mason-green-dark)]' : 'pointer-events-none'
+        className={`absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[var(--m-green)] text-white ${
+          onSubmit ? 'transition-colors hover:bg-[var(--m-green)]' : 'pointer-events-none'
         }`}
         aria-label="Search"
       >
