@@ -31,7 +31,7 @@ export function Header() {
   ]
 
   return (
-    <header className="sticky top-0 z-30 border-b bg-[var(--m-bg)]/85 backdrop-blur-xl" style={{ borderColor: 'var(--m-line)' }}>
+    <header className="sticky top-0 z-50 border-b bg-[var(--m-bg)]/85 backdrop-blur-xl" style={{ borderColor: 'var(--m-line)' }}>
       <div className="mx-auto flex h-[68px] max-w-[1280px] items-center gap-4 px-6">
 
         {/* Logo */}
@@ -50,7 +50,7 @@ export function Header() {
         {/* Search */}
         <form
           onSubmit={handleHeaderSearch}
-          className="flex flex-1 max-w-[480px] items-center gap-2 h-11 rounded-full border bg-white px-4 transition-colors focus-within:border-[var(--m-ink)]"
+          className="hidden sm:flex flex-1 max-w-[480px] items-center gap-2 h-11 rounded-full border bg-white px-4 transition-colors focus-within:border-[var(--m-ink)]"
           style={{ borderColor: 'var(--m-line)' }}
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--m-muted)' }}>
