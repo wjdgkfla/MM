@@ -7,7 +7,7 @@ import {
   listingsFindById,
   usersFindById,
   messagesExistsByUserAndListing,
-} from '@/lib/data/firestoreDataAccess'
+} from '@/lib/data/supabaseDataAccess'
 import { RATING_TAGS, RatingTag, RatingScore } from '@/lib/types'
 
 export async function GET(request: NextRequest) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
-import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '@/lib/firebase/admin'
+import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,39 +9,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Admin only' }, { status: 403 })
     }
 
-    if (!isFirebaseAdminConfigured()) {
-      return NextResponse.json(
-        { error: 'Firebase Admin is not configured. Add FIREBASE_* env vars first.' },
-        { status: 400 }
-      )
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 400 })
     }
 
-    const db = getFirebaseAdminDb()
-    if (!db) {
-      return NextResponse.json({ error: 'Failed to initialize Firebase Admin.' }, { status: 500 })
-    }
+    const db = getSupabaseAdmin()
 
-    const [usersCount, listingsCount, messagesCount, reportsCount, adminActivityCount] = await Promise.all([
-      db.collection('users').count().get(),
-      db.collection('listings').count().get(),
-      db.collection('messages').count().get(),
-      db.collection('reports').count().get(),
-      db.collection('adminActivity').count().get(),
+    const [users, listings, messages, reports, activity] = await Promise.all([
+      db.from('users').select('*', { count: 'exact', head: true }),
+      db.from('listings').select('*', { count: 'exact', head: true }),
+      db.from('messages').select('*', { count: 'exact', head: true }),
+      db.from('reports').select('*', { count: 'exact', head: true }),
+      db.from('admin_activity').select('*', { count: 'exact', head: true }),
     ])
 
     return NextResponse.json({
       ok: true,
-      mode: 'firebase-only',
-      message: 'Firebase-only mode is active. Local seed data is disabled.',
+      mode: 'supabase',
+      message: 'Connected to Supabase. Counts reflect current database state.',
       counts: {
-        users: usersCount.data().count,
-        listings: listingsCount.data().count,
-        messages: messagesCount.data().count,
-        reports: reportsCount.data().count,
-        adminActivity: adminActivityCount.data().count,
+        users: users.count ?? 0,
+        listings: listings.count ?? 0,
+        messages: messages.count ?? 0,
+        reports: reports.count ?? 0,
+        adminActivity: activity.count ?? 0,
       },
     })
-  } catch {
-    return NextResponse.json({ error: 'Failed to seed Firebase data' }, { status: 500 })
+  } catch (err) {
+    console.error('POST /api/admin/firebase/seed error:', err)
+    return NextResponse.json({ error: 'Failed to check database' }, { status: 500 })
   }
 }

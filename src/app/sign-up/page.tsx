@@ -3,8 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
-import { getFirebaseClientAuth } from '@/lib/firebase/client'
+import { getSupabaseClient } from '@/lib/supabase/client'
 import { friendlyAuthError } from '@/lib/auth/authErrors'
 
 export default function SignUpPage() {
@@ -34,17 +33,23 @@ export default function SignUpPage() {
     setSubmitting(true)
 
     try {
-      const auth = getFirebaseClientAuth()
-      const credential = await createUserWithEmailAndPassword(auth, email.trim(), password)
-      if (displayName.trim()) {
-        await updateProfile(credential.user, { displayName: displayName.trim() })
+      const supabase = getSupabaseClient()
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password,
+        options: {
+          data: { display_name: displayName.trim() },
+        },
+      })
+
+      if (signUpError || !data.session) {
+        throw signUpError || new Error('Sign-up failed — check your email for a confirmation link if required.')
       }
-      const idToken = await credential.user.getIdToken(true)
 
       const res = await fetch('/api/auth/sign-up', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName: displayName.trim(), idToken }),
+        body: JSON.stringify({ displayName: displayName.trim(), accessToken: data.session.access_token }),
       })
 
       if (!res.ok) {
@@ -65,7 +70,7 @@ export default function SignUpPage() {
     <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
       <div className="w-full max-w-[400px] rounded-[var(--r-lg)] border bg-white p-8" style={{ borderColor: 'var(--m-line)' }}>
         <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Create account</h1>
-        <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>GMU-only access with Firebase email/password authentication.</p>
+        <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>GMU-only access. Sign up with your university email.</p>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>

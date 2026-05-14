@@ -4,7 +4,7 @@ import { ListingCard } from '@/components/ListingCard'
 import { SellerTrustCard } from '@/components/SellerTrustCard'
 import { SellerRating } from '@/components/SellerRating'
 import { formatPostedDate, formatRecency } from '@/lib/time'
-import { usersFindById, listingsFindBySellerId } from '@/lib/data/firestoreDataAccess'
+import { usersFindById, listingsFindBySellerId } from '@/lib/data/supabaseDataAccess'
 
 export default async function SellerProfilePage({ params }: { params: { id: string } }) {
   const seller = await usersFindById(params.id)

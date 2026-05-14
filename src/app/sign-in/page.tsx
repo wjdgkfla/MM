@@ -4,8 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { DEV_ADMIN_EMAILS } from '@/lib/auth/devAdmin'
-import { signInWithEmailAndPassword } from 'firebase/auth'
-import { getFirebaseClientAuth } from '@/lib/firebase/client'
+import { getSupabaseClient } from '@/lib/supabase/client'
 import { friendlyAuthError } from '@/lib/auth/authErrors'
 
 export default function SignInPage() {
@@ -15,10 +14,6 @@ export default function SignInPage() {
   const [redirect, setRedirect] = useState('/')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-
-  const handleDemoAdminClick = (adminEmail: string) => {
-    setEmail(adminEmail)
-  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -31,14 +26,20 @@ export default function SignInPage() {
     setSubmitting(true)
 
     try {
-      const auth = getFirebaseClientAuth()
-      const credential = await signInWithEmailAndPassword(auth, email.trim(), password)
-      const idToken = await credential.user.getIdToken()
+      const supabase = getSupabaseClient()
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      })
+
+      if (signInError || !data.session) {
+        throw signInError || new Error('Sign-in failed')
+      }
 
       const res = await fetch('/api/auth/sign-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
+        body: JSON.stringify({ accessToken: data.session.access_token }),
       })
 
       if (!res.ok) {
@@ -96,14 +97,15 @@ export default function SignInPage() {
         {process.env.NODE_ENV !== 'production' ? (
           <div className="mt-4 rounded-lg border px-3 py-3 text-xs" style={{ borderColor: 'var(--m-line)', background: 'var(--m-soft)', color: 'var(--m-muted)' }}>
             <p className="font-semibold" style={{ color: 'var(--m-ink)' }}>Dev quick-fill</p>
-            <p className="mt-1">Click to fill the email field (you still need the Firebase Auth password):</p>
+            <p className="mt-1">Click to fill the email field:</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {DEV_ADMIN_EMAILS.map((adminEmail) => (
                 <button
                   key={adminEmail}
                   type="button"
-                  onClick={() => handleDemoAdminClick(adminEmail)}
-                  className="rounded-full border px-2.5 py-1 font-medium bg-white" style={{ borderColor: 'var(--m-line)', color: 'var(--m-ink)' }}
+                  onClick={() => setEmail(adminEmail)}
+                  className="rounded-full border px-2.5 py-1 font-medium bg-white"
+                  style={{ borderColor: 'var(--m-line)', color: 'var(--m-ink)' }}
                 >
                   {adminEmail}
                 </button>

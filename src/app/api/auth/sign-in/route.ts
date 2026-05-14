@@ -3,32 +3,26 @@ import { isGmuEmail } from '@/lib/validators'
 import { AuthSession } from '@/lib/auth/types'
 import { setSessionCookie } from '@/lib/auth/session'
 import { resolveSessionRole } from '@/lib/auth/devAdmin'
-import { getFirebaseAdminAuth } from '@/lib/firebase/admin'
-import { syncUserToFirebase } from '@/lib/firebase/users'
-import { usersFindByEmail, usersUpsert } from '@/lib/data/firestoreDataAccess'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
+import { usersFindByEmail, usersUpsert } from '@/lib/data/supabaseDataAccess'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const idToken = String(body?.idToken || '').trim()
-    if (!idToken) {
-      return NextResponse.json({ error: 'Missing Firebase ID token' }, { status: 400 })
+    const accessToken = String(body?.accessToken || '').trim()
+    if (!accessToken) {
+      return NextResponse.json({ error: 'Missing access token' }, { status: 400 })
     }
 
-    const adminAuth = getFirebaseAdminAuth()
-    if (!adminAuth) {
-      return NextResponse.json(
-        { error: 'Firebase Admin is not configured on the server' },
-        { status: 500 }
-      )
+    // Verify the Supabase JWT and get the authenticated user
+    const { data: { user }, error: authError } = await getSupabaseAdmin().auth.getUser(accessToken)
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
     }
 
-    const decoded = await adminAuth.verifyIdToken(idToken)
-    const email = String(decoded.email || '').trim().toLowerCase()
-    const tokenDisplayName = String(decoded.name || '').trim()
-
+    const email = String(user.email || '').trim().toLowerCase()
     if (!email) {
-      return NextResponse.json({ error: 'Email is missing in Firebase token' }, { status: 400 })
+      return NextResponse.json({ error: 'Email is missing in token' }, { status: 400 })
     }
 
     if (!isGmuEmail(email)) {
@@ -40,17 +34,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'This account is currently suspended' }, { status: 403 })
     }
 
-    const user = await usersUpsert({
+    const dbUser = await usersUpsert({
+      supabaseId: user.id,
       email,
-      displayName: existing?.displayName || tokenDisplayName || email.split('@')[0],
+      displayName: existing?.displayName || (user.user_metadata?.display_name as string) || email.split('@')[0],
       role: existing?.role || resolveSessionRole(email),
     })
 
     const session: AuthSession = {
-      userId: user.id,
-      role: user.role,
+      userId: dbUser.id,
+      role: dbUser.role,
       email,
-      displayName: user.displayName,
+      displayName: dbUser.displayName,
       gmuVerified: true,
       issuedAt: new Date().toISOString(),
     }

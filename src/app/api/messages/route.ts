@@ -7,7 +7,7 @@ import {
   messagesCreate,
   conversationsListByUser,
   usersFindById,
-} from '@/lib/data/firestoreDataAccess'
+} from '@/lib/data/supabaseDataAccess'
 
 export async function GET(request: NextRequest) {
   try {

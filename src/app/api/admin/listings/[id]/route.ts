@@ -7,7 +7,7 @@ import {
   listingsUpdateStatus,
   listingsRemove,
   adminActivityCreate,
-} from '@/lib/data/firestoreDataAccess'
+} from '@/lib/data/supabaseDataAccess'
 
 export async function PATCH(
   request: NextRequest,

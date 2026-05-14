@@ -1,43 +1,44 @@
-const FIREBASE_AUTH_MESSAGES: Record<string, string> = {
-  'auth/invalid-email': 'That email address looks invalid. Please check and try again.',
-  'auth/user-disabled': 'This account has been disabled. Contact Mason Market support if you think this is a mistake.',
-  'auth/user-not-found': 'No account found for that email. Try creating one instead.',
-  'auth/wrong-password': 'Incorrect password. Please try again.',
-  'auth/invalid-credential': 'The email or password you entered is incorrect.',
-  'auth/invalid-login-credentials': 'The email or password you entered is incorrect.',
-  'auth/too-many-requests': 'Too many failed attempts. Please wait a moment and try again.',
-  'auth/network-request-failed': 'Network issue. Check your connection and try again.',
-  'auth/email-already-in-use': 'An account already exists for this email. Try signing in instead.',
-  'auth/weak-password': 'Password is too weak. Use at least 6 characters.',
-  'auth/operation-not-allowed': 'This sign-in method is not enabled. Contact support.',
-  'auth/popup-closed-by-user': 'Sign-in window was closed before completing.',
-  'auth/requires-recent-login': 'Please sign in again to complete this action.',
+const SUPABASE_AUTH_MESSAGES: Record<string, string> = {
+  'Invalid login credentials': 'The email or password you entered is incorrect.',
+  'Email not confirmed': 'Please confirm your email before signing in.',
+  'User already registered': 'An account already exists for this email. Try signing in instead.',
+  'Password should be at least 6 characters': 'Password is too weak. Use at least 6 characters.',
+  'Unable to validate email address: invalid format': 'That email address looks invalid. Please check and try again.',
+  'Email rate limit exceeded': 'Too many attempts. Please wait a moment and try again.',
+  'over_email_send_rate_limit': 'Too many attempts. Please wait a moment and try again.',
+  'signup_disabled': 'Sign-ups are temporarily disabled. Please try again shortly.',
+  'email_address_not_authorized': 'This email is not authorized to sign up.',
 }
 
 const GENERIC_SIGN_IN_MESSAGE = 'We could not sign you in right now. Please try again in a moment.'
 const GENERIC_SIGN_UP_MESSAGE = 'We could not create your account right now. Please try again in a moment.'
 const CONFIG_MESSAGE = 'Mason Market sign-in is temporarily unavailable. Please try again shortly.'
 
-function extractFirebaseCode(error: unknown): string | null {
-  if (!error || typeof error !== 'object') return null
-  const code = (error as { code?: unknown }).code
-  return typeof code === 'string' ? code : null
-}
-
 export function friendlyAuthError(error: unknown, fallback: 'sign-in' | 'sign-up' = 'sign-in'): string {
   const defaultMessage = fallback === 'sign-up' ? GENERIC_SIGN_UP_MESSAGE : GENERIC_SIGN_IN_MESSAGE
 
-  if (error instanceof Error && error.message.startsWith('Firebase client is not configured')) {
+  if (error instanceof Error && error.message.includes('not configured')) {
     return CONFIG_MESSAGE
   }
 
-  const code = extractFirebaseCode(error)
-  if (code && FIREBASE_AUTH_MESSAGES[code]) {
-    return FIREBASE_AUTH_MESSAGES[code]
+  if (error instanceof Error && error.message) {
+    // Check Supabase error messages
+    for (const [key, friendly] of Object.entries(SUPABASE_AUTH_MESSAGES)) {
+      if (error.message.includes(key)) return friendly
+    }
+    // Surface other readable messages directly
+    if (!error.message.toLowerCase().includes('supabase')) {
+      return error.message
+    }
   }
 
-  if (error instanceof Error && error.message && !error.message.toLowerCase().includes('firebase')) {
-    return error.message
+  // Supabase error objects have a `message` property
+  const errObj = error as { message?: string; status?: number }
+  if (errObj?.message) {
+    for (const [key, friendly] of Object.entries(SUPABASE_AUTH_MESSAGES)) {
+      if (errObj.message.includes(key)) return friendly
+    }
+    return errObj.message
   }
 
   return defaultMessage

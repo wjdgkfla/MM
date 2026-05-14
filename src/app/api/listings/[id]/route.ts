@@ -20,7 +20,7 @@ import {
   listingsIncrementViewCount,
   usersFindById,
   listingsCountBySellerId,
-} from '@/lib/data/firestoreDataAccess'
+} from '@/lib/data/supabaseDataAccess'
 
 const canTransitionStatus = (from: ListingStatus, to: ListingStatus) => {
   if (from === to) return true

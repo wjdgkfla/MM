@@ -5,7 +5,7 @@ import {
   usersFindAll,
   reportsListAll,
   adminActivityListAll,
-} from '@/lib/data/firestoreDataAccess'
+} from '@/lib/data/supabaseDataAccess'
 
 export async function GET(request: NextRequest) {
   const session = getSessionFromRequest(request)

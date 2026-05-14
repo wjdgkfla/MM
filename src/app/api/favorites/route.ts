@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
-import { favoritesListByUser, favoritesAdd, favoritesRemove, usersFindById } from '@/lib/data/firestoreDataAccess'
+import { favoritesListByUser, favoritesAdd, favoritesRemove, usersFindById } from '@/lib/data/supabaseDataAccess'
 
 export async function GET(request: NextRequest) {
   try {
