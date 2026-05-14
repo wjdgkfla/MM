@@ -199,7 +199,7 @@ export function AdminModerationClient({
         setInfo('Firebase check completed.')
       }
     } catch (seedError) {
-      setError(seedError instanceof Error ? seedError.message : 'Failed to seed Firebase')
+      setError(seedError instanceof Error ? seedError.message : 'Failed to check database')
     } finally {
       setBusyKey('')
     }
@@ -213,21 +213,16 @@ export function AdminModerationClient({
       const res = await fetch('/api/admin/firebase/status')
       const body = await res.json().catch(() => null)
       if (!res.ok) {
-        throw new Error(body?.error || 'Failed to check Firebase status')
+        throw new Error(body?.error || 'Failed to check database status')
       }
 
-      const env = body?.env || {}
-      const message = [
-        body?.connected ? 'Firebase connected.' : 'Firebase not connected.',
-        `Env -> PROJECT_ID:${env.FIREBASE_PROJECT_ID ? 'set' : 'missing'}, CLIENT_EMAIL:${env.FIREBASE_CLIENT_EMAIL ? 'set' : 'missing'}, PRIVATE_KEY:${env.FIREBASE_PRIVATE_KEY ? 'set' : 'missing'}.`,
-        body?.details ? `Details: ${body.details}` : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
+      const message = body?.connected
+        ? `✓ Supabase connected. ${body.details || ''}`
+        : `✗ Supabase not connected. ${body.details || ''}`
 
       setInfo(message)
     } catch (statusError) {
-      setError(statusError instanceof Error ? statusError.message : 'Failed to check Firebase status')
+      setError(statusError instanceof Error ? statusError.message : 'Failed to check database status')
     } finally {
       setBusyKey('')
     }
@@ -252,7 +247,7 @@ export function AdminModerationClient({
             disabled={busyKey === 'check-firebase'}
             className="ui-btn-secondary"
           >
-            {busyKey === 'check-firebase' ? 'Checking Firebase...' : 'Check Firebase Status'}
+            {busyKey === 'check-firebase' ? 'Checking...' : 'Check DB Status'}
           </button>
           <button
             type="button"
