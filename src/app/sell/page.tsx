@@ -67,7 +67,7 @@ export default function SellPage() {
     description: '',
     campusLocation: 'fairfax',
     pickupZone: 'jc-lobby',
-    pickupNotes: 'Meet at Johnson Center lobby around lunch time.',
+    pickupNotes: '',
     courseCode: '',
     professorName: '',
     edition: '',
@@ -449,7 +449,7 @@ export default function SellPage() {
                     required
                     value={form.pickupNotes}
                     onChange={(e) => setForm({ ...form, pickupNotes: e.target.value })}
-                    placeholder="Best meetup time / landmark"
+                    placeholder="e.g. Johnson Center lobby, weekdays after 2pm"
                     className="ui-input"
                   />
                 </div>

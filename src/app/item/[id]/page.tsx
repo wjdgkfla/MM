@@ -595,8 +595,11 @@ export default function ItemPage() {
       </div>
 
       {showOfferModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          onClick={() => { setShowOfferModal(false); setOfferFeedback('') }}
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-[var(--m-ink)]">Make an offer</h2>
             <p className="mt-1 text-sm text-[var(--m-muted)]">
               Listed at{' '}
@@ -613,7 +616,7 @@ export default function ItemPage() {
                   value={offerAmount}
                   onChange={(e) => setOfferAmount(e.target.value)}
                   placeholder="0"
-                  className="ui-input pl-7"
+                  className={`ui-input pl-7 ${offerFeedback ? 'border-red-400 bg-red-50' : ''}`}
                   ref={offerInputRef}
                 />
               </div>

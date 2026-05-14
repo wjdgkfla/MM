@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
       <div className="w-full max-w-[400px] rounded-[var(--r-lg)] border bg-white p-8" style={{ borderColor: 'var(--m-line)' }}>
-        <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Reset password</h1>
+        <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Forgot password?</h1>
         <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>Enter your GMU email and we&apos;ll send a reset link.</p>
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>

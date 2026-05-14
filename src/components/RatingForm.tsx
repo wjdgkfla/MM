@@ -65,7 +65,7 @@ export function RatingForm({ sellerId, listingId, onSuccess }: RatingFormProps) 
         <button
           type="button"
           onClick={() => setScore(1)}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-3 text-sm font-medium transition-colors ${
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[var(--m-green)] focus-visible:outline-none ${
             score === 1
               ? 'border-[var(--m-green)] bg-[var(--m-green-soft)] text-[var(--m-green)]'
               : 'border-[var(--m-line)] bg-white text-[var(--m-ink)] hover:border-[var(--m-ink)]'
@@ -76,7 +76,7 @@ export function RatingForm({ sellerId, listingId, onSuccess }: RatingFormProps) 
         <button
           type="button"
           onClick={() => setScore(-1)}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-3 text-sm font-medium transition-colors ${
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none ${
             score === -1
               ? 'border-red-300 bg-red-50 text-red-700'
               : 'border-[var(--m-line)] bg-white text-[var(--m-ink)] hover:border-[var(--m-ink)]'

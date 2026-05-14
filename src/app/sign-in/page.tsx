@@ -93,7 +93,7 @@ export default function SignInPage() {
               className="ui-input"
             />
             <p className="text-right text-xs mt-1">
-              <Link href="/forgot-password" style={{ color: 'var(--m-green)' }}>Forgot password?</Link>
+              <Link href="/forgot-password" className="hover:underline" style={{ color: 'var(--m-green)' }}>Forgot password?</Link>
             </p>
           </div>
 

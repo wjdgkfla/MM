@@ -31,8 +31,8 @@ export function SearchBar({
       />
       <button
         type={onSubmit ? 'submit' : 'button'}
-        className={`absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[var(--m-green)] text-white ${
-          onSubmit ? 'transition-colors hover:bg-[var(--m-green)]' : 'pointer-events-none'
+        className={`absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[var(--m-green)] text-white transition-colors ${
+          onSubmit ? 'hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--m-green)] focus-visible:outline-none' : 'pointer-events-none opacity-70'
         }`}
         aria-label="Search"
       >

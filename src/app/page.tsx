@@ -138,7 +138,7 @@ export default function HomePage() {
         </p>
         {!session && (
           <p className="mt-2 text-sm" style={{ color: 'var(--m-muted)' }}>
-            <a href="/sign-in?redirect=/" className="font-medium hover:underline" style={{ color: 'var(--m-green)' }}>Sign in</a> to use filters, save listings, message sellers, and post items.
+            <a href="/sign-in?redirect=/" className="font-medium hover:underline" style={{ color: 'var(--m-green)' }}>Sign in</a> to save listings, use filters, message sellers, and post items. Search works for everyone.
           </p>
         )}
       </section>

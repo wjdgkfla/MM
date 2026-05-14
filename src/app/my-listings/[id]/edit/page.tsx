@@ -286,7 +286,7 @@ export default function EditListingPage() {
 
       <form onSubmit={handleSubmit} className="ui-surface mt-5 space-y-5 p-4 sm:p-6">
         <div>
-          <label className="block text-sm font-medium mb-2">Photos (optional)</label>
+          <label className="block text-sm font-medium mb-2">Photos <span className="text-red-500">*</span></label>
           <input
             type="file"
             accept="image/*"

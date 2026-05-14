@@ -8,12 +8,24 @@ interface ToastMessage {
   id: string
   message: string
   type: ToastType
+  duration: number
+}
+
+const DURATIONS: Record<ToastType, number> = {
+  success: 3000,
+  info: 4000,
+  error: 6000, // errors stay longer so users can read them
 }
 
 let _listeners: ((toast: ToastMessage) => void)[] = []
 
 export function showToast(message: string, type: ToastType = 'success') {
-  const toast: ToastMessage = { id: Math.random().toString(36).slice(2), message, type }
+  const toast: ToastMessage = {
+    id: Math.random().toString(36).slice(2),
+    message,
+    type,
+    duration: DURATIONS[type],
+  }
   _listeners.forEach((fn) => fn(toast))
 }
 
@@ -25,7 +37,7 @@ export function ToastContainer() {
       setToasts((prev) => [...prev, toast])
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== toast.id))
-      }, 3500)
+      }, toast.duration)
     }
     _listeners.push(handler)
     return () => { _listeners = _listeners.filter((fn) => fn !== handler) }
@@ -34,20 +46,30 @@ export function ToastContainer() {
   if (toasts.length === 0) return null
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 max-w-xs w-full">
+    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 max-w-sm w-full px-4 sm:px-0">
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`flex items-start gap-3 rounded-xl px-4 py-3 text-sm font-medium shadow-lg animate-in slide-in-from-bottom-2 ${
+          role="alert"
+          aria-live="polite"
+          className={`flex items-start gap-3 rounded-xl px-4 py-3 text-sm font-medium shadow-lg cursor-pointer ${
             toast.type === 'success' ? 'bg-[var(--m-green)] text-white' :
-            toast.type === 'error' ? 'bg-red-600 text-white' :
-            'bg-gray-900 text-white'
+            toast.type === 'error'   ? 'bg-red-600 text-white' :
+                                       'bg-gray-900 text-white'
           }`}
+          onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
         >
           {toast.type === 'success' && (
-            <svg viewBox="0 0 24 24" className="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
           )}
-          {toast.message}
+          {toast.type === 'error' && (
+            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
+            </svg>
+          )}
+          <span className="flex-1">{toast.message}</span>
         </div>
       ))}
     </div>
