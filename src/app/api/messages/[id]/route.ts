@@ -42,14 +42,16 @@ export async function PATCH(
 
     const msg = msgData as Record<string, unknown>
 
+    // Runtime type guards — guards against schema changes or corruption
+    if (typeof msg.to_user_id !== 'string') {
+      return NextResponse.json({ error: 'Invalid message data' }, { status: 500 })
+    }
     if (msg.to_user_id !== session.userId) {
       return NextResponse.json({ error: 'Only the offer recipient can accept or decline' }, { status: 403 })
     }
-
     if (msg.type !== 'offer') {
       return NextResponse.json({ error: 'This message is not an offer' }, { status: 400 })
     }
-
     if (msg.offer_status === 'accepted' || msg.offer_status === 'declined') {
       return NextResponse.json({ error: 'This offer has already been responded to' }, { status: 409 })
     }

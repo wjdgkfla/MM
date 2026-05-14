@@ -32,7 +32,12 @@ export function middleware(request: NextRequest) {
 
   const ip = getIp(request)
   const config = getRateLimitConfig(pathname)
-  const key = `${ip}:${pathname.split('/').slice(0, 4).join('/')}`
+  // Auth routes use full pathname so sign-in and sign-up have separate buckets.
+  // Other routes use a prefix key (covers all sub-paths together).
+  const isAuth = pathname.startsWith('/api/auth/')
+  const key = isAuth
+    ? `${ip}:${pathname}` // e.g. "1.2.3.4:/api/auth/sign-in"
+    : `${ip}:${pathname.split('/').slice(0, 4).join('/')}`
 
   const { allowed, remaining, resetAt } = checkRateLimit(key, config)
 

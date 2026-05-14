@@ -19,7 +19,7 @@ const statusActionsByCurrentStatus: Record<
     { label: 'Mark available', nextStatus: 'available' },
     { label: 'Mark sold', nextStatus: 'sold' },
   ],
-  sold: [{ label: 'Relist', nextStatus: 'available' }],
+  sold: [{ label: 'Relist as available', nextStatus: 'available' }],
 }
 
 export default function MyListingsPage() {
@@ -81,7 +81,7 @@ export default function MyListingsPage() {
   }
 
   const archiveListing = async (id: string) => {
-    const ok = window.confirm('Archive/Delete this listing? This will remove it from your feed.')
+    const ok = window.confirm('Archive this listing? It will be permanently removed from Mason Market.')
     if (!ok) return
 
     setBusyId(id)

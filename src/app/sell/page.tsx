@@ -167,7 +167,7 @@ export default function SellPage() {
       }
 
       const listing = await res.json()
-      router.push(`/item/${listing.id}`)
+      router.push(`/my-listings/${listing.id}/edit?posted=1`)
     } catch (submitError) {
       setError(
         submitError instanceof Error

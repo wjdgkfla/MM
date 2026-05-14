@@ -29,16 +29,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Maximum 4 images allowed' }, { status: 400 })
     }
 
+    // Validate ALL files before uploading any — avoids partial uploads
+    const imageFiles = files.filter((f) => f.type.startsWith('image/'))
+    if (imageFiles.length === 0) {
+      return NextResponse.json({ error: 'No valid image files were provided' }, { status: 400 })
+    }
+    for (const file of imageFiles) {
+      if (file.size > 5 * 1024 * 1024) {
+        return NextResponse.json(
+          { error: `"${file.name}" exceeds the 5MB limit. Please resize it and try again.` },
+          { status: 400 }
+        )
+      }
+    }
+
+    // All files validated — now upload
     const supabase = getSupabaseAdmin()
     const uploadedUrls: string[] = []
 
-    for (const file of files) {
-      if (!file.type.startsWith('image/')) continue
-
-      if (file.size > 5 * 1024 * 1024) {
-        return NextResponse.json({ error: 'Each image must be under 5MB' }, { status: 400 })
-      }
-
+    for (const file of imageFiles) {
       const buffer = Buffer.from(await file.arrayBuffer())
       const ext = file.type.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg'
       const path = `listings/${session.userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
@@ -49,15 +58,11 @@ export async function POST(request: NextRequest) {
 
       if (uploadError) {
         console.error('Storage upload error:', uploadError)
-        return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to upload image. Please try again.' }, { status: 500 })
       }
 
       const { data: urlData } = supabase.storage.from('listings').getPublicUrl(path)
       uploadedUrls.push(urlData.publicUrl)
-    }
-
-    if (uploadedUrls.length === 0) {
-      return NextResponse.json({ error: 'No valid image files were provided' }, { status: 400 })
     }
 
     return NextResponse.json({ urls: uploadedUrls })

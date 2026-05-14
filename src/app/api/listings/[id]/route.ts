@@ -198,6 +198,20 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid pickup zone' }, { status: 400 })
     }
 
+    // Validate campus/pickup zone pairing (same rule as listing creation)
+    const CAMPUS_ZONE_MAP: Record<string, string[]> = {
+      fairfax:    ['jc-lobby','fenwick-entrance','sub1-desk','engineering-atrium','shenandoah-deck','potomac-courtyard','off-campus-fairfax'],
+      arlington:  ['van-metre-hall','off-campus-fairfax'],
+      'sci-tech': ['sci-tech-kiosk','off-campus-fairfax'],
+    }
+    const validZones = CAMPUS_ZONE_MAP[campusLocation as string]
+    if (validZones && !validZones.includes(pickupZone as string)) {
+      return NextResponse.json(
+        { error: `Pickup zone "${pickupZone}" is not available at ${campusLocation} campus` },
+        { status: 400 }
+      )
+    }
+
     const listing = await listingsUpdate(params.id, {
       title,
       description,

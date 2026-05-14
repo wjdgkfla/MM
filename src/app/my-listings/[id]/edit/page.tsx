@@ -95,7 +95,7 @@ export default function EditListingPage() {
     () =>
       form.tags
         .split(',')
-        .map((tag) => tag.trim())
+        .map((tag) => tag.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''))
         .filter(Boolean)
         .slice(0, 5),
     [form.tags]
@@ -230,7 +230,7 @@ export default function EditListingPage() {
         throw new Error(payload?.error || 'Failed to update listing')
       }
 
-      router.push(`/item/${listing.id}`)
+      router.push('/my-listings')
       router.refresh()
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Failed to update listing')

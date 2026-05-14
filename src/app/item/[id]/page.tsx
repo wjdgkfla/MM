@@ -184,7 +184,7 @@ export default function ItemPage() {
   }
 
   const handleDelete = async () => {
-    const ok = window.confirm('Archive/Delete this listing? This removes it from the marketplace.')
+    const ok = window.confirm('Archive this listing? It will be permanently removed from Mason Market.')
     if (!ok) return
 
     setActionError('')

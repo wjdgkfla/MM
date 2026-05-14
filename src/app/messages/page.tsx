@@ -323,11 +323,18 @@ export default function MessagesPage() {
                     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
                     Back to conversations
                   </button>
-                  <p className="text-xs" style={{ color: 'var(--m-muted)' }}>Listing</p>
-                  <p className="font-semibold" style={{ color: 'var(--m-ink)' }}>{selectedConversation.listingTitle}</p>
-                  <p className="text-xs" style={{ color: 'var(--m-muted)' }}>
-                    Chat with {selectedConversation.peerLabel} • Status: {selectedConversation.listingStatus}
-                  </p>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-xs" style={{ color: 'var(--m-muted)' }}>Listing</p>
+                      <p className="font-semibold" style={{ color: 'var(--m-ink)' }}>{selectedConversation.listingTitle}</p>
+                      <p className="text-xs" style={{ color: 'var(--m-muted)' }}>
+                        Chat with {selectedConversation.peerLabel} • Status: {selectedConversation.listingStatus}
+                      </p>
+                    </div>
+                    <Link href={`/item/${selectedConversation.listingId}`} className="shrink-0 text-xs font-medium hover:underline" style={{ color: 'var(--m-green)' }}>
+                      View listing →
+                    </Link>
+                  </div>
                 </div>
 
                 <div className="mt-4 h-[340px] overflow-y-auto rounded-xl bg-[var(--m-soft)] p-3">

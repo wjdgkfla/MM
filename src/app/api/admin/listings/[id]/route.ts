@@ -79,7 +79,8 @@ export async function PATCH(
     }
 
     return NextResponse.json(updated)
-  } catch {
+  } catch (err) {
+    console.error('PATCH /api/admin/listings/[id] error:', err)
     return NextResponse.json({ error: 'Failed to update listing moderation' }, { status: 500 })
   }
 }
@@ -117,7 +118,8 @@ export async function DELETE(
     })
 
     return NextResponse.json({ ok: true })
-  } catch {
+  } catch (err) {
+    console.error('DELETE /api/admin/listings/[id] error:', err)
     return NextResponse.json({ error: 'Failed to remove listing' }, { status: 500 })
   }
 }

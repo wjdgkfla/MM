@@ -184,8 +184,9 @@ export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]>
     q = q.textSearch('search_vector', term, { type: 'websearch', config: 'english' })
   }
 
-  const needsPriceSort = query?.sort === 'price-asc' || query?.sort === 'price-desc'
-  if (!needsPriceSort) q = q.order('created_at', { ascending: false })
+  if (query?.sort === 'price-asc')  q = q.order('price', { ascending: true })
+  else if (query?.sort === 'price-desc') q = q.order('price', { ascending: false })
+  else q = q.order('created_at', { ascending: false })
 
   // Apply pagination at the DB level
   q = q.range(from, to)
@@ -205,8 +206,7 @@ export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]>
     )
   }
 
-  if (query?.sort === 'price-asc')  results.sort((a, b) => a.price - b.price)
-  if (query?.sort === 'price-desc') results.sort((a, b) => b.price - a.price)
+  // Price sort is now applied at the DB level above — no JS sort needed
 
   return results
 }
