@@ -47,16 +47,7 @@ create table if not exists listings (
   view_count       int not null default 0,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now(),
-  search_vector    tsvector generated always as (
-    to_tsvector('english',
-      coalesce(title,'') || ' ' ||
-      coalesce(description,'') || ' ' ||
-      coalesce(course_code,'') || ' ' ||
-      coalesce(professor_name,'') || ' ' ||
-      coalesce(pickup_notes,'') || ' ' ||
-      coalesce(array_to_string(tags,' '),'')
-    )
-  ) stored
+  search_vector    tsvector
 );
 
 create index if not exists listings_seller_id_idx  on listings (seller_id);
@@ -67,6 +58,28 @@ create index if not exists listings_moderation_idx  on listings (moderation_stat
 create index if not exists listings_created_idx     on listings (created_at desc);
 create index if not exists listings_search_idx      on listings using gin (search_vector);
 create index if not exists listings_tags_idx        on listings using gin (tags);
+
+-- Trigger to maintain search_vector on insert/update
+-- (generated columns can't use to_tsvector because it's STABLE not IMMUTABLE)
+create or replace function listings_search_vector_update()
+returns trigger language plpgsql as $$
+begin
+  NEW.search_vector := to_tsvector('english',
+    coalesce(NEW.title,'') || ' ' ||
+    coalesce(NEW.description,'') || ' ' ||
+    coalesce(NEW.course_code,'') || ' ' ||
+    coalesce(NEW.professor_name,'') || ' ' ||
+    coalesce(NEW.pickup_notes,'') || ' ' ||
+    coalesce(array_to_string(NEW.tags,' '),'')
+  );
+  return NEW;
+end;
+$$;
+
+drop trigger if exists trg_listings_search_vector on listings;
+create trigger trg_listings_search_vector
+  before insert or update on listings
+  for each row execute function listings_search_vector_update();
 
 -- ─── Favorites ────────────────────────────────────────────────────────────
 create table if not exists favorites (
