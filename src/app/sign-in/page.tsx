@@ -1,14 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { DEV_ADMIN_EMAILS } from '@/lib/auth/devAdmin'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { friendlyAuthError } from '@/lib/auth/authErrors'
 
 export default function SignInPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [redirect, setRedirect] = useState('/')
@@ -49,8 +47,10 @@ export default function SignInPage() {
         throw new Error(payload?.error || 'Sign-in failed')
       }
 
-      router.push(redirect)
-      router.refresh()
+      // Full page reload ensures the session cookie is sent with the very first
+      // request to the destination — router.push() + router.refresh() has a race
+      // condition where the App Router re-renders before the cookie is committed.
+      window.location.href = redirect
     } catch (submitError) {
       setError(friendlyAuthError(submitError, 'sign-in'))
     } finally {

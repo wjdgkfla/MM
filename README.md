@@ -1,171 +1,114 @@
-# Mason Market (GMU Student Marketplace)
+# Mason Market
 
-Campus-focused marketplace inspired by Karrot/Facebook Marketplace, built specifically for George Mason University students.
+GMU-only student marketplace — buy and sell textbooks, electronics, furniture, and more on campus.
 
-This project is currently an MVP with mock/in-memory persistence and a database-ready data access layer.
-
-## Current MVP Status
-
-### Core Marketplace
-- Browse feed with realistic GMU listings
-- Search + practical filters (category, condition, price, status, campus/pickup, free-only, sort)
-- Listing detail page with trust cues, seller summary, and save/message actions
-- Create listing flow (`/sell`) with validation, image preview upload (local/mock), and redirect to item detail
-- Edit/manage listings (`/my-listings`, `/my-listings/[id]/edit`)
-- Listing lifecycle: available/reserved/sold/relist + archive/delete
-
-### GMU Trust Layer
-- GMU verification placeholders
-- Campus/pickup zone clarity
-- Seller trust badges + recently active cues
-- Seller profile page (`/seller/[id]`) with active listings + trust snapshot
-
-### Saved + Messaging
-- Saved items via local storage (session-scoped keying by user id)
-- Inbox/conversation UI scaffold (`/messages`)
-- Message composer and listing-linked conversation flow (non-realtime starter architecture)
-
-### Reporting + Moderation
-- Listing detail report action with reasons:
-  - spam
-  - scam concern
-  - prohibited item
-  - misleading description
-  - harassment
-  - duplicate listing
-- Optional “report seller” toggle in report form
-- Admin moderation dashboard (`/admin`) sections:
-  - Overview
-  - Listings
-  - Users
-  - Reports
-  - Activity
-- Admin actions:
-  - hide/flag/remove listings
-  - change listing status
-  - promote/remove admin
-  - suspend/activate user
-  - update report resolution
-- Activity log records admin moderation actions
-
-### Textbook-Specific UX
-- Optional textbook fields:
-  - `courseCode`
-  - `professorName`
-  - `edition`
-  - `bundleNotes`
-- Fields shown only when category is `textbooks`
-- Displayed on item detail when present
-
-## Important Accounts
-
-- Admin: `admin@gmu.edu`
-- Sign-in/sign-up now use Firebase email/password auth
-- Suspended users are blocked from signing in
-
-## Key Routes
-
-- `/` browse feed
-- `/item/[id]` listing detail
-- `/sell` create listing
-- `/saved` saved listings
-- `/messages` conversations
-- `/my-listings` seller listing management
-- `/my-listings/[id]/edit` edit listing
-- `/seller/[id]` seller trust/profile
-- `/admin` moderation dashboard
-- `/sign-in`, `/sign-up` auth starter pages
+---
 
 ## Tech Stack
 
-- Next.js 14 (App Router)
-- TypeScript
-- Tailwind CSS
-- In-memory mock DB + DAL abstraction (`src/lib/data/*`) for future DB migration
-- Firebase Admin SDK (enabled for real user tracking when env vars are set)
+- **Next.js 14** (App Router, TypeScript)
+- **Supabase** — Postgres database, Auth (email/password), Storage (images)
+- **Tailwind CSS**
 
-## Firebase User Tracking Setup
-
-Mason Market now syncs signed-in users to Firestore (`users` collection) from the auth routes.
-
-Add these values in `.env.local`:
-
-```bash
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxx@your-project-id.iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-NEXT_PUBLIC_FIREBASE_API_KEY=your-web-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_APP_ID=your-web-app-id
-```
-
-You can copy from `.env.local.example` as a starting template.
-
-Alternative (easier): place your downloaded Firebase service account key at project root as:
-
-```bash
-firebase-service-account.json
-```
-
-The app now supports either `.env.local` OR `firebase-service-account.json` for Firebase Admin auth.
-
-Notes:
-- Keep `FIREBASE_PRIVATE_KEY` quoted and include `\n` newlines exactly as shown.
-- If these env vars are missing, the app safely falls back to local mock persistence for auth/session behavior.
-- Firestore users are written with `id`, `email`, `displayName`, `role`, `gmuEmailVerified`, `updatedAt`, `lastSignInAt`.
-- In Firebase Console, enable `Authentication -> Email/Password`.
-
-### One-click seed to Firestore
-
-After signing in as admin (`admin@gmu.edu` in demo mode), go to `/admin` and click `Seed Firebase Data`.
-
-Use `Check Firebase Status` first to verify env vars + Firestore connection.
-
-This writes/merges current Mason Market data into Firestore collections:
-- `users`
-- `listings`
-- `messages`
-- `reports`
-- `adminActivity`
+---
 
 ## Local Setup
 
-### Prerequisites
-- Node.js 18+
-- npm
+### 1. Clone and install
 
-### Run Dev
 ```bash
+git clone https://github.com/wjdgkfla/MM.git
+cd MM
 npm install
+```
+
+### 2. Create `.env.local`
+
+Copy the example file and fill in the values:
+
+```bash
+cp .env.local.example .env.local
+```
+
+Then open `.env.local` and add the real values. **Get these from the project owner** (they are shared team secrets):
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://fnunijtdaepvmetdabik.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<ask team lead>
+SUPABASE_SERVICE_ROLE_KEY=<ask team lead>
+SESSION_SECRET=any-random-string-32-chars-or-more
+```
+
+> Generate a SESSION_SECRET with: `openssl rand -hex 32`  
+> Or just use any long random string locally — it only needs to match in production.
+
+### 3. Run
+
+```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000)
 
-### Build
+---
+
+## Test Accounts
+
+| Email | Password | Role |
+|---|---|---|
+| `admin@gmu.edu` | `Mason@Market2025!` | Admin |
+
+To create your own student account, sign up with any `@gmu.edu` or `@masonlive.gmu.edu` email via the Supabase dashboard (Authentication → Users → Add user → check "Auto Confirm User").
+
+---
+
+## Key Routes
+
+| Route | Description |
+|---|---|
+| `/` | Browse listings feed |
+| `/sell` | Post a new listing |
+| `/item/[id]` | Listing detail, messaging, offers |
+| `/messages` | Inbox / conversations |
+| `/saved` | Saved listings |
+| `/my-listings` | Manage your listings |
+| `/seller/[id]` | Public seller profile + ratings |
+| `/admin` | Admin moderation dashboard |
+| `/sign-in` | Sign in |
+| `/sign-up` | Create account |
+| `/forgot-password` | Request password reset |
+
+---
+
+## Database
+
+The Supabase schema is in `supabase/`. If you need to reset and recreate the database:
+
+1. Run `supabase/schema.sql` in the Supabase SQL Editor
+2. Run `supabase/schema-addons.sql` (RPC + DB constraints)
+3. Run `supabase/schema-security.sql` (RLS + function security)
+
+---
+
+## Features
+
+- **GMU-only auth** — only `@gmu.edu` / `@masonlive.gmu.edu` emails accepted
+- **Listings** — post with photos, category, condition, pickup zone
+- **Full-text search** — native Postgres `tsvector` search
+- **Messaging** — conversation threads, offer cards (accept/decline)
+- **Favorites** — save listings, public interest count (당근마켓-style)
+- **Seller ratings** — manner temperature score + tags after transactions
+- **Make an offer** — structured offer flow with seller accept/decline
+- **Reports** — flag listings for moderation
+- **Admin panel** — moderate listings, manage users, review reports
+- **Rate limiting** — all API routes rate-limited per IP
+- **HMAC session cookies** — signed and tamper-proof
+
+---
+
+## Build
+
 ```bash
 npm run build
 npm start
 ```
-
-## What Changed Recently (Summary)
-
-- Added seller listing management flows and seller-only controls
-- Added reporting system and report storage model
-- Upgraded admin from summary page to actionable moderation workspace
-- Added seller profile pages for trust and seller listing discovery
-- Added textbook/course-material specific metadata and conditional form/display UX
-- Fixed `/saved` runtime hook-order bug
-
-## Known Gaps (Next Step Candidates)
-
-- Real authentication/session backend (GMU SSO or provider)
-- Real DB persistence (listings/users/favorites/conversations/messages/reports/activity)
-- Real image storage
-- Realtime messaging
-- Dedicated course-code filter UI (current search already matches textbook metadata)
-
-## License
-
-MIT

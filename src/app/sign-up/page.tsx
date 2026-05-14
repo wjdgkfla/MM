@@ -1,13 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { friendlyAuthError } from '@/lib/auth/authErrors'
 
 export default function SignUpPage() {
-  const router = useRouter()
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -57,8 +55,10 @@ export default function SignUpPage() {
         throw new Error(payload?.error || 'Sign-up failed')
       }
 
-      router.push(redirect)
-      router.refresh()
+      // Full page reload ensures the session cookie is sent with the very first
+      // request to the destination — router.push() + router.refresh() has a race
+      // condition where the App Router re-renders before the cookie is committed.
+      window.location.href = redirect
     } catch (submitError) {
       setError(friendlyAuthError(submitError, 'sign-up'))
     } finally {
