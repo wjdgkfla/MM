@@ -1,10 +1,27 @@
+import { createHmac, timingSafeEqual } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { AUTH_COOKIE_NAME } from '@/lib/auth/constants'
 import { AuthSession } from '@/lib/auth/types'
 import { UserRole } from '@/lib/types'
 
-export function encodeSession(session: AuthSession) {
-  return Buffer.from(JSON.stringify(session), 'utf8').toString('base64url')
+// SESSION_SECRET must be set in production. Falls back to a dev default
+// so the app still works locally without extra config.
+function getSecret(): string {
+  const secret = process.env.SESSION_SECRET
+  if (!secret && process.env.NODE_ENV === 'production') {
+    throw new Error('SESSION_SECRET env var is required in production')
+  }
+  return secret || 'dev-secret-change-me-in-production'
+}
+
+function sign(payload: string): string {
+  return createHmac('sha256', getSecret()).update(payload).digest('base64url')
+}
+
+export function encodeSession(session: AuthSession): string {
+  const payload = Buffer.from(JSON.stringify(session), 'utf8').toString('base64url')
+  const sig = sign(payload)
+  return `${payload}.${sig}`
 }
 
 const SESSION_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000 // 14 days
@@ -13,7 +30,21 @@ export function decodeSession(raw: string | undefined): AuthSession | null {
   if (!raw) return null
 
   try {
-    const decoded = Buffer.from(raw, 'base64url').toString('utf8')
+    const dotIndex = raw.lastIndexOf('.')
+    if (dotIndex === -1) return null // no signature — reject legacy unsigned cookies
+
+    const payload = raw.slice(0, dotIndex)
+    const sig = raw.slice(dotIndex + 1)
+
+    // Verify HMAC signature using timing-safe comparison
+    const expectedSig = sign(payload)
+    const sigBuf = Buffer.from(sig, 'base64url')
+    const expectedBuf = Buffer.from(expectedSig, 'base64url')
+    if (sigBuf.length !== expectedBuf.length || !timingSafeEqual(sigBuf, expectedBuf)) {
+      return null // tampered cookie
+    }
+
+    const decoded = Buffer.from(payload, 'base64url').toString('utf8')
     const parsed = JSON.parse(decoded)
 
     const role: UserRole = parsed?.role === 'admin' ? 'admin' : 'student'
@@ -25,7 +56,6 @@ export function decodeSession(raw: string | undefined): AuthSession | null {
       typeof parsed?.gmuVerified === 'boolean' &&
       typeof parsed?.issuedAt === 'string'
     ) {
-      // Reject sessions older than 14 days even if the cookie hasn't expired
       const issuedAt = new Date(parsed.issuedAt).getTime()
       if (isNaN(issuedAt) || Date.now() - issuedAt > SESSION_MAX_AGE_MS) return null
 

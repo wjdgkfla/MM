@@ -197,6 +197,28 @@ export async function POST(request: NextRequest) {
     const parsedBundleNotes = typeof bundleNotes === 'string' ? bundleNotes.trim().slice(0, 200) : undefined
     const shouldKeepTextbookFields = category === 'textbooks'
 
+    // Validate course code format (e.g. "CS 112", "STAT250")
+    if (parsedCourseCode && !/^[A-Z]{2,5}\s?\d{3}$/.test(parsedCourseCode)) {
+      return NextResponse.json(
+        { error: 'Course code must be in format: CS 112 or STAT250' },
+        { status: 400 }
+      )
+    }
+
+    // Validate campus/pickup zone pairing
+    const CAMPUS_ZONE_MAP: Record<string, string[]> = {
+      fairfax:   ['jc-lobby','fenwick-entrance','sub1-desk','engineering-atrium','shenandoah-deck','potomac-courtyard','off-campus-fairfax'],
+      arlington: ['van-metre-hall','off-campus-fairfax'],
+      'sci-tech': ['sci-tech-kiosk','off-campus-fairfax'],
+    }
+    const validZones = CAMPUS_ZONE_MAP[campusLocation as string]
+    if (validZones && !validZones.includes(pickupZone as string)) {
+      return NextResponse.json(
+        { error: `Pickup zone "${pickupZone}" is not available at ${campusLocation} campus` },
+        { status: 400 }
+      )
+    }
+
     const seller = await usersFindById(session.userId)
     if (seller?.accountState === 'suspended') {
       return NextResponse.json({ error: 'Your account is suspended' }, { status: 403 })

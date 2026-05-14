@@ -96,10 +96,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'You cannot message your own listing' }, { status: 400 })
     }
 
-    // Issue 5: Verify the recipient user actually exists
+    // Validate message body length
+    const trimmedBody = String(messageBody).trim()
+    if (trimmedBody.length === 0) {
+      return NextResponse.json({ error: 'Message cannot be empty' }, { status: 400 })
+    }
+    if (trimmedBody.length > 2000) {
+      return NextResponse.json({ error: 'Message cannot exceed 2000 characters' }, { status: 400 })
+    }
+
+    // Verify the recipient user exists and is not suspended
     const recipient = await usersFindById(String(toUserId))
     if (!recipient) {
       return NextResponse.json({ error: 'Recipient user not found' }, { status: 404 })
+    }
+    if (recipient.accountState === 'suspended') {
+      return NextResponse.json({ error: 'This seller account is not currently active' }, { status: 403 })
     }
 
     const message = await messagesCreate({

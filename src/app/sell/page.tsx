@@ -79,7 +79,7 @@ export default function SellPage() {
     () =>
       form.tags
         .split(',')
-        .map((tag) => tag.trim())
+        .map((tag) => tag.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''))
         .filter(Boolean)
         .slice(0, 5),
     [form.tags]

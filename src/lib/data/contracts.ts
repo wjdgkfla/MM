@@ -25,6 +25,8 @@ export type ListingQuery = {
   courseTag?: string
   sort?: 'newest' | 'price-asc' | 'price-desc'
   showHidden?: boolean
+  page?: number
+  pageSize?: number
 }
 
 export type CreateListingInput = Omit<Listing, 'id' | 'createdAt' | 'updatedAt' | 'favoriteCount' | 'isFavorited'>

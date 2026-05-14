@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { SellerTrustCard } from '@/components/SellerTrustCard'
 import { SellerRating } from '@/components/SellerRating'
@@ -23,6 +23,7 @@ import { formatPostedDate, formatRecency } from '@/lib/time'
 import { useFavorites } from '@/lib/useFavorites'
 import { isCampusMeetupRecommended } from '@/lib/trust'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
+import { showToast } from '@/components/Toast'
 
 const FALLBACK_IMAGE = '/listings/moving-boxes.svg'
 
@@ -58,6 +59,7 @@ export default function ItemPage() {
   const [offerAmount, setOfferAmount] = useState('')
   const [offerSending, setOfferSending] = useState(false)
   const [offerFeedback, setOfferFeedback] = useState('')
+  const offerInputRef = useRef<HTMLInputElement>(null)
   const [hasConversation, setHasConversation] = useState(false)
   const [showReportForm, setShowReportForm] = useState(false)
   const [reportReason, setReportReason] = useState<ReportReason>('scam-concern')
@@ -68,6 +70,25 @@ export default function ItemPage() {
 
   const { session } = useAuthSession()
   const { isSaved, toggleFavorite } = useFavorites(session?.userId)
+
+  // Close offer modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showOfferModal) {
+        setShowOfferModal(false)
+        setOfferFeedback('')
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [showOfferModal])
+
+  // Focus the offer input when modal opens
+  useEffect(() => {
+    if (showOfferModal) {
+      setTimeout(() => offerInputRef.current?.focus(), 50)
+    }
+  }, [showOfferModal])
 
   useEffect(() => {
     if (!params?.id) return
@@ -154,6 +175,7 @@ export default function ItemPage() {
       }
       const updated = (await res.json()) as Listing
       setListing(updated)
+      showToast(`Listing marked as ${nextStatus}`)
     } catch (statusError) {
       setActionError(statusError instanceof Error ? statusError.message : 'Could not update listing status')
     } finally {
@@ -173,6 +195,7 @@ export default function ItemPage() {
         const payload = await res.json().catch(() => null)
         throw new Error(payload?.error || 'Could not archive listing')
       }
+      showToast('Listing archived')
       router.push('/my-listings')
       router.refresh()
     } catch (deleteError) {
@@ -245,6 +268,7 @@ export default function ItemPage() {
       setReportNotes('')
       setIncludeSellerInReport(false)
       setShowReportForm(false)
+      showToast('Report submitted to moderation')
     } catch (reportError) {
       setReportFeedback(reportError instanceof Error ? reportError.message : 'Could not submit report')
     } finally {
@@ -590,7 +614,7 @@ export default function ItemPage() {
                   onChange={(e) => setOfferAmount(e.target.value)}
                   placeholder="0"
                   className="ui-input pl-7"
-                  autoFocus
+                  ref={offerInputRef}
                 />
               </div>
               {offerFeedback ? <p className="text-xs text-red-600">{offerFeedback}</p> : null}

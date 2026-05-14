@@ -14,10 +14,12 @@ export default function SignInPage() {
   const [redirect, setRedirect] = useState('/')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [resetSuccess, setResetSuccess] = useState(false)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     setRedirect(params.get('redirect') || '/')
+    if (params.get('reset') === 'success') setResetSuccess(true)
   }, [])
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -62,6 +64,11 @@ export default function SignInPage() {
         <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Sign in</h1>
         <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>Use your GMU email to access Mason Market.</p>
 
+        {resetSuccess ? (
+          <p className="mt-4 rounded-lg px-3 py-2 text-sm font-medium" style={{ background: 'var(--m-green-soft)', color: 'var(--m-green)' }}>
+            Password reset successfully. Sign in with your new password.
+          </p>
+        ) : null}
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>GMU email</label>
@@ -85,6 +92,9 @@ export default function SignInPage() {
               placeholder="Enter your password"
               className="ui-input"
             />
+            <p className="text-right text-xs mt-1">
+              <Link href="/forgot-password" style={{ color: 'var(--m-green)' }}>Forgot password?</Link>
+            </p>
           </div>
 
           {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}

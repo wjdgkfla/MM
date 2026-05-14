@@ -27,11 +27,14 @@ import {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
+import { randomBytes } from 'crypto'
+
 function nanoid(len = 20): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  const bytes = randomBytes(len)
   let result = ''
   for (let i = 0; i < len; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)]
+    result += chars[bytes[i] % chars.length]
   }
   return result
 }
@@ -153,8 +156,15 @@ function rowToRating(row: Record<string, unknown>): Rating {
 
 // ─── Listings ──────────────────────────────────────────────────────────────
 
+export const DEFAULT_PAGE_SIZE = 24
+
 export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]> {
   const db = getSupabaseAdmin()
+  const pageSize = query?.pageSize ?? DEFAULT_PAGE_SIZE
+  const page = query?.page ?? 0
+  const from = page * pageSize
+  const to = from + pageSize - 1
+
   let q = db
     .from('listings')
     .select('*')
@@ -169,16 +179,16 @@ export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]>
   if (query?.minPrice != null && query.minPrice >= 0) q = q.gte('price', query.minPrice)
   if (query?.maxPrice != null && query.maxPrice >= 0) q = q.lte('price', query.maxPrice)
 
-  // Full-text search via Postgres tsvector
   if (query?.search) {
     const term = query.search.trim().split(/\s+/).join(' & ')
     q = q.textSearch('search_vector', term, { type: 'websearch', config: 'english' })
   }
 
   const needsPriceSort = query?.sort === 'price-asc' || query?.sort === 'price-desc'
-  if (!needsPriceSort) {
-    q = q.order('created_at', { ascending: false })
-  }
+  if (!needsPriceSort) q = q.order('created_at', { ascending: false })
+
+  // Apply pagination at the DB level
+  q = q.range(from, to)
 
   const { data, error } = await q
   if (error) {
@@ -188,7 +198,6 @@ export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]>
 
   let results = (data || []).map((r) => rowToListing(r as Record<string, unknown>))
 
-  // courseTag filter: substring match on tags
   if (query?.courseTag) {
     const normalized = query.courseTag.toLowerCase().replace(/[^a-z0-9]/g, '')
     results = results.filter((l) =>
@@ -354,21 +363,11 @@ export async function listingsRemove(id: string): Promise<boolean> {
 }
 
 export async function listingsIncrementViewCount(id: string): Promise<void> {
+  // Use the Postgres RPC for an atomic increment (no read-modify-write race condition).
+  // Run schema-addons.sql in Supabase to create this function if it's missing.
   const { error } = await getSupabaseAdmin().rpc('increment_view_count', { listing_id: id })
   if (error) {
-    // Fallback: direct update if RPC not available
-    await getSupabaseAdmin()
-      .from('listings')
-      .update({ view_count: undefined }) // handled below via raw query
-      .eq('id', id)
-    // Use a direct SQL approach
-    const { data: cur } = await getSupabaseAdmin().from('listings').select('view_count').eq('id', id).single()
-    if (cur) {
-      await getSupabaseAdmin()
-        .from('listings')
-        .update({ view_count: (Number((cur as Record<string, unknown>).view_count) || 0) + 1 })
-        .eq('id', id)
-    }
+    console.error(`increment_view_count(${id}) error:`, error.message)
   }
 }
 
