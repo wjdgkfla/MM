@@ -10,7 +10,10 @@ function getIp(request: NextRequest): string {
 }
 
 function getRateLimitConfig(pathname: string) {
-  if (pathname.startsWith('/api/auth/')) return RATE_LIMITS.auth
+  // Only sign-in and sign-up get the strict 5/min brute-force limit.
+  // The session check (/api/auth/session) fires on every page navigation —
+  // rate-limiting it at 5/min would sign users out after ~5 page loads.
+  if (pathname === '/api/auth/sign-in' || pathname === '/api/auth/sign-up') return RATE_LIMITS.auth
   if (pathname.startsWith('/api/upload')) return RATE_LIMITS.upload
   if (pathname.startsWith('/api/messages')) return RATE_LIMITS.message
   if (
