@@ -27,3 +27,9 @@ do $$ begin
     check (length(body) >= 1 and length(body) <= 2000);
 exception when duplicate_object then null;
 end $$;
+
+-- ─── Performance index for conversation inbox queries ──────────────────────
+-- Speeds up conversationsListByUser at scale (GIN scan + sort without full table scan)
+create index if not exists conversations_active_updated_idx
+  on conversations (updated_at desc)
+  where is_active = true;

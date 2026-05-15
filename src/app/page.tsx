@@ -53,6 +53,10 @@ export default function HomePage() {
   const [freeOnly, setFreeOnly] = useState(false)
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState('')
+  const [page, setPage] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const PAGE_SIZE = 24
 
   const { session } = useAuthSession()
   const { savedSet, toggleFavorite } = useFavorites(session?.userId)
@@ -91,14 +95,21 @@ export default function HomePage() {
     if (freeOnly) params.set('freeOnly', 'true')
     params.set('sort', sort)
 
+    setPage(0)
+    setHasMore(true)
     setLoading(true)
     setFetchError('')
+    params.set('page', '0')
     fetch(`/api/listings?${params.toString()}`)
       .then((res) => {
         if (!res.ok) throw new Error(`Server error ${res.status}`)
         return res.json()
       })
-      .then((data: Listing[]) => setListings(Array.isArray(data) ? data : []))
+      .then((data: Listing[]) => {
+        const result = Array.isArray(data) ? data : []
+        setListings(result)
+        setHasMore(result.length === PAGE_SIZE)
+      })
       .catch(() => setFetchError('Failed to load listings. Check your connection and try again.'))
       .finally(() => setLoading(false))
   }, [
@@ -131,6 +142,42 @@ export default function HomePage() {
     setCourseTag('')
     setFreeOnly(false)
     setSort('newest')
+    setPage(0)
+    setHasMore(true)
+  }
+
+  const loadMore = async () => {
+    const nextPage = page + 1
+    setLoadingMore(true)
+    try {
+      const params = new URLSearchParams()
+      if (search) params.set('search', search)
+      if (category) params.set('category', category)
+      if (campusLocation) params.set('campusLocation', campusLocation)
+      if (pickupZone) params.set('pickupZone', pickupZone)
+      if (condition) params.set('condition', condition)
+      if (status) params.set('status', status)
+      if (minPrice) params.set('minPrice', minPrice)
+      if (maxPrice) params.set('maxPrice', maxPrice)
+      if (courseTag) params.set('courseTag', courseTag)
+      if (freeOnly) params.set('freeOnly', 'true')
+      params.set('sort', sort)
+      params.set('page', String(nextPage))
+      const res = await fetch(`/api/listings?${params.toString()}`)
+      if (!res.ok) return
+      const data = await res.json() as Listing[]
+      if (Array.isArray(data) && data.length > 0) {
+        setListings((prev) => [...prev, ...data])
+        setPage(nextPage)
+        setHasMore(data.length === PAGE_SIZE)
+      } else {
+        setHasMore(false)
+      }
+    } catch {
+      // silently fail — user can try again
+    } finally {
+      setLoadingMore(false)
+    }
   }
 
   return (
@@ -323,6 +370,18 @@ export default function HomePage() {
               />
             ))}
           </div>
+          {hasMore && !loading && listings.length > 0 ? (
+            <div className="mt-10 flex justify-center">
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="ui-btn-secondary px-8 py-3 text-sm disabled:opacity-50"
+              >
+                {loadingMore ? 'Loading…' : 'Load more'}
+              </button>
+            </div>
+          ) : null}
         </>
       )}
     </div>

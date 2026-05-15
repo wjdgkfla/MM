@@ -385,7 +385,7 @@ export default function ItemPage() {
                           rows={3}
                           maxLength={500}
                           value={reportNotes}
-                          onChange={(e) => setReportNotes(e.target.value)}
+                          onChange={(e) => { setReportNotes(e.target.value); setReportFeedback('') }}
                           placeholder="Share what looked suspicious or unsafe."
                           className="ui-input resize-none"
                         />
@@ -603,7 +603,7 @@ export default function ItemPage() {
                   max="100000"
                   step="1"
                   value={offerAmount}
-                  onChange={(e) => setOfferAmount(e.target.value)}
+                  onChange={(e) => { setOfferAmount(e.target.value); setOfferFeedback('') }}
                   placeholder="0"
                   className={`ui-input pl-7 ${offerFeedback ? 'border-red-400 bg-red-50' : ''}`}
                   ref={offerInputRef}

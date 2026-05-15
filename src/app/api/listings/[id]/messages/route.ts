@@ -5,6 +5,7 @@ import {
   messagesListByListing,
   messagesListThread,
   messagesCreate,
+  usersFindById,
 } from '@/lib/data/supabaseDataAccess'
 
 export async function GET(
@@ -24,14 +25,12 @@ export async function GET(
 
     const { searchParams } = new URL(request.url)
     const buyerId = String(searchParams.get('buyerId') || '').trim()
-    const viewerUserId = String(searchParams.get('viewerUserId') || '').trim()
 
     if (!buyerId) {
       return NextResponse.json({ error: 'buyerId is required' }, { status: 400 })
     }
 
-    // Verify requester is a participant in this conversation:
-    // must be either the listing seller OR the buyer in the thread.
+    // Verify requester is a participant in this conversation
     const isSeller = session.userId === listing.sellerId
     const isBuyer = session.userId === buyerId
 
@@ -39,9 +38,7 @@ export async function GET(
       return NextResponse.json({ error: 'You are not a participant in this conversation' }, { status: 403 })
     }
 
-    const messages = viewerUserId
-      ? await messagesListThread(params.id, listing.sellerId, buyerId)
-      : await messagesListByListing(params.id, buyerId)
+    const messages = await messagesListThread(params.id, listing.sellerId, buyerId)
     return NextResponse.json(messages)
   } catch (err) {
     console.error('GET /api/listings/[id]/messages error:', err)
@@ -59,6 +56,12 @@ export async function POST(
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     }
 
+    // Suspended users cannot send messages
+    const sessionUser = await usersFindById(session.userId)
+    if (sessionUser?.accountState === 'suspended') {
+      return NextResponse.json({ error: 'Your account is suspended' }, { status: 403 })
+    }
+
     const listing = await listingsFindById(params.id)
     if (!listing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
@@ -69,6 +72,9 @@ export async function POST(
 
     if (!content) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+    if (content.length > 2000) {
+      return NextResponse.json({ error: 'Message cannot exceed 2000 characters' }, { status: 400 })
     }
 
     const senderRole = session.userId === listing.sellerId ? 'seller' : 'buyer'

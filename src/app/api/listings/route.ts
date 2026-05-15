@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
   const freeOnly = searchParams.get('freeOnly')
   const courseTag = searchParams.get('courseTag')
   const sort = (searchParams.get('sort') || 'newest') as 'newest' | 'price-asc' | 'price-desc'
+  const pageParam = searchParams.get('page')
 
   const ids = searchParams.get('ids')
   // Anonymous users can browse the feed and do basic search. Advanced filters still require sign-in.
@@ -99,6 +100,8 @@ export async function GET(request: NextRequest) {
       courseTag: courseTag || undefined,
       sort,
       showHidden: session?.role === 'admin',
+      page: pageParam ? Math.max(0, Number(pageParam)) : 0,
+      pageSize: 24,
     }
 
     let listings = await listingsFindMany(query)

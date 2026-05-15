@@ -76,7 +76,7 @@ export default function SignInPage() {
               type="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setError('') }}
               placeholder="you@gmu.edu"
               className="ui-input"
             />
@@ -88,7 +88,7 @@ export default function SignInPage() {
               required
               minLength={6}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setError('') }}
               placeholder="Enter your password"
               className="ui-input"
             />

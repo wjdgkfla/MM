@@ -145,7 +145,7 @@ export default function MessagesPage() {
                   toUserId: conv.peerId,
                   body: 'Hi, is this still available?',
                 }),
-              }).catch((err) => console.error('Auto-send "still available?" error:', err))
+              }).catch(() => { /* auto-send is best-effort */ })
             }
           }
         }

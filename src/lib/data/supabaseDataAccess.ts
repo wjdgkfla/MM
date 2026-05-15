@@ -31,10 +31,16 @@ import { randomBytes } from 'crypto'
 
 function nanoid(len = 20): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  const bytes = randomBytes(len)
+  const charsLen = chars.length
+  // Rejection sampling: discard bytes that would cause modulo bias
+  // (256 % 62 = 10, so bytes 246-255 are slightly biased without this)
+  const maxValid = 256 - (256 % charsLen)
   let result = ''
-  for (let i = 0; i < len; i++) {
-    result += chars[bytes[i] % chars.length]
+  while (result.length < len) {
+    const batch = randomBytes(len * 2)
+    for (let i = 0; i < batch.length && result.length < len; i++) {
+      if (batch[i] < maxValid) result += chars[batch[i] % charsLen]
+    }
   }
   return result
 }
@@ -212,6 +218,7 @@ export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]>
 }
 
 export async function listingsFindById(id: string): Promise<Listing | undefined> {
+  if (!id || id.trim().length === 0) return undefined
   const { data, error } = await getSupabaseAdmin()
     .from('listings')
     .select('*')
@@ -527,7 +534,11 @@ export async function messagesCreate(input: Omit<Message, 'id' | 'createdAt'>): 
   // Upsert the conversation summary (best-effort — don't let this fail the message send)
   try {
     const listing = await listingsFindById(input.listingId)
-    const sellerId = listing?.sellerId || input.toUserId
+    if (!listing) {
+      // Listing was deleted between message save and conversation upsert — skip
+      return rowToMessage(data as Record<string, unknown>)
+    }
+    const sellerId = listing.sellerId
     const buyerId = input.fromUserId === sellerId ? input.toUserId : input.fromUserId
 
     await db.from('conversations').upsert(
@@ -565,14 +576,13 @@ export async function messagesGetInboxByUser(userId: string): Promise<Message[]>
 }
 
 export async function messagesExistsByUserAndListing(userId: string, listingId: string): Promise<boolean> {
-  const { data, error } = await getSupabaseAdmin()
+  // Use count query — .single() throws when 0 rows found, which breaks the ratings flow
+  const { count, error } = await getSupabaseAdmin()
     .from('messages')
-    .select('id')
+    .select('*', { count: 'exact', head: true })
     .eq('listing_id', listingId)
     .eq('from_user_id', userId)
-    .limit(1)
-    .single()
-  return !error && Boolean(data)
+  return !error && (count ?? 0) > 0
 }
 
 export async function messagesUpdateOfferStatus(

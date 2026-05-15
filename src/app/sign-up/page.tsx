@@ -79,7 +79,7 @@ export default function SignUpPage() {
               type="text"
               required
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              onChange={(e) => { setDisplayName(e.target.value); setError('') }}
               placeholder="Your name"
               className="ui-input"
             />
@@ -91,7 +91,7 @@ export default function SignUpPage() {
               type="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setError('') }}
               placeholder="you@gmu.edu"
               className="ui-input"
             />
@@ -104,7 +104,7 @@ export default function SignUpPage() {
               required
               minLength={6}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setError('') }}
               placeholder="At least 6 characters"
               className="ui-input"
             />

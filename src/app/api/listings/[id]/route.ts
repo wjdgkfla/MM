@@ -20,7 +20,6 @@ import {
   listingsRemove,
   listingsIncrementViewCount,
   usersFindById,
-  listingsCountBySellerId,
 } from '@/lib/data/supabaseDataAccess'
 
 const canTransitionStatus = (from: ListingStatus, to: ListingStatus) => {
@@ -51,10 +50,9 @@ export async function GET(
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
 
-    const [seller, sellerListingCount] = await Promise.all([
-      usersFindById(listing.sellerId),
-      listingsCountBySellerId(listing.sellerId),
-    ])
+    const seller = await usersFindById(listing.sellerId)
+    // Use the denormalized listingCount from the user row — avoids a second DB round-trip
+    const sellerListingCount = seller?.listingCount ?? 0
 
     // Fire-and-forget view count increment — skip for the seller viewing their own listing
     if (!session || session.userId !== listing.sellerId) {
@@ -249,6 +247,11 @@ export async function DELETE(
     const existing = await listingsFindById(params.id)
     if (!existing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+    }
+
+    const sessionUser = await usersFindById(session.userId)
+    if (sessionUser?.accountState === 'suspended') {
+      return NextResponse.json({ error: 'Your account is suspended' }, { status: 403 })
     }
 
     if (existing.sellerId !== session.userId) {

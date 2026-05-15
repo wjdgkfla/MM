@@ -17,6 +17,7 @@ export function Header() {
 
   useEffect(() => {
     if (!session) return
+
     const checkUnread = async () => {
       try {
         const res = await fetch('/api/messages')
@@ -29,10 +30,14 @@ export function Header() {
         )
         setHasUnread(hasNew)
       } catch {
-        // silently ignore
+        // silently ignore — unread dot is non-critical
       }
     }
+
     checkUnread()
+    // Poll every 30s so the badge updates without a page reload
+    const interval = setInterval(checkUnread, 30_000)
+    return () => clearInterval(interval)
   }, [session])
 
   useEffect(() => {

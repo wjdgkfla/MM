@@ -29,7 +29,10 @@ export default function SavedPage() {
 
     setLoading(true)
     fetch(`/api/listings?ids=${savedIds.join(',')}`, { credentials: 'include' })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`Server error ${res.status}`)
+        return res.json()
+      })
       .then((data: Listing[]) => {
         const fetched = Array.isArray(data) ? data : []
         setSavedListings(fetched)
