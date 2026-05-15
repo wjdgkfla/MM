@@ -48,6 +48,7 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false)
   const didAutoSend = useRef(false)
   const isSendingRef = useRef(false)
+  const threadScrollRef = useRef<HTMLDivElement>(null)
 
   const selectedConversation = useMemo(
     () => conversations.find((conversation) => conversation.key === selectedKey) || null,
@@ -156,6 +157,8 @@ export default function MessagesPage() {
     }
 
     loadInbox()
+    // Mark messages as seen so the header badge clears
+    localStorage.setItem('mm_msgs_last_seen', Date.now().toString())
   }, [currentUserId])
 
   useEffect(() => {
@@ -191,6 +194,13 @@ export default function MessagesPage() {
     const pollInterval = setInterval(() => loadThread(false), 4000)
     return () => clearInterval(pollInterval)
   }, [selectedConversation])
+
+  // Auto-scroll thread to bottom when new messages arrive
+  useEffect(() => {
+    if (threadScrollRef.current) {
+      threadScrollRef.current.scrollTop = threadScrollRef.current.scrollHeight
+    }
+  }, [thread.length])
 
   const [sendError, setSendError] = useState('')
 
@@ -283,7 +293,7 @@ export default function MessagesPage() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="font-display text-[36px] font-black mb-1" style={{ color: 'var(--m-ink)' }}>Messages</h1>
       <p className="text-[13px] mt-1" style={{ color: 'var(--m-muted)' }}>
-        Transaction chat for listing questions, pickup timing, and final price agreement.
+        Message sellers about availability, meetup timing, and price.
       </p>
 
       {loadingInbox ? (
@@ -294,7 +304,7 @@ export default function MessagesPage() {
         </div>
       ) : conversations.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed p-8 text-center" style={{ borderColor: 'var(--m-line)' }}>
-          <p style={{ color: 'var(--m-muted)' }}>No conversations yet.</p>
+          <p style={{ color: 'var(--m-muted)' }}>No conversations yet. Browse listings and message a seller to get started.</p>
           <Link href="/" className="mt-3 inline-block text-sm font-medium text-[var(--m-green)]">
             Browse listings
           </Link>
@@ -357,11 +367,11 @@ export default function MessagesPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 h-[340px] overflow-y-auto rounded-xl bg-[var(--m-soft)] p-3">
+                <div ref={threadScrollRef} className="mt-4 flex-1 min-h-[280px] overflow-y-auto rounded-xl bg-[var(--m-soft)] p-3">
                   {loadingThread ? (
                     <p className="text-sm" style={{ color: 'var(--m-muted)' }}>Loading conversation…</p>
                   ) : thread.length === 0 ? (
-                    <p className="text-sm" style={{ color: 'var(--m-muted)' }}>No messages yet. Send the first message about pickup or price.</p>
+                    <p className="text-sm" style={{ color: 'var(--m-muted)' }}>No messages yet. Say hi or ask about availability.</p>
                   ) : (
                     <div className="space-y-2">
                       {thread.map((message) => {
@@ -397,20 +407,22 @@ export default function MessagesPage() {
                           )
                         }
                         return (
-                          <div
-                            key={message.id}
-                            className={
-                              fromCurrentUser
-                                ? 'ml-auto max-w-[60%] rounded-[20px] rounded-br-[6px] px-4 py-2.5 text-sm text-white'
-                                : 'mr-auto max-w-[60%] rounded-[20px] rounded-bl-[6px] border bg-white px-4 py-2.5 text-sm'
-                            }
-                            style={
-                              fromCurrentUser
-                                ? { background: 'var(--m-ink)' }
-                                : { borderColor: 'var(--m-line)', color: 'var(--m-ink)' }
-                            }
-                          >
-                            {message.body}
+                          <div key={message.id} className={`flex flex-col ${fromCurrentUser ? 'items-end' : 'items-start'}`}>
+                            <div
+                              className={
+                                fromCurrentUser
+                                  ? 'max-w-[60%] rounded-[20px] rounded-br-[6px] px-4 py-2.5 text-sm text-white'
+                                  : 'max-w-[60%] rounded-[20px] rounded-bl-[6px] border bg-white px-4 py-2.5 text-sm'
+                              }
+                              style={
+                                fromCurrentUser
+                                  ? { background: 'var(--m-ink)' }
+                                  : { borderColor: 'var(--m-line)', color: 'var(--m-ink)' }
+                              }
+                            >
+                              {message.body}
+                            </div>
+                            <p className="mt-0.5 text-[10px]" style={{ color: 'var(--m-muted)' }}>{formatRecency(message.createdAt)}</p>
                           </div>
                         )
                       })}

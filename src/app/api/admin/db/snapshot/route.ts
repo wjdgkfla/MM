@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (err) {
-    console.error('POST /api/admin/firebase/seed error:', err)
+    console.error('POST /api/admin/db/snapshot error:', err)
     return NextResponse.json({ error: 'Failed to check database' }, { status: 500 })
   }
 }

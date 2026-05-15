@@ -180,37 +180,37 @@ export function AdminModerationClient({
     }
   }
 
-  const seedFirebase = async () => {
-    setBusyKey('seed-firebase')
+  const checkDbSnapshot = async () => {
+    setBusyKey('check-db-snapshot')
     setError('')
     setInfo('')
     try {
-      const res = await fetch('/api/admin/firebase/seed', { method: 'POST' })
+      const res = await fetch('/api/admin/db/snapshot', { method: 'POST' })
       const body = await res.json().catch(() => null)
       if (!res.ok) {
-        throw new Error(body?.error || 'Failed to seed Firebase')
+        throw new Error(body?.error || 'Failed to check database snapshot')
       }
       const counts = body?.counts
       if (counts) {
         setInfo(
-          `Firebase snapshot: ${counts.users} users, ${counts.listings} listings, ${counts.messages} messages, ${counts.reports} reports, ${counts.adminActivity} admin activity entries.`
+          `Database snapshot: ${counts.users} users, ${counts.listings} listings, ${counts.messages} messages, ${counts.reports} reports, ${counts.adminActivity} admin activity entries.`
         )
       } else {
-        setInfo('Firebase check completed.')
+        setInfo('Database snapshot completed.')
       }
-    } catch (seedError) {
-      setError(seedError instanceof Error ? seedError.message : 'Failed to check database')
+    } catch (snapshotError) {
+      setError(snapshotError instanceof Error ? snapshotError.message : 'Failed to check database')
     } finally {
       setBusyKey('')
     }
   }
 
-  const checkFirebaseStatus = async () => {
-    setBusyKey('check-firebase')
+  const checkDbStatus = async () => {
+    setBusyKey('check-db-status')
     setError('')
     setInfo('')
     try {
-      const res = await fetch('/api/admin/firebase/status')
+      const res = await fetch('/api/admin/db/status')
       const body = await res.json().catch(() => null)
       if (!res.ok) {
         throw new Error(body?.error || 'Failed to check database status')
@@ -243,19 +243,19 @@ export function AdminModerationClient({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={checkFirebaseStatus}
-            disabled={busyKey === 'check-firebase'}
+            onClick={checkDbStatus}
+            disabled={busyKey === 'check-db-status'}
             className="ui-btn-secondary"
           >
-            {busyKey === 'check-firebase' ? 'Checking...' : 'Check DB Status'}
+            {busyKey === 'check-db-status' ? 'Checking...' : 'DB Status'}
           </button>
           <button
             type="button"
-            onClick={seedFirebase}
-            disabled={busyKey === 'seed-firebase'}
+            onClick={checkDbSnapshot}
+            disabled={busyKey === 'check-db-snapshot'}
             className="ui-btn-secondary"
           >
-            {busyKey === 'seed-firebase' ? 'Checking...' : 'Check Database'}
+            {busyKey === 'check-db-snapshot' ? 'Checking...' : 'DB Snapshot'}
           </button>
         </div>
       </div>

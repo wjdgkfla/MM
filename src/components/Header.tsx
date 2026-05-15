@@ -3,8 +3,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
+import { Conversation } from '@/lib/data/contracts'
 
 export function Header() {
   const { session } = useAuthSession()
@@ -12,6 +13,33 @@ export function Header() {
   const router = useRouter()
   const [headerSearch, setHeaderSearch] = useState('')
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [hasUnread, setHasUnread] = useState(false)
+
+  useEffect(() => {
+    if (!session) return
+    const checkUnread = async () => {
+      try {
+        const res = await fetch('/api/messages')
+        if (!res.ok) return
+        const conversations = (await res.json()) as Conversation[]
+        if (!Array.isArray(conversations) || conversations.length === 0) return
+        const lastSeen = parseInt(localStorage.getItem('mm_msgs_last_seen') || '0', 10)
+        const hasNew = conversations.some(
+          (c) => c.lastMessageAt && new Date(c.lastMessageAt).getTime() > lastSeen
+        )
+        setHasUnread(hasNew)
+      } catch {
+        // silently ignore
+      }
+    }
+    checkUnread()
+  }, [session])
+
+  useEffect(() => {
+    if (pathname === '/messages') {
+      setHasUnread(false)
+    }
+  }, [pathname])
 
   const handleSignOut = async () => {
     await fetch('/api/auth/sign-out', { method: 'POST' })
@@ -94,6 +122,9 @@ export function Header() {
                   style={{ color: active ? 'var(--m-ink)' : 'var(--m-muted)' }}
                 >
                   {item.label}
+                  {item.href === '/messages' && hasUnread && (
+                    <span className="ml-1 inline-block h-2 w-2 rounded-full bg-[var(--m-pop)]" />
+                  )}
                   {active && (
                     <span
                       className="absolute left-3 right-3 rounded-full"
