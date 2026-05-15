@@ -406,20 +406,21 @@ export async function usersUpsert(input: {
   email: string
   displayName: string
   role?: UserRole
-  supabaseId?: string
+  supabaseId: string // Required — always use the Supabase auth UUID as PK
 }): Promise<User> {
   const normalized = input.email.trim().toLowerCase()
   const role = input.role || 'student'
   const now = new Date().toISOString()
 
-  // Use Supabase auth UUID as the user ID if provided, otherwise derive from email
-  const id = input.supabaseId || `u_${normalized.replace(/[^a-z0-9]/g, '_')}`
-
+  // Always use the Supabase auth UUID as the primary key.
+  // Conflict on 'id' (PK) — safe update; never changes the user's identity.
+  // If conflicting on email instead of id, the old id might get updated,
+  // breaking all FK references in listings, messages, favorites, etc.
   const { data, error } = await getSupabaseAdmin()
     .from('users')
     .upsert(
       {
-        id,
+        id: input.supabaseId,
         role,
         account_state: 'active',
         display_name: input.displayName || normalized.split('@')[0],
@@ -435,7 +436,7 @@ export async function usersUpsert(input: {
         listing_count: 0,
       },
       {
-        onConflict: 'gmu_email',
+        onConflict: 'id',
         ignoreDuplicates: false,
       }
     )

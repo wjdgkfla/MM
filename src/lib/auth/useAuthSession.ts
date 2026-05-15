@@ -1,33 +1,48 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
 import { AuthSession } from '@/lib/auth/types'
 
 export function useAuthSession() {
   const [session, setSession] = useState<AuthSession | null>(null)
   const [loading, setLoading] = useState(true)
-  const pathname = usePathname()
+  const fetchedRef = useRef(false)
 
   useEffect(() => {
+    // Only fetch once on mount. Session changes only happen via sign-in/out,
+    // both of which do a full page reload (window.location.href) — no need
+    // to re-fetch on every navigation. Re-fetching on [pathname] was causing
+    // the rate limiter to fire and sign users out.
+    if (fetchedRef.current) return
+    fetchedRef.current = true
+
     const controller = new AbortController()
-    setLoading(true)
+    const timeoutId = setTimeout(() => controller.abort(), 8000) // 8s timeout
 
     fetch('/api/auth/session', {
       cache: 'no-store',
       credentials: 'include',
       signal: controller.signal,
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`Session check failed: ${res.status}`)
+        return res.json()
+      })
       .then((payload) => setSession(payload?.session || null))
       .catch((err) => {
-        // Ignore cancellations from rapid navigation — not a real error
+        // AbortError from timeout or unmount — not a real sign-out
         if (err.name !== 'AbortError') setSession(null)
       })
-      .finally(() => setLoading(false))
+      .finally(() => {
+        clearTimeout(timeoutId)
+        setLoading(false)
+      })
 
-    return () => controller.abort()
-  }, [pathname])
+    return () => {
+      clearTimeout(timeoutId)
+      controller.abort()
+    }
+  }, []) // Run once on mount only
 
   return { session, loading, isLoggedIn: Boolean(session) }
 }

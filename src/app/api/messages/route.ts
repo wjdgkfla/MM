@@ -12,39 +12,30 @@ import {
 export async function GET(request: NextRequest) {
   try {
     const session = getSessionFromRequest(request)
+
+    // All message reads require authentication
+    if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
+
     const { searchParams } = new URL(request.url)
     const listingId = searchParams.get('listingId')
-    const userId = searchParams.get('userId')
     const peerId = searchParams.get('peerId')
 
-    if (listingId && userId && peerId) {
-      if (!session || session.userId !== userId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
-      const thread = await messagesListThread(listingId, userId, peerId)
+    // Always use session.userId — never trust userId from query params for authorization.
+    // Passing userId param is still accepted for compatibility, but the session is the source of truth.
+    if (listingId && peerId) {
+      // Load a specific thread: session user ↔ peerId
+      const thread = await messagesListThread(listingId, session.userId, peerId)
       return NextResponse.json(thread)
     }
 
     if (listingId) {
-      if (!userId) {
-        return NextResponse.json({ error: 'userId required for listing messages' }, { status: 400 })
-      }
-      if (!session || session.userId !== userId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
-      const messages = await messagesListByListing(listingId, userId)
+      const messages = await messagesListByListing(listingId, session.userId)
       return NextResponse.json(messages)
     }
 
-    if (userId) {
-      if (!session || session.userId !== userId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
-      const inbox = await conversationsListByUser(userId)
-      return NextResponse.json(inbox)
-    }
-
-    return NextResponse.json({ error: 'Pass listingId or userId' }, { status: 400 })
+    // No listingId — return full inbox for the session user
+    const inbox = await conversationsListByUser(session.userId)
+    return NextResponse.json(inbox)
   } catch (err) {
     console.error('GET /api/messages error:', err)
     return NextResponse.json({ error: 'Failed to load messages' }, { status: 500 })

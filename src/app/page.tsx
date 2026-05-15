@@ -52,6 +52,7 @@ export default function HomePage() {
   const [sort, setSort] = useState<SortOption>('newest')
   const [freeOnly, setFreeOnly] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState('')
 
   const { session } = useAuthSession()
   const { savedSet, toggleFavorite } = useFavorites(session?.userId)
@@ -77,25 +78,28 @@ export default function HomePage() {
 
   useEffect(() => {
     const params = new URLSearchParams()
-    // Search is allowed for all visitors (including anonymous).
+    // Filters and search are available to all visitors — no sign-in required to browse
     if (search) params.set('search', search)
-    if (session) {
-      if (category) params.set('category', category)
-      if (campusLocation) params.set('campusLocation', campusLocation)
-      if (pickupZone) params.set('pickupZone', pickupZone)
-      if (condition) params.set('condition', condition)
-      if (status) params.set('status', status)
-      if (minPrice) params.set('minPrice', minPrice)
-      if (maxPrice) params.set('maxPrice', maxPrice)
-      if (courseTag) params.set('courseTag', courseTag)
-      if (freeOnly) params.set('freeOnly', 'true')
-      params.set('sort', sort)
-    }
+    if (category) params.set('category', category)
+    if (campusLocation) params.set('campusLocation', campusLocation)
+    if (pickupZone) params.set('pickupZone', pickupZone)
+    if (condition) params.set('condition', condition)
+    if (status) params.set('status', status)
+    if (minPrice) params.set('minPrice', minPrice)
+    if (maxPrice) params.set('maxPrice', maxPrice)
+    if (courseTag) params.set('courseTag', courseTag)
+    if (freeOnly) params.set('freeOnly', 'true')
+    params.set('sort', sort)
 
     setLoading(true)
+    setFetchError('')
     fetch(`/api/listings?${params.toString()}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`Server error ${res.status}`)
+        return res.json()
+      })
       .then((data: Listing[]) => setListings(Array.isArray(data) ? data : []))
+      .catch(() => setFetchError('Failed to load listings. Check your connection and try again.'))
       .finally(() => setLoading(false))
   }, [
     session,
@@ -151,7 +155,6 @@ export default function HomePage() {
         />
       </div>
 
-      {session ? (
       <div className="ui-surface mb-6 space-y-4 p-4 sm:mb-8 sm:p-5">
         <CategoryFilter selected={category} onSelect={setCategory} />
 
@@ -276,13 +279,22 @@ export default function HomePage() {
           </button>
         </div>
       </div>
-      ) : null}
 
       {loading ? (
         <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 md:grid-cols-4">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="aspect-square rounded-[20px] bg-[var(--m-soft)] animate-pulse" />
           ))}
+        </div>
+      ) : fetchError ? (
+        <div className="py-16 text-center">
+          <div className="mx-auto max-w-md rounded-3xl border border-dashed bg-white px-6 py-10" style={{ borderColor: 'var(--m-line)' }}>
+            <p className="text-lg font-medium text-red-600">Could not load listings</p>
+            <p className="mt-2 text-sm" style={{ color: 'var(--m-muted)' }}>{fetchError}</p>
+            <button type="button" onClick={() => window.location.reload()} className="mt-4 ui-btn-secondary text-sm">
+              Try again
+            </button>
+          </div>
         </div>
       ) : listings.length === 0 ? (
         <div className="py-16 text-center">

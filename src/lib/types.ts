@@ -24,6 +24,12 @@ export const PICKUP_ZONES = [
   'off-campus-fairfax',
 ] as const
 
+export const CAMPUS_ZONE_MAP: Record<string, string[]> = {
+  fairfax:    ['jc-lobby','fenwick-entrance','sub1-desk','engineering-atrium','shenandoah-deck','potomac-courtyard','off-campus-fairfax'],
+  arlington:  ['van-metre-hall','off-campus-fairfax'],
+  'sci-tech': ['sci-tech-kiosk','off-campus-fairfax'],
+}
+
 export const LISTING_STATUSES = ['available', 'reserved', 'sold'] as const
 export const LISTING_MODERATION_STATES = ['visible', 'flagged', 'hidden'] as const
 export const REPORT_REASONS = [

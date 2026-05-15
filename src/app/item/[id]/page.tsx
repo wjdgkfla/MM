@@ -60,7 +60,6 @@ export default function ItemPage() {
   const [offerSending, setOfferSending] = useState(false)
   const [offerFeedback, setOfferFeedback] = useState('')
   const offerInputRef = useRef<HTMLInputElement>(null)
-  const [hasConversation, setHasConversation] = useState(false)
   const [showReportForm, setShowReportForm] = useState(false)
   const [reportReason, setReportReason] = useState<ReportReason>('scam-concern')
   const [reportNotes, setReportNotes] = useState('')
@@ -104,16 +103,6 @@ export default function ItemPage() {
         setSeller(data.seller)
         setSellerListingCount(data.sellerListingCount || 0)
         setActiveImage(0)
-        // Check if the current user has messaged about this listing (for RatingForm gate)
-        if (session?.userId && data.listing.status === 'sold' && session.userId !== data.listing.sellerId) {
-          const threadRes = await fetch(
-            `/api/messages?listingId=${data.listing.id}&userId=${session.userId}&peerId=${data.listing.sellerId}`
-          ).catch(() => null)
-          if (threadRes?.ok) {
-            const thread = await threadRes.json().catch(() => [])
-            setHasConversation(Array.isArray(thread) && thread.length > 0)
-          }
-        }
       })
       .catch(() => {
         setListing(null)
@@ -440,7 +429,7 @@ export default function ItemPage() {
               </div>
             </div>
 
-            {isSoldListing && !isOwnListing && session && hasConversation ? (
+            {isSoldListing && !isOwnListing && session ? (
               <div>
                 <h2 className="mb-3 text-base font-semibold text-[var(--m-ink)]">Rate your experience</h2>
                 <RatingForm sellerId={listing.sellerId} listingId={listing.id} />

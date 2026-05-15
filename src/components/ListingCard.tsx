@@ -41,7 +41,7 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
             type="button"
             onClick={(e) => { e.stopPropagation(); onToggleSave(listing.id) }}
             aria-label={isSaved ? 'Unsave listing' : 'Save listing'}
-            className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full transition-colors"
+            className="absolute right-2 top-2 grid h-11 w-11 place-items-center rounded-full transition-colors"
             style={{
               background: isSaved ? 'var(--m-pop)' : 'rgba(0,0,0,0.15)',
               color: '#fff',

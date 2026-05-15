@@ -26,9 +26,14 @@ export default function ResetPasswordPage() {
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return }
     setSubmitting(true)
     try {
-      const { error: sbError } = await getSupabaseClient().auth.updateUser({ password })
+      const supabase = getSupabaseClient()
+      const { error: sbError } = await supabase.auth.updateUser({ password })
       if (sbError) throw sbError
-      router.push('/sign-in?reset=success')
+      // Sign out all sessions globally — invalidates any attacker sessions too
+      await supabase.auth.signOut({ scope: 'global' })
+      // Clear our own session cookie via the sign-out API
+      await fetch('/api/auth/sign-out', { method: 'POST' })
+      window.location.href = '/sign-in?reset=success'
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not reset password. Try again.')
     } finally {

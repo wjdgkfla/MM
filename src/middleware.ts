@@ -10,10 +10,13 @@ function getIp(request: NextRequest): string {
 }
 
 function getRateLimitConfig(pathname: string) {
-  // Only sign-in and sign-up get the strict 5/min brute-force limit.
-  // The session check (/api/auth/session) fires on every page navigation —
-  // rate-limiting it at 5/min would sign users out after ~5 page loads.
+  // Session check and sign-out are cookie-only operations with no DB writes.
+  // Throttling them breaks the app for normal users — exempt entirely.
+  if (pathname === '/api/auth/session' || pathname === '/api/auth/sign-out') return null
+
+  // Sign-in and sign-up: strict brute-force protection
   if (pathname === '/api/auth/sign-in' || pathname === '/api/auth/sign-up') return RATE_LIMITS.auth
+
   if (pathname.startsWith('/api/upload')) return RATE_LIMITS.upload
   if (pathname.startsWith('/api/messages')) return RATE_LIMITS.message
   if (
@@ -35,6 +38,10 @@ export function middleware(request: NextRequest) {
 
   const ip = getIp(request)
   const config = getRateLimitConfig(pathname)
+
+  // Null means "no rate limit for this route" — pass through immediately
+  if (config === null) return NextResponse.next()
+
   // Auth routes use full pathname so sign-in and sign-up have separate buckets.
   // Other routes use a prefix key (covers all sub-paths together).
   const isAuth = pathname.startsWith('/api/auth/')

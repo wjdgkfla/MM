@@ -444,13 +444,14 @@ export default function SellPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>Pickup notes *</label>
-                  <input
-                    type="text"
+                  <textarea
                     required
+                    rows={3}
+                    maxLength={300}
                     value={form.pickupNotes}
                     onChange={(e) => setForm({ ...form, pickupNotes: e.target.value })}
-                    placeholder="e.g. Johnson Center lobby, weekdays after 2pm"
-                    className="ui-input"
+                    placeholder="e.g. Johnson Center lobby near the info desk, weekdays after 2pm"
+                    className="ui-input resize-none"
                   />
                 </div>
               </div>

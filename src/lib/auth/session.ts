@@ -4,14 +4,29 @@ import { AUTH_COOKIE_NAME } from '@/lib/auth/constants'
 import { AuthSession } from '@/lib/auth/types'
 import { UserRole } from '@/lib/types'
 
-// SESSION_SECRET must be set in production. Falls back to a dev default
-// so the app still works locally without extra config.
+// SESSION_SECRET must be set in production.
+// Generate with: openssl rand -hex 32
 function getSecret(): string {
   const secret = process.env.SESSION_SECRET
-  if (!secret && process.env.NODE_ENV === 'production') {
-    throw new Error('SESSION_SECRET env var is required in production')
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      // Hard fail in production — unsafe to run without a real secret
+      throw new Error(
+        'FATAL: SESSION_SECRET env var is required in production. ' +
+        'Generate with: openssl rand -hex 32'
+      )
+    }
+    // Dev warning — doesn't block local development
+    console.warn(
+      '[Mason Market] WARNING: SESSION_SECRET is not set. ' +
+      'Using insecure dev default. This is a security risk if deployed.'
+    )
+    return 'dev-secret-change-me-in-production'
   }
-  return secret || 'dev-secret-change-me-in-production'
+  if (secret.length < 32) {
+    console.warn('[Mason Market] WARNING: SESSION_SECRET is too short. Use at least 32 characters.')
+  }
+  return secret
 }
 
 function sign(payload: string): string {

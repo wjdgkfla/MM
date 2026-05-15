@@ -33,6 +33,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Sign-up is limited to GMU emails' }, { status: 400 })
     }
 
+    // In production, email must be confirmed before a session is issued.
+    // In development, Supabase has email confirmation disabled so we skip this check.
+    if (process.env.NODE_ENV === 'production' && !user.email_confirmed_at) {
+      return NextResponse.json(
+        { error: 'Please check your email and confirm your address before signing in.' },
+        { status: 403 }
+      )
+    }
+
     const dbUser = await usersUpsert({
       supabaseId: user.id,
       email,

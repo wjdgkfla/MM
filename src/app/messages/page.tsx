@@ -159,27 +159,38 @@ export default function MessagesPage() {
   }, [currentUserId])
 
   useEffect(() => {
-    const loadThread = async () => {
+    const loadThread = async (showLoadingSpinner = true) => {
       if (!selectedConversation) {
         setThread([])
         return
       }
 
-      setLoadingThread(true)
+      if (showLoadingSpinner) setLoadingThread(true)
       try {
-        const url = `/api/messages?listingId=${selectedConversation.listingId}&userId=${currentUserId}&peerId=${selectedConversation.peerId}`
+        const url = `/api/messages?listingId=${selectedConversation.listingId}&peerId=${selectedConversation.peerId}`
         const res = await fetch(url)
+        if (!res.ok) return
         const data = (await res.json()) as Message[]
-        setThread(Array.isArray(data) ? data : [])
+        if (Array.isArray(data)) {
+          setThread((prev) => {
+            // Only update if there are new messages (avoid flickering)
+            if (data.length !== prev.length) return data
+            return prev
+          })
+        }
       } catch {
-        setThread([])
+        // Silently ignore poll errors — don't clear the thread
       } finally {
-        setLoadingThread(false)
+        if (showLoadingSpinner) setLoadingThread(false)
       }
     }
 
-    loadThread()
-  }, [selectedConversation, currentUserId])
+    loadThread(true)
+
+    // Poll for new messages every 4 seconds while this thread is open
+    const pollInterval = setInterval(() => loadThread(false), 4000)
+    return () => clearInterval(pollInterval)
+  }, [selectedConversation])
 
   const [sendError, setSendError] = useState('')
 
