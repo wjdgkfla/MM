@@ -413,44 +413,63 @@ export async function usersUpsert(input: {
   email: string
   displayName: string
   role?: UserRole
-  supabaseId: string // Required — always use the Supabase auth UUID as PK
+  supabaseId: string
 }): Promise<User> {
   const normalized = input.email.trim().toLowerCase()
   const role = input.role || 'student'
   const now = new Date().toISOString()
+  const db = getSupabaseAdmin()
 
-  // Always use the Supabase auth UUID as the primary key.
-  // Conflict on 'id' (PK) — safe update; never changes the user's identity.
-  // If conflicting on email instead of id, the old id might get updated,
-  // breaking all FK references in listings, messages, favorites, etc.
-  const { data, error } = await getSupabaseAdmin()
+  // Step 1: Try to find existing user by Supabase UUID (the fast, normal path)
+  const { data: existingById } = await db
+    .from('users').select('*').eq('id', input.supabaseId).single()
+
+  if (existingById) {
+    // User already exists — refresh last_active_at and return
+    const { data, error } = await db
+      .from('users')
+      .update({ last_active_at: now, role })
+      .eq('id', input.supabaseId)
+      .select().single()
+    if (error || !data) throw new Error(error?.message || 'Failed to update user')
+    return rowToUser(data as Record<string, unknown>)
+  }
+
+  // Step 2: Try to find by email (handles re-created auth users with new UUID,
+  // or any scenario where the supabaseId doesn't match the stored id)
+  const { data: existingByEmail } = await db
+    .from('users').select('*').eq('gmu_email', normalized).single()
+
+  if (existingByEmail) {
+    // User exists under a different id — return them as-is.
+    // We don't update the PK because that would break all FK references
+    // (listings, messages, favorites). Their existing id is still valid.
+    await db.from('users').update({ last_active_at: now }).eq('gmu_email', normalized)
+    return rowToUser(existingByEmail as Record<string, unknown>)
+  }
+
+  // Step 3: Brand-new user — insert
+  const { data, error } = await db
     .from('users')
-    .upsert(
-      {
-        id: input.supabaseId,
-        role,
-        account_state: 'active',
-        display_name: input.displayName || normalized.split('@')[0],
-        gmu_email: normalized,
-        gmu_email_verified: true,
-        is_student_seller: role !== 'admin',
-        home_campus: 'fairfax',
-        campus_verification: 'verified',
-        trust_badge: 'verified-gmu',
-        reputation_score: role === 'admin' ? 5 : 0,
-        last_active_at: now,
-        joined_at: now,
-        listing_count: 0,
-      },
-      {
-        onConflict: 'id',
-        ignoreDuplicates: false,
-      }
-    )
-    .select()
-    .single()
+    .insert({
+      id: input.supabaseId,
+      role,
+      account_state: 'active',
+      display_name: input.displayName || normalized.split('@')[0],
+      gmu_email: normalized,
+      gmu_email_verified: true,
+      is_student_seller: role !== 'admin',
+      home_campus: 'fairfax',
+      campus_verification: 'verified',
+      trust_badge: 'verified-gmu',
+      reputation_score: role === 'admin' ? 5 : 0,
+      last_active_at: now,
+      joined_at: now,
+      listing_count: 0,
+    })
+    .select().single()
 
-  if (error || !data) throw new Error(error?.message || 'Failed to upsert user')
+  if (error || !data) throw new Error(error?.message || 'Failed to create user')
   return rowToUser(data as Record<string, unknown>)
 }
 

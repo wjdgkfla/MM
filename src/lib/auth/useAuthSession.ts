@@ -1,24 +1,30 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { AuthSession } from '@/lib/auth/types'
 
 export function useAuthSession() {
   const [session, setSession] = useState<AuthSession | null>(null)
   const [loading, setLoading] = useState(true)
-  const fetchedRef = useRef(false)
+  const pathname = usePathname()
 
   useEffect(() => {
-    // Only fetch once on mount. Session changes only happen via sign-in/out,
-    // both of which do a full page reload (window.location.href) — no need
-    // to re-fetch on every navigation. Re-fetching on [pathname] was causing
-    // the rate limiter to fire and sign users out.
-    if (fetchedRef.current) return
-    fetchedRef.current = true
-
+    // Re-fetch on every pathname change. This is safe because /api/auth/session
+    // is fully exempt from rate limiting (see middleware.ts) and is a fast
+    // cookie-only read with no database calls.
+    //
+    // Fetching on [pathname] ensures the session is always current after:
+    //   - Sign-in via window.location.href (new page = new pathname)
+    //   - Any navigation where session state might have changed
+    //
+    // The previous one-time-fetch approach caused a race: if the very first
+    // mount happened before the Set-Cookie was committed, the user was stuck
+    // as "not signed in" forever until a manual refresh.
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 8000) // 8s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
 
+    setLoading(true)
     fetch('/api/auth/session', {
       cache: 'no-store',
       credentials: 'include',
@@ -30,7 +36,7 @@ export function useAuthSession() {
       })
       .then((payload) => setSession(payload?.session || null))
       .catch((err) => {
-        // AbortError from timeout or unmount — not a real sign-out
+        // AbortError means the component unmounted or navigated away — not a sign-out
         if (err.name !== 'AbortError') setSession(null)
       })
       .finally(() => {
@@ -42,7 +48,7 @@ export function useAuthSession() {
       clearTimeout(timeoutId)
       controller.abort()
     }
-  }, []) // Run once on mount only
+  }, [pathname])
 
   return { session, loading, isLoggedIn: Boolean(session) }
 }
