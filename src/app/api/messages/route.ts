@@ -88,12 +88,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'This listing is sold and no longer accepts new messages' }, { status: 409 })
     }
 
-    // Issue 6: Validate toUserId is actually the listing seller (prevents spoofed recipients)
-    if (String(toUserId) !== listing.sellerId) {
-      return NextResponse.json({ error: 'Messages can only be sent to the listing seller' }, { status: 400 })
-    }
-    if (listing.sellerId === session.userId) {
-      return NextResponse.json({ error: 'You cannot message your own listing' }, { status: 400 })
+    const senderIsSeller = session.userId === listing.sellerId
+
+    if (senderIsSeller) {
+      // Seller replying to a buyer — recipient must not be themselves
+      if (String(toUserId) === session.userId) {
+        return NextResponse.json({ error: 'You cannot send messages to yourself' }, { status: 400 })
+      }
+    } else {
+      // Buyer sending — recipient must be the listing seller
+      if (String(toUserId) !== listing.sellerId) {
+        return NextResponse.json({ error: 'Messages can only be sent to the listing seller' }, { status: 400 })
+      }
     }
 
     // Validate message body length
