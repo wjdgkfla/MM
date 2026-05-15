@@ -15,7 +15,7 @@ export function TrustCues({ listing, compact = false }: TrustCuesProps) {
     cues.studentSeller ? 'Student seller' : 'Community seller',
     cues.campusSeller,
     cues.meetup,
-    `Recently active ${formatRecency(listing.sellerProfile.lastActiveAt)}`,
+    listing.sellerProfile.lastActiveAt ? `Recently active ${formatRecency(listing.sellerProfile.lastActiveAt)}` : 'Activity unknown',
   ]
 
   return (
