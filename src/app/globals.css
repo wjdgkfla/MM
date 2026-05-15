@@ -116,6 +116,11 @@ body {
   }
 }
 
+@keyframes heroWordIn {
+  from { transform: translateY(110%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
 @layer utilities {
   .font-display {
     font-family: var(--font-instrument-serif, Georgia, serif);
