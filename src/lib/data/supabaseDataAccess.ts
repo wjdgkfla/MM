@@ -523,32 +523,32 @@ export async function messagesCreate(input: Omit<Message, 'id' | 'createdAt'>): 
     .single()
   if (error || !data) throw new Error(error?.message || 'Failed to create message')
 
-  // Upsert the conversation summary
-  const listing = await listingsFindById(input.listingId)
-  const sellerId = listing?.sellerId || ''
-  const buyerId = input.fromUserId === sellerId ? input.toUserId : input.fromUserId
+  // Upsert the conversation summary (best-effort — don't let this fail the message send)
+  try {
+    const listing = await listingsFindById(input.listingId)
+    const sellerId = listing?.sellerId || input.toUserId
+    const buyerId = input.fromUserId === sellerId ? input.toUserId : input.fromUserId
 
-  await db.from('conversations').upsert(
-    {
-      id: conversationId,
-      listing_id: input.listingId,
-      buyer_id: buyerId,
-      seller_id: sellerId,
-      last_message: input.body,
-      unread_count: 1,
-      is_active: true,
-      participant_ids: [buyerId, sellerId].sort(),
-      updated_at: now,
-      created_at: now,
-    },
-    { onConflict: 'id' }
-  )
-
-  // Update last_message + updated_at on subsequent messages
-  await db
-    .from('conversations')
-    .update({ last_message: input.body, updated_at: now })
-    .eq('id', conversationId)
+    await db.from('conversations').upsert(
+      {
+        id: conversationId,
+        listing_id: input.listingId,
+        buyer_id: buyerId,
+        seller_id: sellerId,
+        last_message: input.body,
+        unread_count: 1,
+        is_active: true,
+        participant_ids: [buyerId, sellerId].sort(),
+        participants: {},
+        updated_at: now,
+        created_at: now,
+      },
+      { onConflict: 'id' }
+    )
+  } catch (convErr) {
+    // Log but don't throw — the message was saved; the conversation index is non-critical
+    console.error('messagesCreate: conversation upsert failed (non-fatal):', convErr)
+  }
 
   return rowToMessage(data as Record<string, unknown>)
 }

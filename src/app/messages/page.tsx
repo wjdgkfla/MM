@@ -181,6 +181,8 @@ export default function MessagesPage() {
     loadThread()
   }, [selectedConversation, currentUserId])
 
+  const [sendError, setSendError] = useState('')
+
   const handleSend = async (messageBody: string) => {
     if (!selectedConversation || !messageBody.trim()) return
     // Ref-level guard prevents duplicate sends from rapid double-clicks
@@ -189,6 +191,7 @@ export default function MessagesPage() {
     isSendingRef.current = true
 
     setSending(true)
+    setSendError('')
     try {
       const res = await fetch('/api/messages', {
         method: 'POST',
@@ -200,7 +203,11 @@ export default function MessagesPage() {
         }),
       })
 
-      if (!res.ok) throw new Error('send failed')
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null)
+        setSendError(payload?.error || 'Failed to send message. Please try again.')
+        return
+      }
 
       const created = (await res.json()) as Message
       setThread((current) => [...current, created])
@@ -220,6 +227,8 @@ export default function MessagesPage() {
         )
       })
       setDraft('')
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : 'Failed to send message.')
     } finally {
       setSending(false)
       isSendingRef.current = false
@@ -436,6 +445,9 @@ export default function MessagesPage() {
                     Send
                   </button>
                 </form>
+                {sendError ? (
+                  <p className="mt-2 text-xs text-red-600">{sendError}</p>
+                ) : null}
               </>
             ) : (
               <p className="text-sm" style={{ color: 'var(--m-muted)' }}>Select a conversation.</p>
