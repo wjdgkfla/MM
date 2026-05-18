@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSessionFromRequest } from '@/lib/auth/session'
+import { requireActiveAdmin } from '@/lib/auth/admin'
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = getSessionFromRequest(request)
-    if (!session || session.role !== 'admin') {
-      return NextResponse.json({ error: 'Admin only' }, { status: 403 })
-    }
+    const admin = await requireActiveAdmin(request)
+    if (!admin.ok) return admin.response
 
     if (!isSupabaseConfigured()) {
       return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 400 })

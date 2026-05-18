@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSessionFromRequest } from '@/lib/auth/session'
+import { requireActiveAdmin } from '@/lib/auth/admin'
 import {
   listingsListAllForAdmin,
   usersFindAll,
@@ -8,13 +8,8 @@ import {
 } from '@/lib/data/supabaseDataAccess'
 
 export async function GET(request: NextRequest) {
-  const session = getSessionFromRequest(request)
-  if (!session) {
-    return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
-  }
-  if (session.role !== 'admin') {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
-  }
+  const admin = await requireActiveAdmin(request)
+  if (!admin.ok) return admin.response
 
   try {
     const [listings, users, reports, activity] = await Promise.all([

@@ -86,6 +86,10 @@ export async function POST(request: NextRequest) {
       if (String(toUserId) === session.userId) {
         return NextResponse.json({ error: 'You cannot send messages to yourself' }, { status: 400 })
       }
+      const existingThread = await messagesListThread(String(listingId), listing.sellerId, String(toUserId))
+      if (existingThread.length === 0) {
+        return NextResponse.json({ error: 'Seller replies require an existing buyer conversation' }, { status: 403 })
+      }
     } else {
       // Buyer sending — recipient must be the listing seller
       if (String(toUserId) !== listing.sellerId) {

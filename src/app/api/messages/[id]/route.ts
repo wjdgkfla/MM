@@ -8,9 +8,10 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = getSessionFromRequest(request)
     if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
 
@@ -33,7 +34,7 @@ export async function PATCH(
     const { data: msgData, error: msgError } = await getSupabaseAdmin()
       .from('messages')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (msgError || !msgData) {
@@ -56,7 +57,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'This offer has already been responded to' }, { status: 409 })
     }
 
-    const updated = await messagesUpdateOfferStatus(params.id, offerStatus)
+    const updated = await messagesUpdateOfferStatus(id, offerStatus)
     if (!updated) return NextResponse.json({ error: 'Message not found' }, { status: 404 })
 
     return NextResponse.json(updated)

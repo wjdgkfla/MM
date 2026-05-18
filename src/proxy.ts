@@ -11,10 +11,10 @@ function getIp(request: NextRequest): string {
 
 function getRateLimitConfig(pathname: string) {
   // Session check and sign-out are cookie-only operations with no DB writes.
-  // Throttling them breaks the app for normal users — exempt entirely.
+  // Throttling them breaks the app for normal users - exempt entirely.
   if (pathname === '/api/auth/session' || pathname === '/api/auth/sign-out') return null
 
-  // Sign-in and sign-up: strict brute-force protection
+  // Sign-in and sign-up: strict brute-force protection.
   if (pathname === '/api/auth/sign-in' || pathname === '/api/auth/sign-up') return RATE_LIMITS.auth
 
   if (pathname.startsWith('/api/upload')) return RATE_LIMITS.upload
@@ -30,23 +30,19 @@ function getRateLimitConfig(pathname: string) {
   return RATE_LIMITS.read
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Only rate-limit API routes
   if (!pathname.startsWith('/api/')) return NextResponse.next()
 
   const ip = getIp(request)
   const config = getRateLimitConfig(pathname)
 
-  // Null means "no rate limit for this route" — pass through immediately
   if (config === null) return NextResponse.next()
 
-  // Auth routes use full pathname so sign-in and sign-up have separate buckets.
-  // Other routes use a prefix key (covers all sub-paths together).
   const isAuth = pathname.startsWith('/api/auth/')
   const key = isAuth
-    ? `${ip}:${pathname}` // e.g. "1.2.3.4:/api/auth/sign-in"
+    ? `${ip}:${pathname}`
     : `${ip}:${pathname.split('/').slice(0, 4).join('/')}`
 
   const { allowed, remaining, resetAt } = checkRateLimit(key, config)

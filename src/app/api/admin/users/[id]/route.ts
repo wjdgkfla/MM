@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSessionFromRequest } from '@/lib/auth/session'
+import { requireActiveAdmin } from '@/lib/auth/admin'
 import { UserAccountState, UserRole } from '@/lib/types'
 import {
   usersFindById,
@@ -10,18 +10,15 @@ import {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = getSessionFromRequest(request)
-    if (!session) {
-      return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
-    }
-    if (session.role !== 'admin') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
-    }
+    const { id } = await params
+    const admin = await requireActiveAdmin(request)
+    if (!admin.ok) return admin.response
+    const { session } = admin
 
-    const user = await usersFindById(params.id)
+    const user = await usersFindById(id)
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }

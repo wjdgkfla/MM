@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
   CAMPUS_LOCATIONS,
-  CAMPUS_ZONE_MAP,
   CATEGORIES,
   CONDITIONS,
   LISTING_STATUSES,
@@ -14,6 +13,7 @@ import {
 } from '@/lib/types'
 import { isGmuEmail } from '@/lib/validators'
 import { getSessionFromRequest } from '@/lib/auth/session'
+import { normalizeListingInput } from '@/lib/listingValidation'
 import {
   listingsFindMany,
   listingsFindBySellerId,
@@ -137,133 +137,54 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const {
-      title,
-      description,
-      price,
-      category,
-      condition,
-      campusLocation,
-      pickupZone,
-      pickupNotes,
-      imageUrls,
-      courseCode,
-      professorName,
-      edition,
-      bundleNotes,
-      tags,
-    } = body
-
-    if (
-      !title ||
-      !description ||
-      price === undefined ||
-      !category ||
-      !condition ||
-      !campusLocation ||
-      !pickupZone ||
-      !pickupNotes
-    ) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    const normalized = normalizeListingInput(body)
+    if (!normalized.ok) {
+      return NextResponse.json({ error: normalized.error }, { status: 400 })
     }
-
-    if (!CATEGORIES.includes(category as Category)) {
-      return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
-    }
-    if (!CONDITIONS.includes(condition as Condition)) {
-      return NextResponse.json({ error: 'Invalid condition' }, { status: 400 })
-    }
-    if (!CAMPUS_LOCATIONS.includes(campusLocation as CampusLocation)) {
-      return NextResponse.json({ error: 'Invalid location' }, { status: 400 })
-    }
-    if (!PICKUP_ZONES.includes(pickupZone as PickupZone)) {
-      return NextResponse.json({ error: 'Invalid pickup zone' }, { status: 400 })
-    }
-
-    const parsedPrice = Number(price)
-    if (!Number.isFinite(parsedPrice) || parsedPrice < 0 || parsedPrice > 50_000) {
-      return NextResponse.json({ error: 'Price must be between $0 and $50,000' }, { status: 400 })
-    }
-
-    const parsedTags = Array.isArray(tags)
-      ? tags
-          .filter((value: unknown) => typeof value === 'string')
-          .map((value: string) => value.trim())
-          .filter(Boolean)
-          .slice(0, 5)
-      : []
-    const parsedImageUrls = Array.isArray(imageUrls)
-      ? imageUrls.filter((value: unknown) => typeof value === 'string' && (value as string).trim().length > 0)
-      : []
-    const parsedCourseCode = typeof courseCode === 'string' ? courseCode.trim().toUpperCase().slice(0, 24) : undefined
-    const parsedProfessorName = typeof professorName === 'string' ? professorName.trim().slice(0, 80) : undefined
-    const parsedEdition = typeof edition === 'string' ? edition.trim().slice(0, 40) : undefined
-    const parsedBundleNotes = typeof bundleNotes === 'string' ? bundleNotes.trim().slice(0, 200) : undefined
-    const shouldKeepTextbookFields = category === 'textbooks'
-
-    // Validate course code format (e.g. "CS 112", "STAT250")
-    if (parsedCourseCode && !/^[A-Z]{2,5}\s?\d{3}$/.test(parsedCourseCode)) {
-      return NextResponse.json(
-        { error: 'Course code must be in format: CS 112 or STAT250' },
-        { status: 400 }
-      )
-    }
-
-    // Validate campus/pickup zone pairing (shared constant from types.ts)
-    const validZones = CAMPUS_ZONE_MAP[campusLocation as string]
-    if (validZones && !validZones.includes(pickupZone as string)) {
-      return NextResponse.json(
-        { error: `Pickup zone "${pickupZone}" is not available at ${campusLocation} campus` },
-        { status: 400 }
-      )
-    }
+    const listingInput = normalized.value
 
     const seller = await usersFindById(session.userId)
-    if (seller?.accountState === 'suspended') {
+    if (!seller) {
+      // User profile missing from DB — session is stale or account was deleted
+      return NextResponse.json(
+        { error: 'User profile not found. Please sign out and sign in again.' },
+        { status: 403 }
+      )
+    }
+    if (seller.accountState === 'suspended') {
       return NextResponse.json({ error: 'Your account is suspended' }, { status: 403 })
     }
-    const sellerProfile = seller
-      ? {
-          displayName: seller.displayName,
-          profileImageUrl: seller.profileImageUrl,
-          trustBadge: seller.trustBadge,
-          reputationScore: seller.reputationScore,
-          isGmuVerified: seller.gmuEmailVerified,
-          isStudentSeller: seller.isStudentSeller,
-          homeCampus: seller.homeCampus,
-          lastActiveAt: seller.lastActiveAt,
-          campusVerification: seller.campusVerification,
-        }
-      : {
-          displayName: session.displayName,
-          profileImageUrl: undefined,
-          trustBadge: 'verification-pending' as const,
-          reputationScore: 0,
-          isGmuVerified: false,
-          isStudentSeller: true,
-          homeCampus: campusLocation as CampusLocation,
-          lastActiveAt: new Date().toISOString(),
-          campusVerification: 'pending' as const,
-        }
+    // seller is guaranteed non-null here (returned 403 above if missing)
+    const sellerProfile = {
+      displayName: seller.displayName,
+      profileImageUrl: seller.profileImageUrl,
+      trustBadge: seller.trustBadge,
+      reputationScore: seller.reputationScore,
+      isGmuVerified: seller.gmuEmailVerified,
+      isStudentSeller: seller.isStudentSeller,
+      homeCampus: seller.homeCampus,
+      lastActiveAt: seller.lastActiveAt,
+      campusVerification: seller.campusVerification,
+    }
 
     const listing = await listingsCreate({
-      title: String(title),
-      description: String(description),
-      price: parsedPrice,
-      category: category as Category,
-      condition: condition as Condition,
+      title: listingInput.title,
+      description: listingInput.description,
+      price: listingInput.price,
+      category: listingInput.category,
+      condition: listingInput.condition,
       moderationState: 'visible',
-      campusLocation: campusLocation as CampusLocation,
-      pickupZone: pickupZone as PickupZone,
-      pickupNotes: String(pickupNotes),
-      courseCode: shouldKeepTextbookFields ? parsedCourseCode || undefined : undefined,
-      professorName: shouldKeepTextbookFields ? parsedProfessorName || undefined : undefined,
-      edition: shouldKeepTextbookFields ? parsedEdition || undefined : undefined,
-      bundleNotes: shouldKeepTextbookFields ? parsedBundleNotes || undefined : undefined,
+      campusLocation: listingInput.campusLocation,
+      pickupZone: listingInput.pickupZone,
+      pickupNotes: listingInput.pickupNotes,
+      courseCode: listingInput.courseCode,
+      professorName: listingInput.professorName,
+      edition: listingInput.edition,
+      bundleNotes: listingInput.bundleNotes,
       sellerId: session.userId,
       sellerProfile,
-      imageUrls: parsedImageUrls,
-      tags: parsedTags,
+      imageUrls: listingInput.imageUrls,
+      tags: listingInput.tags,
       status: 'available',
     })
 

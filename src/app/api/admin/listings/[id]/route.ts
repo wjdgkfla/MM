@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSessionFromRequest } from '@/lib/auth/session'
+import { requireActiveAdmin } from '@/lib/auth/admin'
 import { LISTING_MODERATION_STATES, LISTING_STATUSES, ListingModerationState, ListingStatus } from '@/lib/types'
 import {
   listingsFindById,
@@ -11,18 +11,15 @@ import {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = getSessionFromRequest(request)
-    if (!session) {
-      return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
-    }
-    if (session.role !== 'admin') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
-    }
+    const { id } = await params
+    const admin = await requireActiveAdmin(request)
+    if (!admin.ok) return admin.response
+    const { session } = admin
 
-    const existing = await listingsFindById(params.id)
+    const existing = await listingsFindById(id)
     if (!existing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
@@ -87,18 +84,15 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = getSessionFromRequest(request)
-    if (!session) {
-      return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
-    }
-    if (session.role !== 'admin') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
-    }
+    const { id } = await params
+    const admin = await requireActiveAdmin(request)
+    if (!admin.ok) return admin.response
+    const { session } = admin
 
-    const existing = await listingsFindById(params.id)
+    const existing = await listingsFindById(id)
     if (!existing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }

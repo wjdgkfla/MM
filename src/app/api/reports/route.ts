@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
+import { requireActiveAdmin } from '@/lib/auth/admin'
 import { REPORT_REASONS, REPORT_STATUSES, ReportReason, ReportStatus } from '@/lib/types'
 import {
   listingsFindById,
@@ -12,13 +13,8 @@ import {
 } from '@/lib/data/supabaseDataAccess'
 
 export async function GET(request: NextRequest) {
-  const session = getSessionFromRequest(request)
-  if (!session) {
-    return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
-  }
-  if (session.role !== 'admin') {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
-  }
+  const admin = await requireActiveAdmin(request)
+  if (!admin.ok) return admin.response
 
   try {
     const reports = await reportsListAll()
@@ -88,13 +84,9 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const session = getSessionFromRequest(request)
-    if (!session) {
-      return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
-    }
-    if (session.role !== 'admin') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
-    }
+    const admin = await requireActiveAdmin(request)
+    if (!admin.ok) return admin.response
+    const { session } = admin
 
     const body = await request.json()
     const reportId = String(body?.reportId || '').trim()

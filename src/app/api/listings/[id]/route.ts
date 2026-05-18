@@ -1,18 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import {
-  CAMPUS_LOCATIONS,
-  CAMPUS_ZONE_MAP,
-  CATEGORIES,
-  CONDITIONS,
-  LISTING_STATUSES,
-  PICKUP_ZONES,
-  Category,
-  CampusLocation,
-  Condition,
-  ListingStatus,
-  PickupZone,
-} from '@/lib/types'
+import { LISTING_STATUSES, ListingStatus } from '@/lib/types'
 import { getSessionFromRequest } from '@/lib/auth/session'
+import { normalizeListingInput } from '@/lib/listingValidation'
 import {
   listingsFindById,
   listingsUpdateStatus,
@@ -32,11 +21,12 @@ const canTransitionStatus = (from: ListingStatus, to: ListingStatus) => {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = getSessionFromRequest(request)
-    const listing = await listingsFindById(params.id)
+    const listing = await listingsFindById(id)
 
     if (!listing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
@@ -56,7 +46,7 @@ export async function GET(
 
     // Fire-and-forget view count increment — skip for the seller viewing their own listing
     if (!session || session.userId !== listing.sellerId) {
-      listingsIncrementViewCount(params.id)
+      listingsIncrementViewCount(id)
     }
 
     return NextResponse.json({ listing, seller: seller || null, sellerListingCount })
@@ -68,15 +58,16 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     }
 
-    const existing = await listingsFindById(params.id)
+    const existing = await listingsFindById(id)
     if (!existing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
@@ -104,7 +95,7 @@ export async function PATCH(
       )
     }
 
-    const listing = await listingsUpdateStatus(params.id, nextStatus)
+    const listing = await listingsUpdateStatus(id, nextStatus)
     return NextResponse.json(listing)
   } catch (err) {
     console.error('PATCH /api/listings/[id] error:', err)
@@ -114,15 +105,16 @@ export async function PATCH(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     }
 
-    const existing = await listingsFindById(params.id)
+    const existing = await listingsFindById(id)
     if (!existing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
@@ -137,90 +129,35 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const title = String(body?.title || '').trim()
-    const description = String(body?.description || '').trim()
-    const pickupNotes = String(body?.pickupNotes || '').trim()
-    const price = Number(body?.price)
-    const category = body?.category as Category
-    const condition = body?.condition as Condition
-    const campusLocation = body?.campusLocation as CampusLocation
-    const pickupZone = body?.pickupZone as PickupZone
-    const tags = Array.isArray(body?.tags)
-      ? body.tags
-          .filter((value: unknown) => typeof value === 'string')
-          .map((value: string) => value.trim())
-          .filter(Boolean)
-          .slice(0, 5)
-      : existing.tags
-    const imageUrls = Array.isArray(body?.imageUrls)
-      ? body.imageUrls.filter((value: unknown) => typeof value === 'string' && (value as string).trim().length > 0)
-      : existing.imageUrls
-    const courseCode =
-      typeof body?.courseCode === 'string'
-        ? body.courseCode.trim().toUpperCase().slice(0, 24)
-        : existing.courseCode
-    const professorName =
-      typeof body?.professorName === 'string'
-        ? body.professorName.trim().slice(0, 80)
-        : existing.professorName
-    const edition =
-      typeof body?.edition === 'string'
-        ? body.edition.trim().slice(0, 40)
-        : existing.edition
-    const bundleNotes =
-      typeof body?.bundleNotes === 'string'
-        ? body.bundleNotes.trim().slice(0, 200)
-        : existing.bundleNotes
+    const normalized = normalizeListingInput({
+      ...body,
+      tags: Array.isArray(body?.tags) ? body.tags : existing.tags,
+      imageUrls: Array.isArray(body?.imageUrls) ? body.imageUrls : existing.imageUrls,
+      courseCode: typeof body?.courseCode === 'string' ? body.courseCode : existing.courseCode,
+      professorName: typeof body?.professorName === 'string' ? body.professorName : existing.professorName,
+      edition: typeof body?.edition === 'string' ? body.edition : existing.edition,
+      bundleNotes: typeof body?.bundleNotes === 'string' ? body.bundleNotes : existing.bundleNotes,
+    })
+    if (!normalized.ok) {
+      return NextResponse.json({ error: normalized.error }, { status: 400 })
+    }
+    const listingInput = normalized.value
 
-    if (title.length < 5) {
-      return NextResponse.json({ error: 'Title should be at least 5 characters' }, { status: 400 })
-    }
-    if (description.length < 15) {
-      return NextResponse.json({ error: 'Description should be at least 15 characters' }, { status: 400 })
-    }
-    if (pickupNotes.length < 6) {
-      return NextResponse.json({ error: 'Pickup notes should be at least 6 characters' }, { status: 400 })
-    }
-    if (!Number.isFinite(price) || price < 0) {
-      return NextResponse.json({ error: 'Price must be 0 or higher' }, { status: 400 })
-    }
-    if (!CATEGORIES.includes(category)) {
-      return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
-    }
-    if (!CONDITIONS.includes(condition)) {
-      return NextResponse.json({ error: 'Invalid condition' }, { status: 400 })
-    }
-    if (!CAMPUS_LOCATIONS.includes(campusLocation)) {
-      return NextResponse.json({ error: 'Invalid campus location' }, { status: 400 })
-    }
-    if (!PICKUP_ZONES.includes(pickupZone)) {
-      return NextResponse.json({ error: 'Invalid pickup zone' }, { status: 400 })
-    }
-
-    // Validate campus/pickup zone pairing (shared constant from types.ts)
-    const validZones = CAMPUS_ZONE_MAP[campusLocation as string]
-    if (validZones && !validZones.includes(pickupZone as string)) {
-      return NextResponse.json(
-        { error: `Pickup zone "${pickupZone}" is not available at ${campusLocation} campus` },
-        { status: 400 }
-      )
-    }
-
-    const listing = await listingsUpdate(params.id, {
-      title,
-      description,
-      price,
-      category,
-      condition,
-      campusLocation,
-      pickupZone,
-      pickupNotes,
-      courseCode: category === 'textbooks' ? courseCode || undefined : undefined,
-      professorName: category === 'textbooks' ? professorName || undefined : undefined,
-      edition: category === 'textbooks' ? edition || undefined : undefined,
-      bundleNotes: category === 'textbooks' ? bundleNotes || undefined : undefined,
-      tags,
-      imageUrls,
+    const listing = await listingsUpdate(id, {
+      title: listingInput.title,
+      description: listingInput.description,
+      price: listingInput.price,
+      category: listingInput.category,
+      condition: listingInput.condition,
+      campusLocation: listingInput.campusLocation,
+      pickupZone: listingInput.pickupZone,
+      pickupNotes: listingInput.pickupNotes,
+      courseCode: listingInput.courseCode,
+      professorName: listingInput.professorName,
+      edition: listingInput.edition,
+      bundleNotes: listingInput.bundleNotes,
+      tags: listingInput.tags,
+      imageUrls: listingInput.imageUrls,
     })
 
     if (!listing) {
@@ -236,15 +173,16 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     }
 
-    const existing = await listingsFindById(params.id)
+    const existing = await listingsFindById(id)
     if (!existing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
@@ -258,7 +196,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Only the seller can delete this listing' }, { status: 403 })
     }
 
-    const deleted = await listingsRemove(params.id)
+    const deleted = await listingsRemove(id)
     if (!deleted) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }

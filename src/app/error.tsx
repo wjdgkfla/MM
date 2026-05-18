@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import Link from 'next/link'
 
 export default function GlobalError({
   error,
@@ -38,9 +39,9 @@ export default function GlobalError({
           >
             Try again
           </button>
-          <a href="/" className="ui-btn-secondary">
+          <Link href="/" className="ui-btn-secondary">
             Back to feed
-          </a>
+          </Link>
         </div>
       </div>
     </div>
