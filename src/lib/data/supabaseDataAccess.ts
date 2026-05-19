@@ -621,13 +621,26 @@ export async function messagesListByListing(listingId: string, userId?: string):
 
 export async function messagesListThread(listingId: string, userA: string, userB: string): Promise<Message[]> {
   const conversationId = buildConversationId(listingId, userA, userB)
-  const { data, error } = await getSupabaseAdmin()
+  const db = getSupabaseAdmin()
+  const { data, error } = await db
     .from('messages')
     .select('*')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
-  if (error || !data) return []
-  return (data as Record<string, unknown>[]).map(rowToMessage)
+  if (!error && data && data.length > 0) {
+    return (data as Record<string, unknown>[]).map(rowToMessage)
+  }
+
+  const fallback = await db
+    .from('messages')
+    .select('*')
+    .eq('listing_id', listingId)
+    .or(
+      `and(from_user_id.eq.${userA},to_user_id.eq.${userB}),and(from_user_id.eq.${userB},to_user_id.eq.${userA})`
+    )
+    .order('created_at', { ascending: true })
+  if (fallback.error || !fallback.data) return []
+  return (fallback.data as Record<string, unknown>[]).map(rowToMessage)
 }
 
 export async function messagesCreate(input: Omit<Message, 'id' | 'createdAt'>): Promise<Message> {

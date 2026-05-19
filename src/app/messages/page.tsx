@@ -51,6 +51,7 @@ export default function MessagesPage() {
   const didAutoSend = useRef(false)
   const isSendingRef = useRef(false)
   const threadScrollRef = useRef<HTMLDivElement>(null)
+  const threadCountRef = useRef(0)
 
   const selectedConversation = useMemo(
     () => conversations.find((conversation) => conversation.key === selectedKey) || null,
@@ -185,23 +186,27 @@ export default function MessagesPage() {
         return
       }
 
-      if (showLoadingSpinner) setLoadingThread(true)
+      if (showLoadingSpinner && threadCountRef.current === 0) setLoadingThread(true)
       try {
-        await fetch('/api/messages', {
+        if (showLoadingSpinner) await fetch('/api/messages', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'mark-read', conversationId: selectedConversation.key }),
         }).catch(() => {})
-        setConversations((current) => current.map((c) => c.key === selectedConversation.key ? { ...c, unreadCount: 0 } : c))
+        if (showLoadingSpinner) {
+          setConversations((current) => current.map((c) => c.key === selectedConversation.key ? { ...c, unreadCount: 0 } : c))
+        }
         const url = `/api/messages?listingId=${selectedConversation.listingId}&peerId=${selectedConversation.peerId}`
         const res = await fetch(url)
         if (!res.ok) return
         const data = (await res.json()) as Message[]
         if (Array.isArray(data)) {
           setThread((prev) => {
-            // Only update if there are new messages (avoid flickering)
+            if (data.length === 0 && prev.length > 0) return prev
             if (data.length !== prev.length) return data
-            return prev
+            const previousLast = prev[prev.length - 1]?.id
+            const nextLast = data[data.length - 1]?.id
+            return previousLast !== nextLast ? data : prev
           })
         }
       } catch {
@@ -211,7 +216,9 @@ export default function MessagesPage() {
       }
     }
 
-    loadThread(true)
+    const shouldShowInitialLoader = threadCountRef.current === 0
+    setLoadingThread(shouldShowInitialLoader)
+    loadThread(shouldShowInitialLoader)
 
     // Poll for new messages every 4 seconds while this thread is open
     const pollInterval = setInterval(() => loadThread(false), 4000)
@@ -223,6 +230,7 @@ export default function MessagesPage() {
     if (threadScrollRef.current) {
       threadScrollRef.current.scrollTop = threadScrollRef.current.scrollHeight
     }
+    threadCountRef.current = thread.length
   }, [thread.length])
 
   const [sendError, setSendError] = useState('')

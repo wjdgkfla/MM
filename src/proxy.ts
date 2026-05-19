@@ -18,7 +18,7 @@ function getRateLimitConfig(pathname: string) {
   if (pathname === '/api/auth/sign-in' || pathname === '/api/auth/sign-up') return RATE_LIMITS.auth
 
   if (pathname.startsWith('/api/upload')) return RATE_LIMITS.upload
-  if (pathname.startsWith('/api/messages')) return RATE_LIMITS.message
+  if (pathname.startsWith('/api/messages')) return null
   if (
     pathname.startsWith('/api/listings') ||
     pathname.startsWith('/api/favorites') ||
@@ -36,7 +36,10 @@ export function proxy(request: NextRequest) {
   if (!pathname.startsWith('/api/')) return NextResponse.next()
 
   const ip = getIp(request)
-  const config = getRateLimitConfig(pathname)
+  const messageMethod = request.method.toUpperCase()
+  const config = pathname.startsWith('/api/messages')
+    ? (messageMethod === 'POST' ? RATE_LIMITS.message : RATE_LIMITS.messageRead)
+    : getRateLimitConfig(pathname)
 
   if (config === null) return NextResponse.next()
 

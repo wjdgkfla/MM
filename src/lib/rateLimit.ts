@@ -57,7 +57,8 @@ export function checkRateLimit(
 export const RATE_LIMITS = {
   auth:    { limit: 5,  windowSecs: 60 },  // 5/min — brute force protection
   upload:  { limit: 6,  windowSecs: 60 },  // 6 uploads/min (max 4 files each)
-  message: { limit: 15, windowSecs: 60 },  // 15 messages/min
+  message: { limit: 15, windowSecs: 60 },  // 15 message sends/min
+  messageRead: { limit: 180, windowSecs: 60 }, // inbox/thread polling + read receipts
   write:   { limit: 30, windowSecs: 60 },  // 30 writes/min (listings, favorites, reports)
   read:    { limit: 120, windowSecs: 60 }, // 120 reads/min
 } as const
