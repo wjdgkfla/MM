@@ -3,10 +3,11 @@
 import Image from 'next/image'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Category, Condition, CampusLocation, PickupZone } from '@/lib/types'
+import { Category, Condition, CampusLocation, PickupZone, ListingKind } from '@/lib/types'
 import { CATEGORY_LABELS, CONDITION_LABELS, LOCATION_LABELS, PICKUP_ZONE_LABELS } from '@/lib/types'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { AuthRequiredCard } from '@/components/AuthRequiredCard'
+import { applyPhotoAction } from '@/lib/photoCollection'
 
 type SellFormState = {
   title: string
@@ -22,6 +23,7 @@ type SellFormState = {
   edition: string
   bundleNotes: string
   tags: string
+  listingKind: ListingKind
 }
 
 function filesToDataUrls(files: File[]) {
@@ -59,6 +61,7 @@ export default function SellPage() {
   const [error, setError] = useState('')
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [coverIndex, setCoverIndex] = useState(0)
   const [form, setForm] = useState<SellFormState>({
     title: '',
     price: '',
@@ -73,6 +76,7 @@ export default function SellPage() {
     edition: '',
     bundleNotes: '',
     tags: '',
+    listingKind: 'sell',
   })
 
   const parsedTags = useMemo(
@@ -90,6 +94,7 @@ export default function SellPage() {
     if (files.length === 0) {
       setImagePreviews([])
       setImageFiles([])
+      setCoverIndex(0)
       return
     }
 
@@ -97,9 +102,22 @@ export default function SellPage() {
       const urls = await filesToDataUrls(files)
       setImagePreviews(urls)
       setImageFiles(files)
+      setCoverIndex(0)
     } catch {
       setError('Could not load selected images. Please try different files.')
     }
+  }
+
+  const movePhoto = (from: number, to: number) => {
+    setImagePreviews((current) => applyPhotoAction(current, { type: 'move', from, to }))
+    setImageFiles((current) => applyPhotoAction(current, { type: 'move', from, to }))
+    setCoverIndex((current) => current === from ? to : current)
+  }
+
+  const removePhoto = (index: number) => {
+    setImagePreviews((current) => applyPhotoAction(current, { type: 'remove', index }))
+    setImageFiles((current) => applyPhotoAction(current, { type: 'remove', index }))
+    setCoverIndex((current) => Math.max(0, Math.min(current > index ? current - 1 : current, imagePreviews.length - 2)))
   }
 
   const validate = () => {
@@ -154,6 +172,8 @@ export default function SellPage() {
           price: Number(form.price),
           tags: parsedTags,
           imageUrls: finalImageUrls,
+          coverImageUrl: finalImageUrls[coverIndex] || finalImageUrls[0],
+          listingKind: form.listingKind,
           courseCode: form.courseCode.trim(),
           professorName: form.professorName.trim(),
           edition: form.edition.trim(),
@@ -237,8 +257,16 @@ export default function SellPage() {
                 {imagePreviews.length > 0 ? (
                   <div className="mt-3 grid grid-cols-4 gap-2">
                     {imagePreviews.map((src, index) => (
-                      <div key={`${src}-${index}`} className="relative aspect-square w-full overflow-hidden rounded-lg border" style={{ borderColor: 'var(--m-line)' }}>
+                      <div key={`${src}-${index}`} className="relative aspect-square w-full overflow-hidden rounded-lg border" style={{ borderColor: index === coverIndex ? 'var(--m-green)' : 'var(--m-line)' }}>
                         <Image src={src} alt={`Preview ${index + 1}`} fill className="object-cover" unoptimized />
+                        <div className="absolute inset-x-1 bottom-1 flex justify-center gap-1">
+                          <button type="button" onClick={() => setCoverIndex(index)} className="rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--m-ink)]">
+                            {index === coverIndex ? 'Cover' : 'Set'}
+                          </button>
+                          <button type="button" onClick={() => movePhoto(index, index - 1)} disabled={index === 0} className="rounded bg-white/90 px-1.5 py-0.5 text-[10px] disabled:opacity-40">&lt;</button>
+                          <button type="button" onClick={() => movePhoto(index, index + 1)} disabled={index === imagePreviews.length - 1} className="rounded bg-white/90 px-1.5 py-0.5 text-[10px] disabled:opacity-40">&gt;</button>
+                          <button type="button" onClick={() => removePhoto(index)} className="rounded bg-white/90 px-1.5 py-0.5 text-[10px] text-red-700">Remove</button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -273,6 +301,21 @@ export default function SellPage() {
 
                 <div className="rounded-xl bg-[var(--m-soft)] p-3 sm:p-4">
                   <p className="text-sm font-medium mb-3" style={{ color: 'var(--m-ink)' }}>Basic details</p>
+                  <div className="mb-4 flex rounded-xl border bg-white p-1" style={{ borderColor: 'var(--m-line)' }}>
+                    {([
+                      ['sell', 'Selling'],
+                      ['wanted', 'Wanted'],
+                    ] as Array<[ListingKind, string]>).map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setForm({ ...form, listingKind: value })}
+                        className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${form.listingKind === value ? 'bg-[var(--m-ink)] text-white' : 'text-[var(--m-muted)]'}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                   <div className="grid gap-4 sm:grid-cols-3">
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>Price ($) *</label>

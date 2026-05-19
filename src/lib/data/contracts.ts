@@ -4,9 +4,12 @@ import {
   ListingModerationState,
   ListingStatus,
   Message,
+  Notification,
+  PriceWatch,
   Report,
   ReportReason,
   ReportStatus,
+  SavedSearch,
   User,
   UserAccountState,
   UserRole,
@@ -18,6 +21,7 @@ export type ListingQuery = {
   pickupZone?: Listing['pickupZone']
   condition?: Listing['condition']
   status?: Listing['status']
+  listingKind?: Listing['listingKind']
   search?: string
   minPrice?: number
   maxPrice?: number
@@ -38,6 +42,7 @@ export type UpdateListingInput = Partial<
     | 'price'
     | 'category'
     | 'condition'
+    | 'listingKind'
     | 'campusLocation'
     | 'pickupZone'
     | 'pickupNotes'
@@ -47,6 +52,9 @@ export type UpdateListingInput = Partial<
     | 'bundleNotes'
     | 'tags'
     | 'imageUrls'
+    | 'coverImageUrl'
+    | 'expiresAt'
+    | 'lastRefreshedAt'
   >
 >
 
@@ -56,7 +64,22 @@ export type Conversation = {
   participantIds: [string, string]
   lastMessagePreview: string
   lastMessageAt: string
+  unreadCount?: number
 }
+
+export type UpdateProfileInput = {
+  displayName?: string
+  bio?: string
+  profileImageUrl?: string
+  homeCampus?: User['homeCampus']
+  marketingEmailOptIn?: boolean
+}
+
+export type CreateNotificationInput = Omit<Notification, 'id' | 'createdAt' | 'isRead'> & {
+  isRead?: boolean
+}
+
+export type CreateSavedSearchInput = Omit<SavedSearch, 'id' | 'createdAt' | 'lastNotifiedAt'>
 
 export type CreateReportInput = {
   listingId: string
@@ -86,6 +109,7 @@ export interface UsersRepository {
   upsert(input: { email: string; displayName: string; role?: UserRole }): User
   updateRole(id: string, role: UserRole): User | null
   updateAccountState(id: string, accountState: UserAccountState): User | null
+  updateProfile(id: string, input: UpdateProfileInput): User | null
 }
 
 // Placeholder interface for future DB-backed favorites table.
@@ -105,6 +129,25 @@ export interface MessagesRepository {
   create(input: Omit<Message, 'id' | 'createdAt'>): Message
 }
 
+export interface NotificationsRepository {
+  listByUser(userId: string): Notification[]
+  create(input: CreateNotificationInput): Notification
+  markRead(userId: string, id: string): Notification | null
+  markAllRead(userId: string): void
+}
+
+export interface SavedSearchesRepository {
+  listByUser(userId: string): SavedSearch[]
+  create(input: CreateSavedSearchInput): SavedSearch
+  remove(userId: string, id: string): boolean
+}
+
+export interface PriceWatchesRepository {
+  listByUser(userId: string): PriceWatch[]
+  upsert(userId: string, listingId: string, lastSeenPrice: number): PriceWatch
+  remove(userId: string, listingId: string): boolean
+}
+
 export interface ReportsRepository {
   listAll(): Report[]
   create(input: CreateReportInput): Report
@@ -122,6 +165,9 @@ export interface MarketplaceDataAccess {
   favorites: FavoritesRepository
   conversations: ConversationsRepository
   messages: MessagesRepository
+  notifications: NotificationsRepository
+  savedSearches: SavedSearchesRepository
+  priceWatches: PriceWatchesRepository
   reports: ReportsRepository
   adminActivity: AdminActivityRepository
 }

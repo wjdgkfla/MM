@@ -99,6 +99,24 @@ export default function MyListingsPage() {
     }
   }
 
+  const refreshListing = async (id: string) => {
+    setBusyId(id)
+    try {
+      const res = await fetch(`/api/listings/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'refresh' }),
+      })
+      if (!res.ok) throw new Error('Failed to refresh listing')
+      const updated = (await res.json()) as Listing
+      setListings((current) => current.map((item) => (item.id === id ? updated : item)))
+    } catch (refreshError) {
+      setError(refreshError instanceof Error ? refreshError.message : 'Failed to refresh listing')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   if (authLoading) {
     return <div className="max-w-[1280px] mx-auto px-6 py-10 text-sm" style={{ color: 'var(--m-muted)' }}>Loading…</div>
   }
@@ -163,6 +181,11 @@ export default function MyListingsPage() {
                     </p>
                   </div>
                   <StatusBadge status={listing.status} />
+                  {(listing.isStale || listing.isExpired) ? (
+                    <span className="rounded-full bg-[var(--m-soft)] px-3 py-1 text-xs font-semibold text-[var(--m-muted)]">
+                      {listing.isExpired ? 'Expired' : 'Refresh soon'}
+                    </span>
+                  ) : null}
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -180,6 +203,14 @@ export default function MyListingsPage() {
                       {action.label}
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => refreshListing(listing.id)}
+                    className="ui-btn-secondary disabled:opacity-60"
+                  >
+                    Refresh
+                  </button>
                   <button
                     type="button"
                     disabled={isBusy}

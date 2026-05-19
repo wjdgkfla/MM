@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Listing, Message } from '@/lib/types'
+import { PICKUP_ZONE_LABELS, PickupZone } from '@/lib/types'
 import { formatRecency } from '@/lib/time'
 import { Conversation } from '@/lib/data/contracts'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
@@ -22,6 +23,7 @@ type ConversationSummary = {
   peerLabel: string
   lastMessage: string
   lastMessageAt: string
+  unreadCount?: number
 }
 
 const STARTER_MESSAGES = [
@@ -71,12 +73,26 @@ export default function MessagesPage() {
         for (const conversation of Array.isArray(inbox) ? inbox : []) {
           try {
             const listingRes = await fetch(`/api/listings/${conversation.listingId}`)
-            if (!listingRes.ok) continue
+            const peerId = conversation.participantIds.find((participantId) => participantId !== currentUserId)
+            if (!peerId) continue
+
+            if (!listingRes.ok) {
+              summaries.push({
+                key: conversation.id,
+                listingId: conversation.listingId,
+                listingTitle: 'Listing unavailable',
+                listingStatus: 'available',
+                peerId,
+                peerLabel: 'Marketplace user',
+                lastMessage: conversation.lastMessagePreview,
+                lastMessageAt: conversation.lastMessageAt,
+                unreadCount: conversation.unreadCount || 0,
+              })
+              continue
+            }
 
             const payload = (await listingRes.json()) as ListingPayload
             const listing = payload.listing
-            const peerId = conversation.participantIds.find((participantId) => participantId !== currentUserId)
-            if (!peerId) continue
 
             summaries.push({
               key: conversation.id,
@@ -88,6 +104,7 @@ export default function MessagesPage() {
                 peerId === listing.sellerId ? listing.sellerProfile.displayName : 'Interested buyer',
               lastMessage: conversation.lastMessagePreview,
               lastMessageAt: conversation.lastMessageAt,
+              unreadCount: conversation.unreadCount || 0,
             })
           } catch {
             // Ignore invalid listing rows in demo mode.
@@ -170,6 +187,12 @@ export default function MessagesPage() {
 
       if (showLoadingSpinner) setLoadingThread(true)
       try {
+        await fetch('/api/messages', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'mark-read', conversationId: selectedConversation.key }),
+        }).catch(() => {})
+        setConversations((current) => current.map((c) => c.key === selectedConversation.key ? { ...c, unreadCount: 0 } : c))
         const url = `/api/messages?listingId=${selectedConversation.listingId}&peerId=${selectedConversation.peerId}`
         const res = await fetch(url)
         if (!res.ok) return
@@ -273,6 +296,28 @@ export default function MessagesPage() {
     }
   }
 
+  const sendMeetup = async (status: Message['meetupStatus'], zone: PickupZone = 'jc-lobby') => {
+    if (!selectedConversation || !status) return
+    const time = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    const res = await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        listingId: selectedConversation.listingId,
+        toUserId: selectedConversation.peerId,
+        body: `Meetup ${status}: ${PICKUP_ZONE_LABELS[zone]} tomorrow.`,
+        type: 'meetup',
+        meetupStatus: status,
+        meetupZone: zone,
+        meetupTime: time,
+      }),
+    }).catch(() => null)
+    if (res?.ok) {
+      const created = await res.json() as Message
+      setThread((current) => [...current, created])
+    }
+  }
+
   if (authLoading) {
     return <div className="max-w-6xl mx-auto px-4 py-10 text-sm" style={{ color: 'var(--m-muted)' }}>Loading…</div>
   }
@@ -333,7 +378,10 @@ export default function MessagesPage() {
                     <p className="text-xs" style={{ color: 'var(--m-muted)' }}>{conversation.listingTitle}</p>
                     <p className="mt-1 text-sm font-semibold" style={{ color: 'var(--m-ink)' }}>{conversation.peerLabel}</p>
                     <p className="mt-1 truncate text-xs" style={{ color: 'var(--m-muted)' }}>{conversation.lastMessage}</p>
-                    <p className="mt-1 text-[11px]" style={{ color: 'var(--m-muted)' }}>{formatRecency(conversation.lastMessageAt)}</p>
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                      <p className="text-[11px]" style={{ color: 'var(--m-muted)' }}>{formatRecency(conversation.lastMessageAt)}</p>
+                      {conversation.unreadCount ? <span className="rounded-full bg-[var(--m-pop)] px-1.5 py-0.5 text-[10px] font-bold text-white">{conversation.unreadCount}</span> : null}
+                    </div>
                   </button>
                 </li>
               ))}
@@ -406,6 +454,17 @@ export default function MessagesPage() {
                             </div>
                           )
                         }
+                        if (message.type === 'meetup') {
+                          return (
+                            <div key={message.id} className={`max-w-[90%] ${fromCurrentUser ? 'ml-auto' : 'mr-auto'}`}>
+                              <div className="rounded-2xl border bg-white p-4" style={{ borderColor: 'var(--m-green)' }}>
+                                <p className="font-mono-label text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--m-muted)' }}>Meetup</p>
+                                <p className="mt-1 text-sm font-semibold text-[var(--m-ink)]">{message.body}</p>
+                                {message.meetupZone ? <p className="mt-1 text-xs text-[var(--m-muted)]">{PICKUP_ZONE_LABELS[message.meetupZone]}</p> : null}
+                              </div>
+                            </div>
+                          )
+                        }
                         return (
                           <div key={message.id} className={`flex flex-col ${fromCurrentUser ? 'items-end' : 'items-start'}`}>
                             <div
@@ -442,6 +501,12 @@ export default function MessagesPage() {
                       {starter}
                     </button>
                   ))}
+                  <button type="button" onClick={() => sendMeetup('proposed')} className="rounded-full bg-[var(--m-green-soft)] px-3 py-1 text-xs font-semibold text-[var(--m-ink)]">
+                    Suggest meetup
+                  </button>
+                  <button type="button" onClick={() => sendMeetup('confirmed')} className="rounded-full bg-[var(--m-green-soft)] px-3 py-1 text-xs font-semibold text-[var(--m-ink)]">
+                    Confirm meetup
+                  </button>
                 </div>
 
                 <form

@@ -13,10 +13,12 @@ import {
   Category,
   Condition,
   Listing,
+  ListingKind,
   PickupZone,
 } from '@/lib/types'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { AuthRequiredCard } from '@/components/AuthRequiredCard'
+import { applyPhotoAction } from '@/lib/photoCollection'
 
 type EditFormState = {
   title: string
@@ -32,6 +34,7 @@ type EditFormState = {
   edition: string
   bundleNotes: string
   tags: string
+  listingKind: ListingKind
 }
 
 function filesToDataUrls(files: File[]) {
@@ -76,6 +79,7 @@ const EMPTY_FORM: EditFormState = {
   edition: '',
   bundleNotes: '',
   tags: '',
+  listingKind: 'sell',
 }
 
 export default function EditListingPage() {
@@ -90,6 +94,7 @@ export default function EditListingPage() {
   const [error, setError] = useState('')
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [coverIndex, setCoverIndex] = useState(0)
 
   const parsedTags = useMemo(
     () =>
@@ -132,8 +137,10 @@ export default function EditListingPage() {
           edition: listingData.edition || '',
           bundleNotes: listingData.bundleNotes || '',
           tags: listingData.tags.join(', '),
+          listingKind: listingData.listingKind || 'sell',
         })
         setImagePreviews(listingData.imageUrls || [])
+        setCoverIndex(Math.max(0, (listingData.imageUrls || []).findIndex((url) => url === listingData.coverImageUrl)))
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Failed to load listing')
       } finally {
@@ -145,7 +152,7 @@ export default function EditListingPage() {
   }, [params?.id, session])
 
   const validate = () => {
-    const hasExistingImages = (listing?.imageUrls || []).length > 0
+    const hasExistingImages = imagePreviews.length > 0
     const hasNewImages = imageFiles.length > 0
     if (!hasExistingImages && !hasNewImages) return 'At least 1 photo is required.'
     if (form.title.trim().length < 5) return 'Title should be at least 5 characters.'
@@ -167,6 +174,7 @@ export default function EditListingPage() {
     if (files.length === 0) {
       setImagePreviews(listing?.imageUrls || [])
       setImageFiles([])
+      setCoverIndex(0)
       return
     }
 
@@ -174,9 +182,22 @@ export default function EditListingPage() {
       const urls = await filesToDataUrls(files)
       setImagePreviews(urls)
       setImageFiles(files)
+      setCoverIndex(0)
     } catch {
       setError('Could not load selected images. Please try different files.')
     }
+  }
+
+  const movePhoto = (from: number, to: number) => {
+    setImagePreviews((current) => applyPhotoAction(current, { type: 'move', from, to }))
+    setImageFiles((current) => applyPhotoAction(current, { type: 'move', from, to }))
+    setCoverIndex((current) => current === from ? to : current)
+  }
+
+  const removePhoto = (index: number) => {
+    setImagePreviews((current) => applyPhotoAction(current, { type: 'remove', index }))
+    setImageFiles((current) => applyPhotoAction(current, { type: 'remove', index }))
+    setCoverIndex((current) => Math.max(0, Math.min(current > index ? current - 1 : current, imagePreviews.length - 2)))
   }
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -195,7 +216,7 @@ export default function EditListingPage() {
     try {
       // Default to the listing's existing server-side image URLs.
       // imagePreviews holds local data: URLs (preview only) and must never be saved to the DB.
-      let finalImageUrls = listing.imageUrls
+      let finalImageUrls = imagePreviews.filter((src) => !src.startsWith('data:'))
       if (imageFiles.length > 0) {
         try {
           finalImageUrls = await uploadImages(imageFiles)
@@ -218,6 +239,8 @@ export default function EditListingPage() {
           price: Number(form.price),
           tags: parsedTags,
           imageUrls: finalImageUrls,
+          coverImageUrl: finalImageUrls[coverIndex] || finalImageUrls[0],
+          listingKind: form.listingKind,
           courseCode: form.courseCode.trim(),
           professorName: form.professorName.trim(),
           edition: form.edition.trim(),
@@ -297,8 +320,16 @@ export default function EditListingPage() {
           {imagePreviews.length > 0 ? (
             <div className="mt-3 grid grid-cols-4 gap-2">
               {imagePreviews.map((src, index) => (
-                <div key={`${src}-${index}`} className="relative aspect-square w-full overflow-hidden rounded-lg border border-[var(--m-line)]">
+                <div key={`${src}-${index}`} className="relative aspect-square w-full overflow-hidden rounded-lg border" style={{ borderColor: index === coverIndex ? 'var(--m-green)' : 'var(--m-line)' }}>
                   <Image src={src} alt={`Preview ${index + 1}`} fill className="object-cover" unoptimized />
+                  <div className="absolute inset-x-1 bottom-1 flex justify-center gap-1">
+                    <button type="button" onClick={() => setCoverIndex(index)} className="rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--m-ink)]">
+                      {index === coverIndex ? 'Cover' : 'Set'}
+                    </button>
+                    <button type="button" onClick={() => movePhoto(index, index - 1)} disabled={index === 0} className="rounded bg-white/90 px-1.5 py-0.5 text-[10px] disabled:opacity-40">&lt;</button>
+                    <button type="button" onClick={() => movePhoto(index, index + 1)} disabled={index === imagePreviews.length - 1} className="rounded bg-white/90 px-1.5 py-0.5 text-[10px] disabled:opacity-40">&gt;</button>
+                    <button type="button" onClick={() => removePhoto(index)} className="rounded bg-white/90 px-1.5 py-0.5 text-[10px] text-red-700">Remove</button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -317,6 +348,22 @@ export default function EditListingPage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
+          <div className="sm:col-span-3 flex rounded-xl border bg-white p-1" style={{ borderColor: 'var(--m-line)' }}>
+            {([
+              ['sell', 'Selling'],
+              ['wanted', 'Wanted'],
+            ] as Array<[ListingKind, string]>).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setForm({ ...form, listingKind: value })}
+                className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${form.listingKind === value ? 'bg-[var(--m-ink)] text-white' : 'text-[var(--m-muted)]'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           <div>
             <label className="block text-sm font-medium mb-2">Price ($) *</label>
             <input

@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
@@ -24,6 +23,7 @@ import { useFavorites } from '@/lib/useFavorites'
 import { isCampusMeetupRecommended } from '@/lib/trust'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { showToast } from '@/components/Toast'
+import { ListingPhotoGallery } from '@/components/ListingPhotoGallery'
 
 const FALLBACK_IMAGE = '/listings/moving-boxes.svg'
 
@@ -51,7 +51,6 @@ export default function ItemPage() {
   const [listing, setListing] = useState<Listing | null>(null)
   const [seller, setSeller] = useState<User | null>(null)
   const [sellerListingCount, setSellerListingCount] = useState(0)
-  const [activeImage, setActiveImage] = useState(0)
   const [loading, setLoading] = useState(true)
   const [actionBusy, setActionBusy] = useState(false)
   const [actionError, setActionError] = useState('')
@@ -66,6 +65,7 @@ export default function ItemPage() {
   const [includeSellerInReport, setIncludeSellerInReport] = useState(false)
   const [reportSubmitting, setReportSubmitting] = useState(false)
   const [reportFeedback, setReportFeedback] = useState('')
+  const [watchingPrice, setWatchingPrice] = useState(false)
 
   const { session } = useAuthSession()
   const { isSaved, toggleFavorite } = useFavorites(session?.userId)
@@ -102,7 +102,6 @@ export default function ItemPage() {
         setListing(data.listing)
         setSeller(data.seller)
         setSellerListingCount(data.sellerListingCount || 0)
-        setActiveImage(0)
       })
       .catch(() => {
         setListing(null)
@@ -142,7 +141,6 @@ export default function ItemPage() {
   }
 
   const priceLabel = listing.price === 0 ? 'Free' : `$${listing.price}`
-  const selectedImage = gallery[Math.min(activeImage, gallery.length - 1)]
   const listingIsSaved = isSaved(listing.id)
   const signInRedirect = `/sign-in?redirect=${encodeURIComponent(`/item/${listing.id}`)}`
   const isOwnListing = Boolean(session && session.userId === listing.sellerId)
@@ -265,6 +263,21 @@ export default function ItemPage() {
     }
   }
 
+  const togglePriceWatch = async () => {
+    if (!session) {
+      router.push(signInRedirect)
+      return
+    }
+    const method = watchingPrice ? 'DELETE' : 'POST'
+    const url = watchingPrice ? `/api/price-watches?listingId=${listing.id}` : '/api/price-watches'
+    await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: method === 'POST' ? JSON.stringify({ listingId: listing.id }) : undefined,
+    })
+    setWatchingPrice((current) => !current)
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <Link href="/" className="mb-6 inline-block text-sm text-[var(--m-muted)] hover:text-[var(--m-green)]">
@@ -273,26 +286,7 @@ export default function ItemPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1.15fr_400px] lg:gap-10">
         <section>
-          <div className="relative overflow-hidden rounded-2xl border bg-[var(--m-soft)] aspect-[4/3]" style={{ borderColor: 'var(--m-line)' }}>
-            <Image src={selectedImage} alt={listing.title} fill className="object-cover" priority unoptimized={selectedImage.startsWith('data:')} />
-          </div>
-
-          {gallery.length > 1 ? (
-            <div className="mt-3 grid grid-cols-4 gap-2">
-              {gallery.map((image, index) => (
-                <button
-                  type="button"
-                  key={`${image}-${index}`}
-                  onClick={() => setActiveImage(index)}
-                  className={`relative overflow-hidden rounded-xl border aspect-square ${
-                    index === activeImage ? 'border-[var(--m-green)]' : 'border-[var(--m-line)]'
-                  }`}
-                >
-                  <Image src={image} alt={`${listing.title} ${index + 1}`} fill className="object-cover" unoptimized={image.startsWith('data:')} />
-                </button>
-              ))}
-            </div>
-          ) : null}
+          <ListingPhotoGallery images={gallery} title={listing.title} coverImageUrl={listing.coverImageUrl} />
 
           <div className="mt-6 space-y-5">
             <div>
@@ -498,6 +492,9 @@ export default function ItemPage() {
                   }`}
                 >
                   {listingIsSaved ? 'Saved ♥' : 'Save ♡'}
+                </button>
+                <button type="button" onClick={togglePriceWatch} className="ui-btn-secondary">
+                  {watchingPrice ? 'Watching price' : 'Watch price drop'}
                 </button>
                 {isSoldListing && !isOwnListing ? (
                   <button type="button" disabled className="w-full h-12 rounded-2xl text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-not-allowed opacity-60" style={{ background: 'var(--m-ink)' }}>

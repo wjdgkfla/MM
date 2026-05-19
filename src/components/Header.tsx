@@ -14,6 +14,8 @@ export function Header() {
   const [headerSearch, setHeaderSearch] = useState('')
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [hasUnread, setHasUnread] = useState(false)
+  const [unreadNotifications, setUnreadNotifications] = useState(0)
+  const [accountOpen, setAccountOpen] = useState(false)
 
   useEffect(() => {
     if (!session) return
@@ -24,6 +26,11 @@ export function Header() {
         if (!res.ok) return
         const conversations = (await res.json()) as Conversation[]
         if (!Array.isArray(conversations) || conversations.length === 0) return
+        const apiUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
+        if (apiUnread > 0) {
+          setHasUnread(true)
+          return
+        }
         const lastSeen = parseInt(localStorage.getItem('mm_msgs_last_seen') || '0', 10)
         const hasNew = conversations.some(
           (c) => c.lastMessageAt && new Date(c.lastMessageAt).getTime() > lastSeen
@@ -37,6 +44,19 @@ export function Header() {
     checkUnread()
     // Poll every 30s so the badge updates without a page reload
     const interval = setInterval(checkUnread, 30_000)
+    return () => clearInterval(interval)
+  }, [session])
+
+  useEffect(() => {
+    if (!session) return
+    const loadNotifications = async () => {
+      const res = await fetch('/api/notifications').catch(() => null)
+      if (!res?.ok) return
+      const data = await res.json().catch(() => [])
+      setUnreadNotifications(Array.isArray(data) ? data.filter((n) => !n.isRead).length : 0)
+    }
+    loadNotifications()
+    const interval = setInterval(loadNotifications, 30_000)
     return () => clearInterval(interval)
   }, [session])
 
@@ -65,6 +85,12 @@ export function Header() {
     { href: '/messages', label: 'Messages' },
     { href: '/my-listings', label: 'My posts' },
   ]
+
+  const initials = (session?.displayName || session?.email || '?')
+    .split(/\s+/)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('')
+    .slice(0, 2) || '?'
 
   return (
     <header className="sticky top-0 z-50 border-b bg-[var(--m-bg)]/85 backdrop-blur-xl" style={{ borderColor: 'var(--m-line)' }}>
@@ -165,14 +191,50 @@ export function Header() {
                 </svg>
                 <span className="hidden sm:inline">Sell</span>
               </Link>
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="hidden h-9 items-center rounded-full px-3 text-[13px] font-semibold transition-colors lg:flex"
-                style={{ color: 'var(--m-muted)' }}
-              >
-                Sign out
-              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setAccountOpen((open) => !open)}
+                  aria-label="Account menu"
+                  className="relative grid h-10 w-10 place-items-center rounded-full text-[12px] font-black text-white"
+                  style={{ background: 'var(--m-ink)' }}
+                >
+                  {initials}
+                  {(hasUnread || unreadNotifications > 0) && (
+                    <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-[var(--m-pop)] ring-2 ring-white" />
+                  )}
+                </button>
+                {accountOpen ? (
+                  <>
+                    <button type="button" className="fixed inset-0 z-40 cursor-default bg-transparent" onClick={() => setAccountOpen(false)} aria-label="Close account menu" />
+                    <div className="absolute right-0 top-12 z-50 w-56 rounded-xl border bg-white p-2 shadow-xl" style={{ borderColor: 'var(--m-line)' }}>
+                      <p className="px-3 py-2 text-xs text-[var(--m-muted)]">{session.email}</p>
+                      {[
+                        ['Profile', '/profile'],
+                        ['Settings', '/settings'],
+                        ['Notifications', '/notifications'],
+                        ['My posts', '/my-listings'],
+                        ['Saved', '/saved'],
+                        ['Messages', '/messages'],
+                      ].map(([label, href]) => (
+                        <Link key={href} href={href} onClick={() => setAccountOpen(false)} className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[var(--m-soft)]" style={{ color: 'var(--m-ink)' }}>
+                          {label}
+                          {href === '/messages' && hasUnread ? <span className="h-2 w-2 rounded-full bg-[var(--m-pop)]" /> : null}
+                          {href === '/notifications' && unreadNotifications > 0 ? <span className="text-xs text-[var(--m-pop)]">{unreadNotifications}</span> : null}
+                        </Link>
+                      ))}
+                      {session.role === 'admin' ? (
+                        <Link href="/admin" onClick={() => setAccountOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[var(--m-soft)]" style={{ color: 'var(--m-ink)' }}>
+                          Admin
+                        </Link>
+                      ) : null}
+                      <button type="button" onClick={handleSignOut} className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-[var(--m-soft)]" style={{ color: 'var(--m-muted)' }}>
+                        Sign out
+                      </button>
+                    </div>
+                  </>
+                ) : null}
+              </div>
             </>
           ) : (
             <Link

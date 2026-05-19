@@ -6,6 +6,7 @@ import {
   messagesListThread,
   messagesCreate,
   conversationsListByUser,
+  conversationsMarkRead,
   usersFindById,
 } from '@/lib/data/supabaseDataAccess'
 
@@ -55,13 +56,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { listingId, toUserId, body: messageBody, type, offerAmount } = body
+    const { listingId, toUserId, body: messageBody, type, offerAmount, meetupStatus, meetupZone, meetupTime } = body
 
     if (!listingId || !toUserId || !messageBody) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const isOffer = type === 'offer'
+    const isMeetup = type === 'meetup'
     if (isOffer) {
       if (typeof offerAmount !== 'number' || offerAmount <= 0) {
         return NextResponse.json({ error: 'offerAmount must be a positive number' }, { status: 400 })
@@ -120,14 +122,36 @@ export async function POST(request: NextRequest) {
       fromUserId: String(session.userId),
       toUserId: String(toUserId),
       body: String(messageBody),
-      type: isOffer ? 'offer' : 'text',
+      type: isOffer ? 'offer' : isMeetup ? 'meetup' : 'text',
       offerAmount: isOffer ? Number(offerAmount) : undefined,
       offerStatus: isOffer ? 'pending' : undefined,
+      meetupStatus: isMeetup ? meetupStatus : undefined,
+      meetupZone: isMeetup ? meetupZone : undefined,
+      meetupTime: isMeetup ? meetupTime : undefined,
     })
 
     return NextResponse.json(message)
   } catch (err) {
     console.error('POST /api/messages error:', err)
     return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = getSessionFromRequest(request)
+    if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
+
+    const body = await request.json()
+    if (body?.action !== 'mark-read' || typeof body.conversationId !== 'string') {
+      return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+    }
+
+    const ok = await conversationsMarkRead(body.conversationId, session.userId)
+    if (!ok) return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    console.error('PATCH /api/messages error:', err)
+    return NextResponse.json({ error: 'Failed to update conversation' }, { status: 500 })
   }
 }

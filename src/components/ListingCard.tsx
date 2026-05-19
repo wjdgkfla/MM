@@ -37,7 +37,7 @@ const CAT_BG: Record<string, string> = {
 export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingCardProps) {
   const [sellerHovered, setSellerHovered] = useState(false)
   const priceLabel  = listing.price === 0 ? 'Free' : `$${listing.price}`
-  const coverImage  = listing.imageUrls[0] || FALLBACK_IMAGE
+  const coverImage  = listing.coverImageUrl || listing.imageUrls[0] || FALLBACK_IMAGE
   const isReserved  = listing.status === 'reserved'
   const isFree      = listing.price === 0
   const bg          = CAT_BG[listing.category] || CAT_BG.other
@@ -67,6 +67,18 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
           />
 
           {/* Reserved scrim */}
+          {listing.listingKind === 'wanted' && (
+            <div className="absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white" style={{ background: 'var(--m-ink)' }}>
+              Wanted
+            </div>
+          )}
+          {(listing.isStale || listing.isExpired) && (
+            <div className="absolute bottom-2 right-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-[var(--m-muted)]">
+              {listing.isExpired ? 'Expired' : 'Refresh soon'}
+            </div>
+          )}
+
+          {/* Reserved scrim */}
           {isReserved && (
             <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(15,22,17,0.52)' }}>
               <span className="rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white" style={{ borderColor: 'rgba(255,255,255,0.65)' }}>
@@ -76,7 +88,7 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
           )}
 
           {/* Free badge */}
-          {isFree && !isReserved && (
+          {isFree && !isReserved && listing.listingKind !== 'wanted' && (
             <div className="absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white" style={{ background: 'var(--m-green)' }}>
               Free
             </div>

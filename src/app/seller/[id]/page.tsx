@@ -31,6 +31,9 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
         <p className="mt-1 text-sm" style={{ color: 'var(--m-muted)' }}>
           Trust details for {seller.displayName}. GMU verification and activity cues help buyers decide quickly.
         </p>
+        {seller.bio ? (
+          <p className="mt-3 max-w-2xl text-sm leading-6" style={{ color: 'var(--m-ink)' }}>{seller.bio}</p>
+        ) : null}
 
         <div className="mt-5">
           <SellerTrustCard seller={seller} sellerListingCount={activeListings.length} />

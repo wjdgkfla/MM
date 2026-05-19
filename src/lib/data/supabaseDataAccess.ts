@@ -12,18 +12,29 @@ import {
   Rating,
   RatingScore,
   RatingTag,
+  Notification,
+  PriceWatch,
   Report,
   ReportStatus,
+  SavedSearch,
   User,
   UserAccountState,
   UserRole,
 } from '@/lib/types'
 import {
   CreateListingInput,
+  CreateNotificationInput,
   CreateReportInput,
+  CreateSavedSearchInput,
   ListingQuery,
   UpdateListingInput,
+  UpdateProfileInput,
 } from '@/lib/data/contracts'
+import {
+  calculateListingLifecycle,
+  getDefaultListingExpiry,
+  shouldCreatePriceDropNotification,
+} from '@/lib/marketplaceLifecycle'
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -50,6 +61,16 @@ function buildConversationId(listingId: string, userA: string, userB: string): s
 }
 
 function rowToListing(row: Record<string, unknown>): Listing {
+  const createdAt = row.created_at ? new Date(String(row.created_at)).toISOString() : new Date().toISOString()
+  const updatedAt = row.updated_at ? new Date(String(row.updated_at)).toISOString() : new Date().toISOString()
+  const lastRefreshedAt = row.last_refreshed_at
+    ? new Date(String(row.last_refreshed_at)).toISOString()
+    : createdAt
+  const expiresAt = row.expires_at
+    ? new Date(String(row.expires_at)).toISOString()
+    : getDefaultListingExpiry(new Date(lastRefreshedAt)).toISOString()
+  const lifecycle = calculateListingLifecycle({ expiresAt, lastRefreshedAt, createdAt })
+
   return {
     id: String(row.id),
     title: String(row.title || ''),
@@ -58,11 +79,14 @@ function rowToListing(row: Record<string, unknown>): Listing {
     category: (row.category as Listing['category']) || 'other',
     condition: (row.condition as Listing['condition']) || 'good',
     status: (row.status as ListingStatus) || 'available',
+    listingKind: (row.listing_kind as Listing['listingKind']) || 'sell',
     moderationState: (row.moderation_state as ListingModerationState) || 'visible',
     imageUrls: Array.isArray(row.image_urls) ? (row.image_urls as string[]) : [],
+    coverImageUrl: row.cover_image_url ? String(row.cover_image_url) : undefined,
     sellerId: String(row.seller_id || ''),
     sellerProfile: (row.seller_profile as Listing['sellerProfile']) || {
       displayName: 'Unknown',
+      bio: '',
       trustBadge: 'new-seller',
       reputationScore: 0,
       isGmuVerified: false,
@@ -81,9 +105,13 @@ function rowToListing(row: Record<string, unknown>): Listing {
     tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
     favoriteCount: Number(row.favorite_count) || 0,
     viewCount: Number(row.view_count) || 0,
+    isStale: lifecycle.isStale,
+    isExpired: lifecycle.isExpired,
+    expiresAt,
+    lastRefreshedAt,
     isFavorited: false,
-    createdAt: row.created_at ? new Date(String(row.created_at)).toISOString() : new Date().toISOString(),
-    updatedAt: row.updated_at ? new Date(String(row.updated_at)).toISOString() : new Date().toISOString(),
+    createdAt,
+    updatedAt,
   }
 }
 
@@ -96,6 +124,8 @@ function rowToUser(row: Record<string, unknown>): User {
     gmuEmail: String(row.gmu_email || ''),
     gmuEmailVerified: Boolean(row.gmu_email_verified ?? true),
     profileImageUrl: row.profile_image_url ? String(row.profile_image_url) : undefined,
+    bio: String(row.bio || ''),
+    marketingEmailOptIn: Boolean(row.marketing_email_opt_in ?? false),
     isStudentSeller: Boolean(row.is_student_seller ?? true),
     homeCampus: (row.home_campus as User['homeCampus']) || 'fairfax',
     campusVerification: (row.campus_verification as User['campusVerification']) || 'pending',
@@ -117,6 +147,44 @@ function rowToMessage(row: Record<string, unknown>): Message {
     type: row.type === 'offer' ? 'offer' : 'text',
     offerAmount: row.offer_amount != null ? Number(row.offer_amount) : undefined,
     offerStatus: row.offer_status ? (row.offer_status as Message['offerStatus']) : undefined,
+    meetupStatus: row.meetup_status ? (row.meetup_status as Message['meetupStatus']) : undefined,
+    meetupZone: row.meetup_zone ? (row.meetup_zone as Message['meetupZone']) : undefined,
+    meetupTime: row.meetup_time ? new Date(String(row.meetup_time)).toISOString() : undefined,
+    createdAt: row.created_at ? new Date(String(row.created_at)).toISOString() : new Date().toISOString(),
+  }
+}
+
+function rowToNotification(row: Record<string, unknown>): Notification {
+  return {
+    id: String(row.id),
+    userId: String(row.user_id),
+    type: row.type as Notification['type'],
+    title: String(row.title || ''),
+    body: String(row.body || ''),
+    link: row.link ? String(row.link) : undefined,
+    meta: row.meta && typeof row.meta === 'object' ? (row.meta as Record<string, unknown>) : undefined,
+    isRead: Boolean(row.is_read),
+    createdAt: row.created_at ? new Date(String(row.created_at)).toISOString() : new Date().toISOString(),
+  }
+}
+
+function rowToSavedSearch(row: Record<string, unknown>): SavedSearch {
+  return {
+    id: String(row.id),
+    userId: String(row.user_id),
+    label: String(row.label || ''),
+    query: String(row.query || ''),
+    filters: row.filters && typeof row.filters === 'object' ? (row.filters as Record<string, unknown>) : {},
+    lastNotifiedAt: row.last_notified_at ? new Date(String(row.last_notified_at)).toISOString() : undefined,
+    createdAt: row.created_at ? new Date(String(row.created_at)).toISOString() : new Date().toISOString(),
+  }
+}
+
+function rowToPriceWatch(row: Record<string, unknown>): PriceWatch {
+  return {
+    userId: String(row.user_id),
+    listingId: String(row.listing_id),
+    lastSeenPrice: Number(row.last_seen_price) || 0,
     createdAt: row.created_at ? new Date(String(row.created_at)).toISOString() : new Date().toISOString(),
   }
 }
@@ -177,6 +245,7 @@ export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]>
     .in('moderation_state', ['visible', 'flagged'])
 
   if (query?.category)       q = q.eq('category', query.category)
+  if (query?.listingKind)    q = q.eq('listing_kind', query.listingKind)
   if (query?.campusLocation) q = q.eq('campus_location', query.campusLocation)
   if (query?.condition)      q = q.eq('condition', query.condition)
   if (query?.status)         q = q.eq('status', query.status)
@@ -283,8 +352,10 @@ export async function listingsCreate(input: CreateListingInput): Promise<Listing
     category: input.category,
     condition: input.condition,
     status: input.status,
+    listing_kind: input.listingKind || 'sell',
     moderation_state: input.moderationState,
     image_urls: input.imageUrls,
+    cover_image_url: input.coverImageUrl ?? input.imageUrls[0] ?? null,
     seller_id: input.sellerId,
     seller_profile: input.sellerProfile,
     campus_location: input.campusLocation,
@@ -297,6 +368,8 @@ export async function listingsCreate(input: CreateListingInput): Promise<Listing
     tags: input.tags,
     favorite_count: 0,
     view_count: 0,
+    expires_at: input.expiresAt ?? getDefaultListingExpiry(new Date(now)).toISOString(),
+    last_refreshed_at: input.lastRefreshedAt ?? now,
     created_at: now,
     updated_at: now,
   }
@@ -316,15 +389,21 @@ export async function listingsUpdate(id: string, input: UpdateListingInput): Pro
   if (input.price !== undefined)       updates.price = input.price
   if (input.category !== undefined)    updates.category = input.category
   if (input.condition !== undefined)   updates.condition = input.condition
+  if (input.listingKind !== undefined) updates.listing_kind = input.listingKind
   if (input.campusLocation !== undefined) updates.campus_location = input.campusLocation
   if (input.pickupZone !== undefined)  updates.pickup_zone = input.pickupZone
   if (input.pickupNotes !== undefined) updates.pickup_notes = input.pickupNotes
   if (input.tags !== undefined)        updates.tags = input.tags
   if (input.imageUrls !== undefined)   updates.image_urls = input.imageUrls
+  if (input.coverImageUrl !== undefined) updates.cover_image_url = input.coverImageUrl
+  if (input.expiresAt !== undefined) updates.expires_at = input.expiresAt
+  if (input.lastRefreshedAt !== undefined) updates.last_refreshed_at = input.lastRefreshedAt
   if ('courseCode' in input)    updates.course_code = input.courseCode ?? null
   if ('professorName' in input) updates.professor_name = input.professorName ?? null
   if ('edition' in input)       updates.edition = input.edition ?? null
   if ('bundleNotes' in input)   updates.bundle_notes = input.bundleNotes ?? null
+
+  const existing = await listingsFindById(id)
 
   const { data, error } = await getSupabaseAdmin()
     .from('listings')
@@ -333,7 +412,13 @@ export async function listingsUpdate(id: string, input: UpdateListingInput): Pro
     .select()
     .single()
   if (error || !data) return null
-  return rowToListing(data as Record<string, unknown>)
+  const updated = rowToListing(data as Record<string, unknown>)
+  if (existing && shouldCreatePriceDropNotification(existing.price, updated.price)) {
+    await notifyPriceWatchers(updated, existing.price).catch((notifyError) => {
+      console.error('notifyPriceWatchers error:', notifyError)
+    })
+  }
+  return updated
 }
 
 export async function listingsUpdateStatus(id: string, status: ListingStatus): Promise<Listing | null> {
@@ -414,6 +499,7 @@ export async function usersUpsert(input: {
   displayName: string
   role?: UserRole
   supabaseId: string
+  marketingEmailOptIn?: boolean
 }): Promise<User> {
   const normalized = input.email.trim().toLowerCase()
   const role = input.role || 'student'
@@ -457,6 +543,7 @@ export async function usersUpsert(input: {
       account_state: 'active',
       display_name: input.displayName || normalized.split('@')[0],
       gmu_email: normalized,
+      marketing_email_opt_in: Boolean(input.marketingEmailOptIn),
       gmu_email_verified: true,
       is_student_seller: role !== 'admin',
       home_campus: 'fairfax',
@@ -488,6 +575,24 @@ export async function usersUpdateAccountState(id: string, accountState: UserAcco
   const { data, error } = await getSupabaseAdmin()
     .from('users')
     .update({ account_state: accountState, last_active_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error || !data) return null
+  return rowToUser(data as Record<string, unknown>)
+}
+
+export async function usersUpdateProfile(id: string, input: UpdateProfileInput): Promise<User | null> {
+  const updates: Record<string, unknown> = { last_active_at: new Date().toISOString() }
+  if (input.displayName !== undefined) updates.display_name = input.displayName
+  if (input.bio !== undefined) updates.bio = input.bio
+  if (input.profileImageUrl !== undefined) updates.profile_image_url = input.profileImageUrl || null
+  if (input.homeCampus !== undefined) updates.home_campus = input.homeCampus
+  if (input.marketingEmailOptIn !== undefined) updates.marketing_email_opt_in = input.marketingEmailOptIn
+
+  const { data, error } = await getSupabaseAdmin()
+    .from('users')
+    .update(updates)
     .eq('id', id)
     .select()
     .single()
@@ -540,6 +645,9 @@ export async function messagesCreate(input: Omit<Message, 'id' | 'createdAt'>): 
     type: input.type || 'text',
     offer_amount: input.offerAmount ?? null,
     offer_status: input.offerStatus ?? null,
+    meetup_status: input.meetupStatus ?? null,
+    meetup_zone: input.meetupZone ?? null,
+    meetup_time: input.meetupTime ?? null,
     created_at: now,
   }
 
@@ -568,6 +676,8 @@ export async function messagesCreate(input: Omit<Message, 'id' | 'createdAt'>): 
         seller_id: sellerId,
         last_message: input.body,
         unread_count: 1,
+        buyer_last_read_at: input.fromUserId === buyerId ? now : null,
+        seller_last_read_at: input.fromUserId === sellerId ? now : null,
         is_active: true,
         participant_ids: [buyerId, sellerId].sort(),
         participants: {},
@@ -580,6 +690,10 @@ export async function messagesCreate(input: Omit<Message, 'id' | 'createdAt'>): 
     // Log but don't throw — the message was saved; the conversation index is non-critical
     console.error('messagesCreate: conversation upsert failed (non-fatal):', convErr)
   }
+
+  await createMessageNotification(input, id, conversationId).catch((notifyError) => {
+    console.error('messagesCreate: notification failed (non-fatal):', notifyError)
+  })
 
   return rowToMessage(data as Record<string, unknown>)
 }
@@ -615,30 +729,119 @@ export async function messagesUpdateOfferStatus(
     .select()
     .single()
   if (error || !data) return null
-  return rowToMessage(data as Record<string, unknown>)
+  const updated = rowToMessage(data as Record<string, unknown>)
+  await notificationsCreate({
+    userId: updated.fromUserId,
+    type: 'offer-update',
+    title: status === 'accepted' ? 'Offer accepted' : 'Offer declined',
+    body: status === 'accepted' ? 'Your offer was accepted.' : 'Your offer was declined.',
+    link: `/messages?listingId=${updated.listingId}`,
+    meta: { messageId },
+  }).catch((notifyError) => console.error('offer notification error:', notifyError))
+  return updated
+}
+
+async function messagesUnreadCountForThread(
+  listingId: string,
+  userId: string,
+  lastReadAt?: string | null
+): Promise<number> {
+  let q = getSupabaseAdmin()
+    .from('messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('listing_id', listingId)
+    .eq('to_user_id', userId)
+
+  if (lastReadAt) q = q.gt('created_at', lastReadAt)
+
+  const { count, error } = await q
+  return error ? 0 : count ?? 0
+}
+
+async function createMessageNotification(
+  input: Omit<Message, 'id' | 'createdAt'>,
+  messageId: string,
+  conversationId: string
+): Promise<void> {
+  const type = input.type === 'offer' ? 'offer-update' : input.type === 'meetup' ? 'meetup-update' : 'new-message'
+  const title =
+    input.type === 'offer'
+      ? 'New offer'
+      : input.type === 'meetup'
+        ? 'Meetup update'
+        : 'New message'
+
+  await notificationsCreate({
+    userId: input.toUserId,
+    type,
+    title,
+    body: input.body,
+    link: `/messages?listingId=${input.listingId}`,
+    meta: { messageId, conversationId, listingId: input.listingId },
+  })
 }
 
 // ─── Conversations ─────────────────────────────────────────────────────────
 
 export async function conversationsListByUser(userId: string) {
-  const { data, error } = await getSupabaseAdmin()
+  const db = getSupabaseAdmin()
+  const { data, error } = await db
     .from('conversations')
     .select('*')
     .contains('participant_ids', [userId])
     .eq('is_active', true)
     .order('updated_at', { ascending: false })
 
-  if (error || !data) return []
+  let rows = (data as Record<string, unknown>[]) || []
+  if ((error || rows.length === 0)) {
+    const fallback = await db
+      .from('conversations')
+      .select('*')
+      .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+      .eq('is_active', true)
+      .order('updated_at', { ascending: false })
+    rows = (fallback.data as Record<string, unknown>[]) || []
+  }
 
-  return (data as Record<string, unknown>[]).map((row) => ({
-    id: String(row.id),
-    listingId: String(row.listing_id),
-    participantIds: Array.isArray(row.participant_ids)
-      ? (row.participant_ids as [string, string])
-      : ([String(row.buyer_id), String(row.seller_id)].sort() as [string, string]),
-    lastMessagePreview: String(row.last_message || ''),
-    lastMessageAt: row.updated_at ? new Date(String(row.updated_at)).toISOString() : new Date().toISOString(),
+  if (rows.length === 0) return []
+
+  return Promise.all(rows.map(async (row) => {
+    const listingId = String(row.listing_id)
+    const buyerId = String(row.buyer_id)
+    const sellerId = String(row.seller_id)
+    const lastReadAt = userId === buyerId ? row.buyer_last_read_at : row.seller_last_read_at
+    const unreadCount = await messagesUnreadCountForThread(listingId, userId, lastReadAt ? String(lastReadAt) : null)
+    return {
+      id: String(row.id),
+      listingId,
+      participantIds: Array.isArray(row.participant_ids)
+        ? (row.participant_ids as [string, string])
+        : ([buyerId, sellerId].sort() as [string, string]),
+      lastMessagePreview: String(row.last_message || ''),
+      lastMessageAt: row.updated_at ? new Date(String(row.updated_at)).toISOString() : new Date().toISOString(),
+      unreadCount,
+    }
   }))
+}
+
+export async function conversationsMarkRead(conversationId: string, userId: string): Promise<boolean> {
+  const db = getSupabaseAdmin()
+  const { data, error } = await db
+    .from('conversations')
+    .select('*')
+    .eq('id', conversationId)
+    .single()
+  if (error || !data) return false
+  const row = data as Record<string, unknown>
+  const buyerId = String(row.buyer_id)
+  const sellerId = String(row.seller_id)
+  if (userId !== buyerId && userId !== sellerId) return false
+  const field = userId === buyerId ? 'buyer_last_read_at' : 'seller_last_read_at'
+  const { error: updateError } = await db
+    .from('conversations')
+    .update({ [field]: new Date().toISOString() })
+    .eq('id', conversationId)
+  return !updateError
 }
 
 // ─── Favorites ─────────────────────────────────────────────────────────────
@@ -668,6 +871,154 @@ export async function favoritesRemove(userId: string, listingId: string): Promis
     .eq('user_id', userId)
     .eq('listing_id', listingId)
   if (error) console.error('favoritesRemove error:', error)
+}
+
+// Notifications
+
+export async function notificationsListByUser(userId: string): Promise<Notification[]> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(100)
+  if (error || !data) return []
+  return (data as Record<string, unknown>[]).map(rowToNotification)
+}
+
+export async function notificationsCreate(input: CreateNotificationInput): Promise<Notification> {
+  const id = nanoid()
+  const { data, error } = await getSupabaseAdmin()
+    .from('notifications')
+    .insert({
+      id,
+      user_id: input.userId,
+      type: input.type,
+      title: input.title,
+      body: input.body,
+      link: input.link ?? null,
+      meta: input.meta ?? null,
+      is_read: input.isRead ?? false,
+      created_at: new Date().toISOString(),
+    })
+    .select()
+    .single()
+  if (error || !data) throw new Error(error?.message || 'Failed to create notification')
+  return rowToNotification(data as Record<string, unknown>)
+}
+
+export async function notificationsMarkRead(userId: string, id: string): Promise<Notification | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select()
+    .single()
+  if (error || !data) return null
+  return rowToNotification(data as Record<string, unknown>)
+}
+
+export async function notificationsMarkAllRead(userId: string): Promise<void> {
+  await getSupabaseAdmin()
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('user_id', userId)
+}
+
+// Saved searches and price watches
+
+export async function savedSearchesListByUser(userId: string): Promise<SavedSearch[]> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('saved_searches')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  if (error || !data) return []
+  return (data as Record<string, unknown>[]).map(rowToSavedSearch)
+}
+
+export async function savedSearchesCreate(input: CreateSavedSearchInput): Promise<SavedSearch> {
+  const id = nanoid()
+  const { data, error } = await getSupabaseAdmin()
+    .from('saved_searches')
+    .insert({
+      id,
+      user_id: input.userId,
+      label: input.label,
+      query: input.query,
+      filters: input.filters,
+      created_at: new Date().toISOString(),
+    })
+    .select()
+    .single()
+  if (error || !data) throw new Error(error?.message || 'Failed to save search')
+  return rowToSavedSearch(data as Record<string, unknown>)
+}
+
+export async function savedSearchesRemove(userId: string, id: string): Promise<boolean> {
+  const { error } = await getSupabaseAdmin()
+    .from('saved_searches')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId)
+  return !error
+}
+
+export async function priceWatchesListByUser(userId: string): Promise<PriceWatch[]> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('price_watches')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  if (error || !data) return []
+  return (data as Record<string, unknown>[]).map(rowToPriceWatch)
+}
+
+export async function priceWatchesUpsert(userId: string, listingId: string, lastSeenPrice: number): Promise<PriceWatch> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('price_watches')
+    .upsert({
+      user_id: userId,
+      listing_id: listingId,
+      last_seen_price: lastSeenPrice,
+      created_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,listing_id' })
+    .select()
+    .single()
+  if (error || !data) throw new Error(error?.message || 'Failed to watch listing')
+  return rowToPriceWatch(data as Record<string, unknown>)
+}
+
+export async function priceWatchesRemove(userId: string, listingId: string): Promise<boolean> {
+  const { error } = await getSupabaseAdmin()
+    .from('price_watches')
+    .delete()
+    .eq('user_id', userId)
+    .eq('listing_id', listingId)
+  return !error
+}
+
+async function notifyPriceWatchers(listing: Listing, previousPrice: number): Promise<void> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('price_watches')
+    .select('*')
+    .eq('listing_id', listing.id)
+  if (error || !data) return
+
+  await Promise.all((data as Record<string, unknown>[]).map(async (row) => {
+    const watch = rowToPriceWatch(row)
+    if (!shouldCreatePriceDropNotification(watch.lastSeenPrice || previousPrice, listing.price)) return
+    await notificationsCreate({
+      userId: watch.userId,
+      type: 'price-drop',
+      title: 'Price dropped',
+      body: `${listing.title} is now $${listing.price}.`,
+      link: `/item/${listing.id}`,
+      meta: { listingId: listing.id, previousPrice, nextPrice: listing.price },
+    })
+    await priceWatchesUpsert(watch.userId, listing.id, listing.price)
+  }))
 }
 
 // ─── Reports ───────────────────────────────────────────────────────────────

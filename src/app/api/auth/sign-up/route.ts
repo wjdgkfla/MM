@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const accessToken = String(body?.accessToken || '').trim()
     const requestedDisplayName = String(body?.displayName || '').trim()
+    const marketingEmailOptIn = body?.marketingEmailOptIn === true
 
     if (!accessToken) {
       return NextResponse.json({ error: 'Missing access token' }, { status: 400 })
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest) {
       email,
       displayName,
       role: resolveSessionRole(email),
+      marketingEmailOptIn,
     })
 
     const session: AuthSession = {

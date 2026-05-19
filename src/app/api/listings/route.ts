@@ -4,11 +4,13 @@ import {
   CATEGORIES,
   CONDITIONS,
   LISTING_STATUSES,
+  LISTING_KINDS,
   PICKUP_ZONES,
   Category,
   CampusLocation,
   Condition,
   ListingStatus,
+  ListingKind,
   PickupZone,
 } from '@/lib/types'
 import { isGmuEmail } from '@/lib/validators'
@@ -32,6 +34,7 @@ export async function GET(request: NextRequest) {
   const pickupZone = searchParams.get('pickupZone')
   const condition = searchParams.get('condition')
   const status = searchParams.get('status')
+  const listingKind = searchParams.get('listingKind')
   const minPrice = searchParams.get('minPrice')
   const maxPrice = searchParams.get('maxPrice')
   const freeOnly = searchParams.get('freeOnly')
@@ -47,6 +50,7 @@ export async function GET(request: NextRequest) {
     Boolean(pickupZone) ||
     Boolean(condition) ||
     Boolean(status) ||
+    Boolean(listingKind) ||
     Boolean(minPrice) ||
     Boolean(maxPrice) ||
     freeOnly === 'true' ||
@@ -93,6 +97,7 @@ export async function GET(request: NextRequest) {
         pickupZone && PICKUP_ZONES.includes(pickupZone as PickupZone) ? (pickupZone as PickupZone) : undefined,
       condition: condition && CONDITIONS.includes(condition as Condition) ? (condition as Condition) : undefined,
       status: status && LISTING_STATUSES.includes(status as ListingStatus) ? (status as ListingStatus) : undefined,
+      listingKind: listingKind && LISTING_KINDS.includes(listingKind as ListingKind) ? (listingKind as ListingKind) : undefined,
       search: search || undefined,
       minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
@@ -173,6 +178,7 @@ export async function POST(request: NextRequest) {
       price: listingInput.price,
       category: listingInput.category,
       condition: listingInput.condition,
+      listingKind: listingInput.listingKind,
       moderationState: 'visible',
       campusLocation: listingInput.campusLocation,
       pickupZone: listingInput.pickupZone,
@@ -184,6 +190,7 @@ export async function POST(request: NextRequest) {
       sellerId: session.userId,
       sellerProfile,
       imageUrls: listingInput.imageUrls,
+      coverImageUrl: listingInput.coverImageUrl,
       tags: listingInput.tags,
       status: 'available',
     })

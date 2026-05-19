@@ -9,6 +9,7 @@ export default function SignUpPage() {
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [marketingEmailOptIn, setMarketingEmailOptIn] = useState(false)
   const [redirect, setRedirect] = useState('/')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -47,7 +48,11 @@ export default function SignUpPage() {
       const res = await fetch('/api/auth/sign-up', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName: displayName.trim(), accessToken: data.session.access_token }),
+        body: JSON.stringify({
+          displayName: displayName.trim(),
+          accessToken: data.session.access_token,
+          marketingEmailOptIn,
+        }),
       })
 
       if (!res.ok) {
@@ -109,6 +114,16 @@ export default function SignUpPage() {
               className="ui-input"
             />
           </div>
+
+          <label className="flex items-start gap-2 rounded-xl bg-[var(--m-soft)] p-3 text-sm" style={{ color: 'var(--m-ink)' }}>
+            <input
+              type="checkbox"
+              checked={marketingEmailOptIn}
+              onChange={(e) => setMarketingEmailOptIn(e.target.checked)}
+              className="mt-1 h-4 w-4"
+            />
+            Send me Mason Market updates about new features, campus seasons, and saved deals.
+          </label>
 
           {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
 

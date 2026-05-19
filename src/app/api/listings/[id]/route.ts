@@ -129,10 +129,21 @@ export async function PUT(
     }
 
     const body = await request.json()
+    if (body?.action === 'refresh') {
+      const now = new Date()
+      const refreshed = await listingsUpdate(id, {
+        lastRefreshedAt: now.toISOString(),
+        expiresAt: new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+      })
+      return NextResponse.json(refreshed)
+    }
+
     const normalized = normalizeListingInput({
       ...body,
       tags: Array.isArray(body?.tags) ? body.tags : existing.tags,
       imageUrls: Array.isArray(body?.imageUrls) ? body.imageUrls : existing.imageUrls,
+      listingKind: typeof body?.listingKind === 'string' ? body.listingKind : existing.listingKind,
+      coverImageUrl: typeof body?.coverImageUrl === 'string' ? body.coverImageUrl : existing.coverImageUrl,
       courseCode: typeof body?.courseCode === 'string' ? body.courseCode : existing.courseCode,
       professorName: typeof body?.professorName === 'string' ? body.professorName : existing.professorName,
       edition: typeof body?.edition === 'string' ? body.edition : existing.edition,
@@ -149,6 +160,7 @@ export async function PUT(
       price: listingInput.price,
       category: listingInput.category,
       condition: listingInput.condition,
+      listingKind: listingInput.listingKind,
       campusLocation: listingInput.campusLocation,
       pickupZone: listingInput.pickupZone,
       pickupNotes: listingInput.pickupNotes,
@@ -158,6 +170,7 @@ export async function PUT(
       bundleNotes: listingInput.bundleNotes,
       tags: listingInput.tags,
       imageUrls: listingInput.imageUrls,
+      coverImageUrl: listingInput.coverImageUrl,
     })
 
     if (!listing) {

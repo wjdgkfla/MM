@@ -3,9 +3,11 @@ import {
   CAMPUS_ZONE_MAP,
   CATEGORIES,
   CONDITIONS,
+  LISTING_KINDS,
   Category,
   CampusLocation,
   Condition,
+  ListingKind,
   PickupZone,
 } from '@/lib/types'
 
@@ -15,10 +17,12 @@ export type NormalizedListingInput = {
   price: number
   category: Category
   condition: Condition
+  listingKind: ListingKind
   campusLocation: CampusLocation
   pickupZone: PickupZone
   pickupNotes: string
   imageUrls: string[]
+  coverImageUrl?: string
   courseCode?: string
   professorName?: string
   edition?: string
@@ -79,6 +83,7 @@ export function normalizeListingInput(input: Record<string, unknown>): Result {
   const price = Number(input.price)
   const category = input.category as Category
   const condition = input.condition as Condition
+  const listingKind = (input.listingKind || 'sell') as ListingKind
   const campusLocation = input.campusLocation as CampusLocation
   const pickupZone = input.pickupZone as PickupZone
   const images = normalizeImageUrls(input.imageUrls)
@@ -91,6 +96,7 @@ export function normalizeListingInput(input: Record<string, unknown>): Result {
   }
   if (!CATEGORIES.includes(category)) return { ok: false, error: 'Invalid category' }
   if (!CONDITIONS.includes(condition)) return { ok: false, error: 'Invalid condition' }
+  if (!LISTING_KINDS.includes(listingKind)) return { ok: false, error: 'Invalid listing kind' }
   if (!CAMPUS_LOCATIONS.includes(campusLocation)) return { ok: false, error: 'Invalid campus location' }
   if (!CAMPUS_ZONE_MAP[campusLocation]?.includes(pickupZone)) {
     return { ok: false, error: `Pickup zone "${pickupZone}" is not available at ${campusLocation} campus` }
@@ -115,10 +121,14 @@ export function normalizeListingInput(input: Record<string, unknown>): Result {
       price,
       category,
       condition,
+      listingKind,
       campusLocation,
       pickupZone,
       pickupNotes,
       imageUrls: images,
+      coverImageUrl: typeof input.coverImageUrl === 'string' && images.includes(input.coverImageUrl)
+        ? input.coverImageUrl
+        : images[0],
       courseCode: category === 'textbooks' ? courseCode || undefined : undefined,
       professorName: category === 'textbooks' ? professorName || undefined : undefined,
       edition: category === 'textbooks' ? edition || undefined : undefined,

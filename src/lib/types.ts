@@ -31,6 +31,7 @@ export const CAMPUS_ZONE_MAP: Record<string, string[]> = {
 }
 
 export const LISTING_STATUSES = ['available', 'reserved', 'sold'] as const
+export const LISTING_KINDS = ['sell', 'wanted'] as const
 export const LISTING_MODERATION_STATES = ['visible', 'flagged', 'hidden'] as const
 export const REPORT_REASONS = [
   'spam',
@@ -47,6 +48,7 @@ export type Condition = (typeof CONDITIONS)[number]
 export type CampusLocation = (typeof CAMPUS_LOCATIONS)[number]
 export type PickupZone = (typeof PICKUP_ZONES)[number]
 export type ListingStatus = (typeof LISTING_STATUSES)[number]
+export type ListingKind = (typeof LISTING_KINDS)[number]
 export type ListingModerationState = (typeof LISTING_MODERATION_STATES)[number]
 export type ReportReason = (typeof REPORT_REASONS)[number]
 export type ReportStatus = (typeof REPORT_STATUSES)[number]
@@ -57,6 +59,7 @@ export type CampusVerificationState = 'verified' | 'pending'
 
 export interface SellerProfileSnapshot {
   displayName: string
+  bio?: string
   profileImageUrl?: string
   trustBadge: TrustBadge
   reputationScore: number
@@ -75,8 +78,10 @@ export interface Listing {
   category: Category
   condition: Condition
   status: ListingStatus
+  listingKind: ListingKind
   moderationState: ListingModerationState
   imageUrls: string[]
+  coverImageUrl?: string
   sellerId: string
   sellerProfile: SellerProfileSnapshot
   campusLocation: CampusLocation
@@ -89,6 +94,10 @@ export interface Listing {
   tags: string[]
   favoriteCount: number
   viewCount?: number
+  isStale?: boolean
+  isExpired?: boolean
+  expiresAt?: string
+  lastRefreshedAt?: string
   isFavorited?: boolean
   createdAt: string
   updatedAt: string
@@ -102,6 +111,8 @@ export interface User {
   gmuEmail: string
   gmuEmailVerified: boolean
   profileImageUrl?: string
+  bio?: string
+  marketingEmailOptIn?: boolean
   isStudentSeller: boolean
   homeCampus: CampusLocation
   campusVerification: CampusVerificationState
@@ -112,8 +123,9 @@ export interface User {
   listingCount: number
 }
 
-export type MessageType = 'text' | 'offer'
+export type MessageType = 'text' | 'offer' | 'meetup'
 export type OfferStatus = 'pending' | 'accepted' | 'declined'
+export type MeetupStatus = 'proposed' | 'confirmed' | 'rescheduled' | 'cancelled' | 'completed'
 
 export interface Message {
   id: string
@@ -124,6 +136,48 @@ export interface Message {
   type?: MessageType
   offerAmount?: number
   offerStatus?: OfferStatus
+  meetupStatus?: MeetupStatus
+  meetupZone?: PickupZone
+  meetupTime?: string
+  createdAt: string
+}
+
+export type NotificationType =
+  | 'new-message'
+  | 'offer-update'
+  | 'meetup-update'
+  | 'price-drop'
+  | 'saved-search-match'
+  | 'listing-expiry'
+  | 'moderation'
+  | 'account'
+
+export interface Notification {
+  id: string
+  userId: string
+  type: NotificationType
+  title: string
+  body: string
+  link?: string
+  meta?: Record<string, unknown>
+  isRead: boolean
+  createdAt: string
+}
+
+export interface SavedSearch {
+  id: string
+  userId: string
+  label: string
+  query: string
+  filters: Record<string, unknown>
+  createdAt: string
+  lastNotifiedAt?: string
+}
+
+export interface PriceWatch {
+  userId: string
+  listingId: string
+  lastSeenPrice: number
   createdAt: string
 }
 

@@ -14,7 +14,7 @@ const HTML_BYTES = new TextEncoder().encode('<!DOCTYPE html><html></html>')
 
 function makeFile(name: string, type: string, bytes: Uint8Array, sizeBytes = bytes.length): File {
   // For oversized tests we create a minimal file with the right `size` reported
-  const blob = new Blob([bytes], { type })
+  const blob = new Blob([new Uint8Array(Array.from(bytes))], { type })
   Object.defineProperty(blob, 'size', { value: sizeBytes })
   return new File([blob], name, { type })
 }

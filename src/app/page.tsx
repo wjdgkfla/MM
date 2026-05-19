@@ -54,6 +54,7 @@ export default function HomePage() {
   const [loading, setLoading]         = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [fetchError, setFetchError]   = useState('')
+  const [showEmailBanner, setShowEmailBanner] = useState(false)
   const [page, setPage]               = useState(0)
   const [hasMore, setHasMore]         = useState(true)
   const PAGE_SIZE = 24
@@ -66,6 +67,33 @@ export default function HomePage() {
     const q = new URLSearchParams(window.location.search).get('search')
     if (q) setSearch(q)
   }, [])
+
+  useEffect(() => {
+    if (!session) return
+    fetch('/api/profile')
+      .then((res) => res.ok ? res.json() : null)
+      .then((payload) => setShowEmailBanner(Boolean(payload?.user && !payload.user.marketingEmailOptIn)))
+      .catch(() => {})
+  }, [session])
+
+  const optIntoEmail = async () => {
+    await fetch('/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ marketingEmailOptIn: true }),
+    })
+    setShowEmailBanner(false)
+  }
+
+  const saveCurrentSearch = async () => {
+    if (!session) { router.push('/sign-in?redirect=/'); return }
+    const label = search || category || 'Mason Market search'
+    await fetch('/api/saved-searches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label, query: search, filters: { category, ...filters, sort } }),
+    })
+  }
 
   const handleToggleFavorite = (listingId: string) => {
     if (!session) { router.push('/sign-in?redirect=/'); return }
@@ -147,6 +175,21 @@ export default function HomePage() {
 
       <HeroBlock initialSearch={search} />
 
+      {showEmailBanner ? (
+        <section className="border-y bg-white" style={{ borderColor: 'var(--m-line)' }}>
+          <div className="mx-auto flex max-w-[1280px] flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-semibold text-[var(--m-ink)]">Get Mason Market updates</p>
+              <p className="text-sm text-[var(--m-muted)]">Campus seasons, new features, saved deal reminders, and marketplace tips.</p>
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={optIntoEmail} className="ui-btn-primary">Sign up</button>
+              <button type="button" onClick={() => setShowEmailBanner(false)} className="ui-btn-secondary">Not now</button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       <SubNavRail
         category={category}
         onCategoryChange={c => { setCategory(c); setPage(0) }}
@@ -203,6 +246,9 @@ export default function HomePage() {
               )}
               <button onClick={clearAll} className="text-[12px] hover:underline" style={{ color: 'var(--m-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}>
                 Reset all
+              </button>
+              <button onClick={saveCurrentSearch} className="text-[12px] font-semibold hover:underline" style={{ color: 'var(--m-green)', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                Save search
               </button>
             </div>
           )}
