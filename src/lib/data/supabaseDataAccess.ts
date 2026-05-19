@@ -35,6 +35,7 @@ import {
   getDefaultListingExpiry,
   shouldCreatePriceDropNotification,
 } from '@/lib/marketplaceLifecycle'
+import { recoverConversationSummariesFromMessages } from '@/lib/readState'
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -803,7 +804,10 @@ export async function conversationsListByUser(userId: string) {
     rows = (fallback.data as Record<string, unknown>[]) || []
   }
 
-  if (rows.length === 0) return []
+  if (rows.length === 0) {
+    const legacyMessages = await messagesGetInboxByUser(userId)
+    return recoverConversationSummariesFromMessages(legacyMessages, userId)
+  }
 
   return Promise.all(rows.map(async (row) => {
     const listingId = String(row.listing_id)

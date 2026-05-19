@@ -14,6 +14,7 @@ import {
 import {
   conversationUnreadCount,
   getConversationReadUpdate,
+  recoverConversationSummariesFromMessages,
 } from '@/lib/readState'
 
 describe('marketplace feature helpers', () => {
@@ -88,5 +89,48 @@ describe('marketplace feature helpers', () => {
     ).toBe(0)
     expect(getConversationReadUpdate('buyer', 'buyer').field).toBe('buyer_last_read_at')
     expect(getConversationReadUpdate('seller', 'buyer').field).toBe('seller_last_read_at')
+  })
+
+  test('recovers conversation summaries from legacy message rows', () => {
+    const summaries = recoverConversationSummariesFromMessages([
+      {
+        id: 'm1',
+        listingId: 'listing-a',
+        fromUserId: 'buyer',
+        toUserId: 'seller',
+        body: 'Still available?',
+        createdAt: '2026-05-19T12:00:00.000Z',
+      },
+      {
+        id: 'm2',
+        listingId: 'listing-a',
+        fromUserId: 'seller',
+        toUserId: 'buyer',
+        body: 'Yes',
+        createdAt: '2026-05-19T12:05:00.000Z',
+      },
+      {
+        id: 'm3',
+        listingId: 'listing-b',
+        fromUserId: 'other',
+        toUserId: 'buyer',
+        body: 'Can meet today',
+        createdAt: '2026-05-19T12:10:00.000Z',
+      },
+    ], 'buyer')
+
+    expect(summaries).toHaveLength(2)
+    expect(summaries[0]).toMatchObject({
+      listingId: 'listing-b',
+      participantIds: ['buyer', 'other'],
+      lastMessagePreview: 'Can meet today',
+      unreadCount: 1,
+    })
+    expect(summaries[1]).toMatchObject({
+      listingId: 'listing-a',
+      participantIds: ['buyer', 'seller'],
+      lastMessagePreview: 'Yes',
+      unreadCount: 1,
+    })
   })
 })
