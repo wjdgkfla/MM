@@ -29,6 +29,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only GMU emails are allowed (@gmu.edu or @masonlive.gmu.edu)' }, { status: 400 })
     }
 
+    // Defense-in-depth: require confirmed email in production even if Supabase
+    // is already configured to block unconfirmed sign-ins.
+    if (process.env.NODE_ENV === 'production' && !user.email_confirmed_at) {
+      return NextResponse.json(
+        { error: 'Please check your email and confirm your address before signing in.' },
+        { status: 403 }
+      )
+    }
+
     const existing = await usersFindByEmail(email)
     if (existing?.accountState === 'suspended') {
       return NextResponse.json({ error: 'This account is currently suspended' }, { status: 403 })
