@@ -6,9 +6,11 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { Conversation } from '@/lib/data/contracts'
+import { usePushNotifications } from '@/lib/usePushNotifications'
 
 export function Header() {
   const { session } = useAuthSession()
+  usePushNotifications(session?.userId)
   const pathname = usePathname()
   const router = useRouter()
   const [headerSearch, setHeaderSearch] = useState('')

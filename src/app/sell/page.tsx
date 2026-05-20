@@ -59,6 +59,7 @@ export default function SellPage() {
   const { session, loading: authLoading } = useAuthSession()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [coverIndex, setCoverIndex] = useState(0)
@@ -423,16 +424,30 @@ export default function SellPage() {
                   </div>
                 ) : null}
 
+                {/* Advanced / optional fields — collapsed by default */}
                 <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>Tags (optional)</label>
-                  <input
-                    type="text"
-                    value={form.tags}
-                    onChange={(e) => setForm({ ...form, tags: e.target.value })}
-                    placeholder="exam prep, move-out, pickup today"
-                    className="ui-input"
-                  />
-                  <p className="mt-1 text-xs" style={{ color: 'var(--m-muted)' }}>Comma-separated. Up to 5 tags.</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvanced(v => !v)}
+                    className="flex items-center gap-1.5 text-[13px] font-medium"
+                    style={{ color: 'var(--m-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                  >
+                    <svg viewBox="0 0 24 24" className="h-4 w-4 transition-transform" style={{ transform: showAdvanced ? 'rotate(180deg)' : 'none' }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m6 9 6 6 6-6"/></svg>
+                    {showAdvanced ? 'Hide' : 'Show'} advanced options (tags)
+                  </button>
+                  {showAdvanced && (
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>Tags (optional)</label>
+                      <input
+                        type="text"
+                        value={form.tags}
+                        onChange={(e) => setForm({ ...form, tags: e.target.value })}
+                        placeholder="exam prep, move-out, pickup today"
+                        className="ui-input"
+                      />
+                      <p className="mt-1 text-xs" style={{ color: 'var(--m-muted)' }}>Comma-separated. Up to 5 tags.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </section>

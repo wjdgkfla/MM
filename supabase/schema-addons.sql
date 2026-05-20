@@ -106,3 +106,15 @@ create table if not exists price_watches (
 
 create index if not exists price_watches_listing_idx
   on price_watches (listing_id);
+
+-- ─── Push subscriptions (web push notifications) ──────────────────────────
+create table if not exists push_subscriptions (
+  id         text primary key default gen_random_uuid()::text,
+  user_id    text not null references users(id) on delete cascade,
+  endpoint   text not null,
+  p256dh     text not null,
+  auth       text not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, endpoint)
+);
+create index if not exists push_subs_user_idx on push_subscriptions (user_id);

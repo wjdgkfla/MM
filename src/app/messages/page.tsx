@@ -48,6 +48,7 @@ export default function MessagesPage() {
   const [loadingInbox, setLoadingInbox] = useState(true)
   const [loadingThread, setLoadingThread] = useState(false)
   const [sending, setSending] = useState(false)
+  const [markingSold, setMarkingSold] = useState(false)
   const didAutoSend = useRef(false)
   const isSendingRef = useRef(false)
   const threadScrollRef = useRef<HTMLDivElement>(null)
@@ -220,9 +221,25 @@ export default function MessagesPage() {
     setLoadingThread(shouldShowInitialLoader)
     loadThread(shouldShowInitialLoader)
 
-    // Poll for new messages every 4 seconds while this thread is open
-    const pollInterval = setInterval(() => loadThread(false), 4000)
-    return () => clearInterval(pollInterval)
+    // Poll every 2s when tab is visible, pause when hidden — feels near real-time
+    let pollInterval: ReturnType<typeof setInterval> | null = null
+
+    const startPolling = () => {
+      if (pollInterval) return
+      pollInterval = setInterval(() => loadThread(false), 2000)
+    }
+    const stopPolling = () => {
+      if (pollInterval) { clearInterval(pollInterval); pollInterval = null }
+    }
+
+    startPolling()
+    const onVisibility = () => document.hidden ? stopPolling() : startPolling()
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      stopPolling()
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [selectedConversation])
 
   // Auto-scroll thread to bottom when new messages arrive
@@ -284,6 +301,30 @@ export default function MessagesPage() {
     } finally {
       setSending(false)
       isSendingRef.current = false
+    }
+  }
+
+  const handleMarkSold = async () => {
+    if (!selectedConversation || markingSold) return
+    const ok = window.confirm(`Mark "${selectedConversation.listingTitle}" as sold? This closes it to new messages.`)
+    if (!ok) return
+    setMarkingSold(true)
+    try {
+      const res = await fetch(`/api/listings/${selectedConversation.listingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'sold' }),
+      })
+      if (!res.ok) return
+      // Update local conversation status so button disappears
+      setConversations(prev => prev.map(c =>
+        c.key === selectedConversation.key ? { ...c, listingStatus: 'sold' } : c
+      ))
+      showToast('Listing marked as sold')
+    } catch {
+      showToast('Could not mark as sold — try from the listing page', 'error')
+    } finally {
+      setMarkingSold(false)
     }
   }
 
@@ -414,12 +455,30 @@ export default function MessagesPage() {
                       <p className="text-xs" style={{ color: 'var(--m-muted)' }}>Listing</p>
                       <p className="font-semibold" style={{ color: 'var(--m-ink)' }}>{selectedConversation.listingTitle}</p>
                       <p className="text-xs" style={{ color: 'var(--m-muted)' }}>
-                        Chat with {selectedConversation.peerLabel} • Status: {selectedConversation.listingStatus}
+                        Chat with {selectedConversation.peerLabel} •{' '}
+                        <span style={{ color: selectedConversation.listingStatus === 'sold' ? '#c0392b' : selectedConversation.listingStatus === 'reserved' ? '#b45309' : 'var(--m-green)' }}>
+                          {selectedConversation.listingStatus}
+                        </span>
                       </p>
                     </div>
-                    <Link href={`/item/${selectedConversation.listingId}`} className="shrink-0 text-xs font-medium hover:underline" style={{ color: 'var(--m-green)' }}>
-                      View listing →
-                    </Link>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {/* Seller-only: mark listing as sold directly from the chat */}
+                      {selectedConversation.listingStatus === 'available' &&
+                       selectedConversation.peerId !== currentUserId && (
+                        <button
+                          type="button"
+                          onClick={handleMarkSold}
+                          disabled={markingSold}
+                          className="rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors hover:bg-[var(--m-soft)] disabled:opacity-50"
+                          style={{ borderColor: 'var(--m-line)', color: 'var(--m-ink)' }}
+                        >
+                          {markingSold ? 'Marking…' : '✓ Mark sold'}
+                        </button>
+                      )}
+                      <Link href={`/item/${selectedConversation.listingId}`} className="text-xs font-medium hover:underline" style={{ color: 'var(--m-green)' }}>
+                        View listing →
+                      </Link>
+                    </div>
                   </div>
                 </div>
 

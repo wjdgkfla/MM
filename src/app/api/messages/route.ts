@@ -9,6 +9,7 @@ import {
   conversationsMarkRead,
   usersFindById,
 } from '@/lib/data/supabaseDataAccess'
+import { sendPushToUser } from '@/lib/pushNotification'
 
 export async function GET(request: NextRequest) {
   try {
@@ -129,6 +130,14 @@ export async function POST(request: NextRequest) {
       meetupZone: isMeetup ? meetupZone : undefined,
       meetupTime: isMeetup ? meetupTime : undefined,
     })
+
+    // Fire push notification to recipient (non-blocking)
+    sendPushToUser(String(toUserId), {
+      title: 'New message on Mason Market',
+      body: String(messageBody).slice(0, 100),
+      url: '/messages',
+      tag: `msg-${String(listingId)}`,
+    }).catch(() => {})
 
     return NextResponse.json(message)
   } catch (err) {
