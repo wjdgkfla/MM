@@ -1,14 +1,14 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ListingCard } from '@/components/ListingCard'
 import { HeroBlock } from '@/components/HeroBlock'
 import { SubNavRail } from '@/components/SubNavRail'
 import { FilterDrawer, FilterState } from '@/components/FilterDrawer'
 import { SeasonalRibbon } from '@/components/SeasonalRibbon'
 import { useFavorites } from '@/lib/useFavorites'
-import { Category, Listing } from '@/lib/types'
+import { CATEGORIES, Category, Listing } from '@/lib/types'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 
 type SortOption = 'newest' | 'price-asc' | 'price-desc'
@@ -37,15 +37,20 @@ function countFilters(f: FilterState): number {
   )
 }
 
-export default function HomePage() {
+function HomeContent() {
   const router = useRouter()
   const { session } = useAuthSession()
   const { savedSet, toggleFavorite } = useFavorites(session?.userId)
 
+  const searchParams = useSearchParams()
+
   // Core state
   const [listings, setListings]       = useState<Listing[]>([])
-  const [search, setSearch]           = useState('')
-  const [category, setCategory]       = useState<Category | null>(null)
+  const [search, setSearch]           = useState<string>(() => searchParams.get('search') || '')
+  const [category, setCategory]       = useState<Category | null>(() => {
+    const c = searchParams.get('category')
+    return c && CATEGORIES.includes(c as Category) ? (c as Category) : null
+  })
   const [sort, setSort]               = useState<SortOption>('newest')
   const [filters, setFilters]         = useState<FilterState>(EMPTY_FILTERS)
   const [drawerOpen, setDrawerOpen]   = useState(false)
@@ -59,14 +64,15 @@ export default function HomePage() {
   const [hasMore, setHasMore]         = useState(true)
   const PAGE_SIZE = 24
 
-  // Seed search from URL on first load
-  const seeded = useRef(false)
+  // Sync state when URL search params change (chip clicks, seasonal ribbon, back/forward)
   useEffect(() => {
-    if (seeded.current) return
-    seeded.current = true
-    const q = new URLSearchParams(window.location.search).get('search')
-    if (q) setSearch(q)
-  }, [])
+    const q = searchParams.get('search') || ''
+    const c = searchParams.get('category')
+    setSearch(q)
+    setCategory(c && CATEGORIES.includes(c as Category) ? (c as Category) : null)
+    setPage(0)
+    setHasMore(true)
+  }, [searchParams])
 
   useEffect(() => {
     if (!session) return
@@ -164,6 +170,7 @@ export default function HomePage() {
     setFilters(EMPTY_FILTERS)
     setPage(0)
     setHasMore(true)
+    router.replace('/')
   }
 
   const filterCount = countFilters(filters)
@@ -343,5 +350,13 @@ export default function HomePage() {
         </div>
       </main>
     </>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   )
 }
