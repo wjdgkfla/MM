@@ -190,7 +190,7 @@ function HomeContent() {
               <p className="text-sm text-[var(--m-muted)]">Campus seasons, new features, saved deal reminders, and marketplace tips.</p>
             </div>
             <div className="flex gap-2">
-              <button type="button" onClick={optIntoEmail} className="ui-btn-primary">Sign up</button>
+              <button type="button" onClick={optIntoEmail} className="ui-btn-primary">Subscribe</button>
               <button type="button" onClick={() => setShowEmailBanner(false)} className="ui-btn-secondary">Not now</button>
             </div>
           </div>
