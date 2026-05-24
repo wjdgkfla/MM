@@ -6,8 +6,8 @@ import { CAMPUS_LOCATIONS, LOCATION_LABELS, CampusLocation } from '@/lib/types'
 
 /* ── Rotating word suggestions (Karrot-style animation) ───── */
 const ROTATING_WORDS = [
-  'textbooks', 'desks', 'bikes', 'hoodies', 'mini-fridges',
-  'monitors', 'calculators', 'lab manuals', 'moving boxes', 'dorm chairs', 'desk lamps',
+  'Textbooks', 'Desks', 'Bikes', 'Hoodies', 'Mini-fridges',
+  'Monitors', 'Calculators', 'Lab Manuals', 'Moving Boxes', 'Dorm Chairs', 'Desk Lamps',
 ]
 
 const SUGGESTED_BATCHES = [
@@ -52,7 +52,7 @@ function RotatingWord() {
       ref={containerRef}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom', height: '1.18em', lineHeight: '1.18em' }}
+      style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom', height: '1.18em', lineHeight: '1.18em', minWidth: '6.5ch' }}
     >
       <span
         key={animKey}
