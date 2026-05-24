@@ -64,6 +64,7 @@ export default function SellPage() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showDraftBanner, setShowDraftBanner] = useState(false)
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isFirstRender = useRef(true)
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [coverIndex, setCoverIndex] = useState(0)
@@ -110,6 +111,10 @@ export default function SellPage() {
   }, [])
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
     draftTimerRef.current = setTimeout(() => {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(form))
@@ -280,7 +285,7 @@ export default function SellPage() {
                   onClick={() => {
                     try {
                       const saved = localStorage.getItem(DRAFT_KEY)
-                      if (saved) setForm(JSON.parse(saved) as SellFormState)
+                      if (saved) setForm(prev => ({ ...prev, ...JSON.parse(saved) }))
                     } catch {}
                     setShowDraftBanner(false)
                   }}
