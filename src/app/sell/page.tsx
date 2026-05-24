@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Category, Condition, CampusLocation, PickupZone, ListingKind } from '@/lib/types'
 import { CATEGORY_LABELS, CONDITION_LABELS, LOCATION_LABELS, PICKUP_ZONE_LABELS } from '@/lib/types'
@@ -25,6 +25,8 @@ type SellFormState = {
   tags: string
   listingKind: ListingKind
 }
+
+const DRAFT_KEY = 'mm_sell_draft'
 
 function filesToDataUrls(files: File[]) {
   return Promise.all(
@@ -60,6 +62,8 @@ export default function SellPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [showDraftBanner, setShowDraftBanner] = useState(false)
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [coverIndex, setCoverIndex] = useState(0)
@@ -92,6 +96,28 @@ export default function SellPage() {
       setForm(prev => ({ ...prev, title: q }))
     }
   }, [])
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (typeof parsed?.title === 'string' && parsed.title || typeof parsed?.description === 'string' && parsed.description) {
+          setShowDraftBanner(true)
+        }
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
+    draftTimerRef.current = setTimeout(() => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(form))
+    }, 500)
+    return () => {
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
+    }
+  }, [form])
 
   const parsedTags = useMemo(
     () =>
@@ -199,6 +225,7 @@ export default function SellPage() {
       }
 
       const listing = await res.json()
+      localStorage.removeItem(DRAFT_KEY)
       router.push(`/my-listings/${listing.id}/edit?posted=1`)
     } catch (submitError) {
       setError(
@@ -242,6 +269,37 @@ export default function SellPage() {
             Signed in as <span className="font-medium">{session.displayName}</span> ({session.email}) with the{' '}
             <span className="font-medium">{session.role}</span> role.
           </div>
+
+          {showDraftBanner && (
+            <div className="mb-4 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+              <span style={{ color: 'var(--m-ink)' }}>You have an unsaved draft. Restore it?</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="font-semibold text-amber-700 hover:underline"
+                  onClick={() => {
+                    try {
+                      const saved = localStorage.getItem(DRAFT_KEY)
+                      if (saved) setForm(JSON.parse(saved) as SellFormState)
+                    } catch {}
+                    setShowDraftBanner(false)
+                  }}
+                >
+                  Restore
+                </button>
+                <button
+                  type="button"
+                  className="font-semibold text-[var(--m-muted)] hover:underline"
+                  onClick={() => {
+                    localStorage.removeItem(DRAFT_KEY)
+                    setShowDraftBanner(false)
+                  }}
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Section 1: Listing type */}
