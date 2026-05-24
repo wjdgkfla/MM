@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useEffect, useRef, useState } from 'react'
+import React, { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CAMPUS_LOCATIONS, LOCATION_LABELS, CampusLocation } from '@/lib/types'
 
@@ -19,52 +19,43 @@ const SUGGESTED_BATCHES = [
 const RECENT_SEARCHES = ['TI-84 calculator', 'IKEA desk', 'MATH 113 textbook', 'mini fridge']
 
 function RotatingWord() {
-  const [idx, setIdx]       = useState(0)
-  const [animKey, setKey]   = useState(0)
-  const [hovered, setHover] = useState(false)
-  const visible             = useRef(true)
-  const containerRef        = useRef<HTMLSpanElement>(null)
+  const [current, setCurrent] = useState(0)
+  const [prev, setPrev]       = useState<number | null>(null)
+  const [animKey, setAnimKey] = useState(0)
 
-  // Pause rotation when scrolled off screen
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([e]) => { visible.current = e.isIntersecting },
-      { threshold: 0.1 }
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
-
-  // 2120ms cycle (1800ms hold + 320ms animation)
   useEffect(() => {
     const id = setInterval(() => {
-      if (hovered || !visible.current) return
-      setIdx(i => (i + 1) % ROTATING_WORDS.length)
-      setKey(k => k + 1)
-    }, 2120)
+      setCurrent(i => {
+        setPrev(i)
+        return (i + 1) % ROTATING_WORDS.length
+      })
+      setAnimKey(k => k + 1)
+    }, 2500)
     return () => clearInterval(id)
-  }, [hovered])
+  }, [])
+
+  // Clear outgoing word after animation finishes
+  useEffect(() => {
+    if (prev === null) return
+    const t = setTimeout(() => setPrev(null), 360)
+    return () => clearTimeout(t)
+  }, [animKey])
+
+  const wordStyle: React.CSSProperties = {
+    whiteSpace: 'nowrap',
+    color: 'var(--m-green)',
+    fontWeight: 700,
+  }
 
   return (
-    <span
-      ref={containerRef}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom', height: '1.18em', lineHeight: '1.18em', width: '11ch' }}
-    >
-      <span
-        key={animKey}
-        style={{
-          display: 'inline-block',
-          animation: animKey > 0 ? 'heroWordIn 320ms cubic-bezier(0.22,1,0.36,1) both' : 'none',
-          color: 'var(--m-green)',
-          fontWeight: 700,
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {ROTATING_WORDS[idx]}
+    <span style={{ position: 'relative', display: 'inline-flex', height: '1.2em', verticalAlign: 'bottom' }}>
+      {prev !== null && (
+        <span style={{ ...wordStyle, position: 'absolute', animation: 'wordOut 320ms cubic-bezier(0.22,1,0.36,1) both' }}>
+          {ROTATING_WORDS[prev]}
+        </span>
+      )}
+      <span key={animKey} style={{ ...wordStyle, animation: animKey > 0 ? 'wordIn 320ms cubic-bezier(0.22,1,0.36,1) both' : 'none' }}>
+        {ROTATING_WORDS[current]}
       </span>
     </span>
   )
