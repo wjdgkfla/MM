@@ -142,7 +142,8 @@ export default function MessagesPage() {
         }
 
         setConversations(merged)
-        setSelectedKey(merged[0]?.key || null)
+        // Only auto-open when navigating from a specific listing page
+        setSelectedKey(listingIdFromDetail ? (merged[0]?.key || null) : null)
 
         // Auto-send "Still available?" if navigated here via that button.
         // Fetch the thread first to avoid sending a duplicate if the user navigates back.
@@ -605,7 +606,12 @@ export default function MessagesPage() {
                 ) : null}
               </>
             ) : (
-              <p className="text-sm" style={{ color: 'var(--m-muted)' }}>Select a conversation.</p>
+              <div className="flex flex-col items-center justify-center h-full py-16" style={{ color: 'var(--m-muted)' }}>
+                <svg viewBox="0 0 24 24" className="h-10 w-10 mb-3" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <p className="text-sm font-medium">Select a conversation to read it</p>
+              </div>
             )}
           </section>
         </div>
