@@ -138,6 +138,14 @@ function HomeContent() {
         const result = Array.isArray(data) ? data : []
         setListings(result)
         setHasMore(result.length === PAGE_SIZE)
+        // Auto-save zero-result searches for logged-in users (notified when a match appears)
+        if (result.length === 0 && search && session) {
+          fetch('/api/saved-searches', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ label: search, query: search, filters: {} }),
+          }).catch(() => {})
+        }
       })
       .catch(() => setFetchError('Failed to load listings. Check your connection and try again.'))
       .finally(() => setLoading(false))
@@ -295,16 +303,41 @@ function HomeContent() {
                     <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
                   </svg>
                 </div>
-                <p className="text-[16px] font-bold" style={{ color: 'var(--m-ink)' }}>
-                  {hasAnyFilter ? 'Nothing matches those filters' : 'No listings yet'}
-                </p>
-                <p className="mt-1.5 text-[13px]" style={{ color: 'var(--m-muted)' }}>
-                  {hasAnyFilter ? 'Try widening the price range or removing a filter.' : 'Be the first to post something.'}
-                </p>
-                {hasAnyFilter && (
-                  <button type="button" onClick={clearAll} className="mt-5 ui-btn-secondary px-5 text-sm">
-                    Reset filters
-                  </button>
+                {search ? (
+                  <>
+                    <p className="text-[16px] font-bold" style={{ color: 'var(--m-ink)' }}>
+                      No results for &ldquo;{search}&rdquo;
+                    </p>
+                    <p className="mt-1.5 text-[13px]" style={{ color: 'var(--m-muted)' }}>
+                      Nobody has listed that yet — post a Wanted to let sellers know you&apos;re looking.
+                    </p>
+                    <div className="mt-5 flex justify-center gap-3">
+                      <a
+                        href={`/sell?kind=wanted&q=${encodeURIComponent(search)}`}
+                        className="flex h-10 items-center gap-1.5 rounded-full px-4 text-[13px] font-bold text-white transition-opacity hover:opacity-90"
+                        style={{ background: 'var(--m-pop)' }}
+                      >
+                        + Post Wanted
+                      </a>
+                      <button type="button" onClick={clearAll} className="flex h-10 items-center rounded-full border px-4 text-[13px] font-semibold" style={{ borderColor: 'var(--m-line)', color: 'var(--m-ink)' }}>
+                        Clear search
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[16px] font-bold" style={{ color: 'var(--m-ink)' }}>
+                      {hasAnyFilter ? 'Nothing matches those filters' : 'No listings yet'}
+                    </p>
+                    <p className="mt-1.5 text-[13px]" style={{ color: 'var(--m-muted)' }}>
+                      {hasAnyFilter ? 'Try widening the price range or removing a filter.' : 'Be the first to post something.'}
+                    </p>
+                    {hasAnyFilter && (
+                      <button type="button" onClick={clearAll} className="mt-5 ui-btn-secondary px-5 text-sm">
+                        Reset filters
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
