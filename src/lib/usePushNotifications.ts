@@ -21,7 +21,7 @@ export function usePushNotifications(userId: string | undefined) {
 
         const sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicKey).buffer as ArrayBuffer,
+          applicationServerKey: urlBase64ToUint8Array(publicKey.trim()).buffer as ArrayBuffer,
         })
 
         await fetch('/api/push/subscribe', {
