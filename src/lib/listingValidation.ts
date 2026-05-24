@@ -102,7 +102,9 @@ export function normalizeListingInput(input: Record<string, unknown>): Result {
     return { ok: false, error: `Pickup zone "${pickupZone}" is not available at ${campusLocation} campus` }
   }
   if (!Array.isArray(images)) return images
-  if (images.length === 0) return { ok: false, error: 'At least 1 photo is required' }
+  if (listingKind === 'sell' && images.length === 0) {
+    return { ok: false, error: 'At least 1 photo is required for selling listings' }
+  }
 
   const courseCode = typeof input.courseCode === 'string' ? input.courseCode.trim().toUpperCase().slice(0, 24) : ''
   const professorName = typeof input.professorName === 'string' ? input.professorName.trim().slice(0, 80) : ''

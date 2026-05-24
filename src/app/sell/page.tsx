@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Category, Condition, CampusLocation, PickupZone, ListingKind } from '@/lib/types'
 import { CATEGORY_LABELS, CONDITION_LABELS, LOCATION_LABELS, PICKUP_ZONE_LABELS } from '@/lib/types'
@@ -80,6 +80,19 @@ export default function SellPage() {
     listingKind: 'sell',
   })
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const kind = params.get('kind')
+    const q = params.get('q')
+    if (kind === 'wanted' || kind === 'sell') {
+      setForm(prev => ({ ...prev, listingKind: kind as ListingKind }))
+    }
+    if (q) {
+      setForm(prev => ({ ...prev, title: q }))
+    }
+  }, [])
+
   const parsedTags = useMemo(
     () =>
       form.tags
@@ -122,18 +135,16 @@ export default function SellPage() {
   }
 
   const validate = () => {
-    if (imageFiles.length === 0) return 'At least 1 photo is required to post a listing.'
+    if (form.listingKind === 'sell' && imageFiles.length === 0)
+      return 'At least 1 photo is required for selling listings.'
     if (form.title.trim().length < 5) return 'Title should be at least 5 characters.'
     if (form.description.trim().length < 15) return 'Description should be at least 15 characters.'
     if (form.pickupNotes.trim().length < 6) return 'Pickup notes should be at least 6 characters.'
-
     const price = Number(form.price)
     if (!Number.isFinite(price) || price < 0) return 'Price must be 0 or higher.'
-
     if (form.category === 'textbooks' && form.courseCode.trim().length > 0 && form.courseCode.trim().length < 3) {
       return 'Course code should be at least 3 characters when provided.'
     }
-
     return ''
   }
 
@@ -233,19 +244,48 @@ export default function SellPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Section 1: Photos */}
+            {/* Section 1: Listing type */}
+            <section className="rounded-[var(--r-lg)] border bg-white p-6" style={{ borderColor: 'var(--m-line)' }}>
+              <div className="mb-4 flex items-center gap-2">
+                <span className="grid h-6 w-6 place-items-center rounded-full font-mono-label text-[10px] font-bold text-white" style={{ background: 'var(--m-ink)' }}>
+                  1
+                </span>
+                <p className="font-display text-[20px] font-black">What are you posting?</p>
+              </div>
+              <div className="flex rounded-xl border bg-[var(--m-soft)] p-1" style={{ borderColor: 'var(--m-line)' }}>
+                {([
+                  ['sell', 'Selling', 'I have something to sell'],
+                  ['wanted', 'Wanted', "I'm looking for something"],
+                ] as Array<[ListingKind, string, string]>).map(([value, label, hint]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setForm({ ...form, listingKind: value })}
+                    className={`flex-1 rounded-lg px-4 py-3 text-left transition-colors ${form.listingKind === value ? 'bg-white shadow-sm' : ''}`}
+                    style={{ border: 'none', cursor: 'pointer' }}
+                  >
+                    <p className={`text-sm font-bold ${form.listingKind === value ? 'text-[var(--m-ink)]' : 'text-[var(--m-muted)]'}`}>{label}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--m-muted)' }}>{hint}</p>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* Section 2: Photos */}
             <section className="rounded-[var(--r-lg)] border bg-white p-6" style={{ borderColor: 'var(--m-line)' }}>
               <div className="mb-4 flex items-center gap-2">
                 <span
                   className="grid h-6 w-6 place-items-center rounded-full font-mono-label text-[10px] font-bold text-white"
                   style={{ background: 'var(--m-ink)' }}
                 >
-                  1
+                  2
                 </span>
                 <p className="font-display text-[20px] font-black">Photos</p>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>Photos <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>
+                  Photos {form.listingKind === 'sell' ? <span className="text-red-500">*</span> : <span style={{ color: 'var(--m-muted)' }}>(optional for Wanted)</span>}
+                </label>
                 <input
                   type="file"
                   accept="image/*"
@@ -254,7 +294,9 @@ export default function SellPage() {
                   className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:px-3 file:py-2 file:text-white"
                   style={{ color: 'var(--m-muted)' }}
                 />
-                <p className="mt-1 text-xs" style={{ color: 'var(--m-muted)' }}>At least 1 photo required. Up to 4 images (5MB each).</p>
+                <p className="mt-1 text-xs" style={{ color: 'var(--m-muted)' }}>
+                  {form.listingKind === 'sell' ? 'At least 1 photo required.' : 'Optional for Wanted posts.'} Up to 4 images (5MB each).
+                </p>
                 {imagePreviews.length > 0 ? (
                   <div className="mt-3 grid grid-cols-4 gap-2">
                     {imagePreviews.map((src, index) => (
@@ -275,14 +317,14 @@ export default function SellPage() {
               </div>
             </section>
 
-            {/* Section 2: Basics */}
+            {/* Section 3: Basics */}
             <section className="rounded-[var(--r-lg)] border bg-white p-6" style={{ borderColor: 'var(--m-line)' }}>
               <div className="mb-4 flex items-center gap-2">
                 <span
                   className="grid h-6 w-6 place-items-center rounded-full font-mono-label text-[10px] font-bold text-white"
                   style={{ background: 'var(--m-ink)' }}
                 >
-                  2
+                  3
                 </span>
                 <p className="font-display text-[20px] font-black">Basics</p>
               </div>
@@ -302,21 +344,6 @@ export default function SellPage() {
 
                 <div className="rounded-xl bg-[var(--m-soft)] p-3 sm:p-4">
                   <p className="text-sm font-medium mb-3" style={{ color: 'var(--m-ink)' }}>Basic details</p>
-                  <div className="mb-4 flex rounded-xl border bg-white p-1" style={{ borderColor: 'var(--m-line)' }}>
-                    {([
-                      ['sell', 'Selling'],
-                      ['wanted', 'Wanted'],
-                    ] as Array<[ListingKind, string]>).map(([value, label]) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => setForm({ ...form, listingKind: value })}
-                        className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${form.listingKind === value ? 'bg-[var(--m-ink)] text-white' : 'text-[var(--m-muted)]'}`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
                   <div className="grid gap-4 sm:grid-cols-3">
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>Price ($) *</label>
@@ -452,14 +479,14 @@ export default function SellPage() {
               </div>
             </section>
 
-            {/* Section 3: Pickup zone */}
+            {/* Section 4: Pickup zone */}
             <section className="rounded-[var(--r-lg)] border bg-white p-6" style={{ borderColor: 'var(--m-line)' }}>
               <div className="mb-4 flex items-center gap-2">
                 <span
                   className="grid h-6 w-6 place-items-center rounded-full font-mono-label text-[10px] font-bold text-white"
                   style={{ background: 'var(--m-ink)' }}
                 >
-                  3
+                  4
                 </span>
                 <p className="font-display text-[20px] font-black">Pickup zone</p>
               </div>
