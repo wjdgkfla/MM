@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
   const maxPrice = searchParams.get('maxPrice')
   const freeOnly = searchParams.get('freeOnly')
   const courseTag = searchParams.get('courseTag')
-  const sort = (searchParams.get('sort') || 'newest') as 'newest' | 'price-asc' | 'price-desc'
+  const sort = (searchParams.get('sort') || 'newest') as 'newest' | 'oldest' | 'price-asc' | 'price-desc'
   const pageParam = searchParams.get('page')
 
   const ids = searchParams.get('ids')

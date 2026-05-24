@@ -260,9 +260,10 @@ export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]>
     q = q.textSearch('search_vector', term, { type: 'websearch', config: 'english' })
   }
 
-  if (query?.sort === 'price-asc')  q = q.order('price', { ascending: true })
+  if (query?.sort === 'price-asc')       q = q.order('price', { ascending: true })
   else if (query?.sort === 'price-desc') q = q.order('price', { ascending: false })
-  else q = q.order('created_at', { ascending: false })
+  else if (query?.sort === 'oldest')     q = q.order('created_at', { ascending: true })
+  else                                   q = q.order('created_at', { ascending: false })
 
   // Apply pagination at the DB level
   q = q.range(from, to)

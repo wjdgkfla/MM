@@ -11,7 +11,7 @@ import { useFavorites } from '@/lib/useFavorites'
 import { CATEGORIES, Category, Listing } from '@/lib/types'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 
-type SortOption = 'newest' | 'price-asc' | 'price-desc'
+type SortOption = 'newest' | 'oldest' | 'price-asc' | 'price-desc'
 
 const EMPTY_FILTERS: FilterState = {
   campusLocation: '',

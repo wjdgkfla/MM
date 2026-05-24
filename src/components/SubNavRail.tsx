@@ -2,7 +2,7 @@
 
 import { CATEGORIES, CATEGORY_LABELS, Category } from '@/lib/types'
 
-type SortOption = 'newest' | 'price-asc' | 'price-desc'
+type SortOption = 'newest' | 'oldest' | 'price-asc' | 'price-desc'
 
 interface SubNavRailProps {
   category: Category | null
@@ -17,6 +17,7 @@ interface SubNavRailProps {
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'newest',     label: 'Newest' },
+  { value: 'oldest',     label: 'Oldest' },
   { value: 'price-asc',  label: 'Price ↑' },
   { value: 'price-desc', label: 'Price ↓' },
 ]

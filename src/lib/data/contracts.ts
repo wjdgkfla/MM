@@ -27,7 +27,7 @@ export type ListingQuery = {
   maxPrice?: number
   freeOnly?: boolean
   courseTag?: string
-  sort?: 'newest' | 'price-asc' | 'price-desc'
+  sort?: 'newest' | 'oldest' | 'price-asc' | 'price-desc'
   showHidden?: boolean
   page?: number
   pageSize?: number
