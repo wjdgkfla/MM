@@ -52,7 +52,7 @@ function RotatingWord() {
       ref={containerRef}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom', height: '1.18em', lineHeight: '1.18em', minWidth: '6.5ch' }}
+      style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom', height: '1.18em', lineHeight: '1.18em', width: '11ch' }}
     >
       <span
         key={animKey}

@@ -207,7 +207,13 @@ function HomeContent() {
 
       <SubNavRail
         category={category}
-        onCategoryChange={c => { setCategory(c); setPage(0) }}
+        onCategoryChange={c => {
+          setCategory(c)
+          setPage(0)
+          const p = new URLSearchParams(searchParams.toString())
+          if (c) p.set('category', c); else p.delete('category')
+          router.replace(`/?${p.toString()}`)
+        }}
         sort={sort}
         onSortChange={s => { setSort(s); setPage(0) }}
         filterCount={filterCount}
