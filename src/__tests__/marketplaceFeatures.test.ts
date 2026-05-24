@@ -2,6 +2,7 @@ import {
   applyPhotoAction,
   getCoverImageUrl,
 } from '@/lib/photoCollection'
+import { mannerTemperature } from '@/lib/trust'
 import {
   calculateListingLifecycle,
   getDefaultListingExpiry,
@@ -89,6 +90,16 @@ describe('marketplace feature helpers', () => {
     ).toBe(0)
     expect(getConversationReadUpdate('buyer', 'buyer').field).toBe('buyer_last_read_at')
     expect(getConversationReadUpdate('seller', 'buyer').field).toBe('seller_last_read_at')
+  })
+
+  test('mannerTemperature clamps and computes correctly', () => {
+    expect(mannerTemperature(0)).toBe(36.5)
+    expect(mannerTemperature(10)).toBe(46.5)
+    expect(mannerTemperature(-36.5)).toBe(0)
+    expect(mannerTemperature(62.5)).toBe(99)
+    expect(mannerTemperature(-40)).toBe(0)
+    expect(mannerTemperature(100)).toBe(99)
+    expect(mannerTemperature(-5)).toBe(31.5)
   })
 
   test('recovers conversation summaries from legacy message rows', () => {

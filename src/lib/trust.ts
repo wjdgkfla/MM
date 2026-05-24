@@ -29,3 +29,7 @@ export function listingTrustCues(listing: Listing) {
     meetup: meetupCue(listing.pickupZone),
   }
 }
+
+export function mannerTemperature(reputationScore: number): number {
+  return Math.round(Math.min(99, Math.max(0, 36.5 + reputationScore)) * 10) / 10
+}

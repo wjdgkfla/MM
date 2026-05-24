@@ -602,6 +602,22 @@ export async function usersUpdateProfile(id: string, input: UpdateProfileInput):
   return rowToUser(data as Record<string, unknown>)
 }
 
+export async function usersAdjustReputationScore(userId: string, delta: number): Promise<void> {
+  const { data } = await getSupabaseAdmin()
+    .from('users')
+    .select('reputation_score')
+    .eq('id', userId)
+    .single()
+  if (!data) return
+  const current = Number(data.reputation_score) || 0
+  // Clamp so temperature stays in [0, 99]: display = 36.5 + score, so score ∈ [-36.5, 62.5]
+  const newScore = Math.round(Math.min(62.5, Math.max(-36.5, current + delta)) * 10) / 10
+  await getSupabaseAdmin()
+    .from('users')
+    .update({ reputation_score: newScore })
+    .eq('id', userId)
+}
+
 // ─── Messages ──────────────────────────────────────────────────────────────
 
 export async function messagesListByListing(listingId: string, userId?: string): Promise<Message[]> {

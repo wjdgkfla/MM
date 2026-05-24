@@ -1,7 +1,7 @@
 import { User } from '@/lib/types'
 import { formatPostedDate, formatRecency } from '@/lib/time'
 import { LOCATION_LABELS } from '@/lib/types'
-import { badgeToneByTrust, trustBadgeLabel } from '@/lib/trust'
+import { badgeToneByTrust, trustBadgeLabel, mannerTemperature } from '@/lib/trust'
 
 interface SellerTrustCardProps {
   seller: User | null
@@ -33,10 +33,18 @@ export function SellerTrustCard({ seller, sellerListingCount = 0 }: SellerTrustC
         </span>
       </div>
 
+      {seller.reputationScore < 0 && (
+        <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+          ⚠ This seller&apos;s previous trades received below-average ratings.
+        </p>
+      )}
+
       <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         <div className="rounded-xl bg-[var(--m-soft)] p-3 text-center">
-          <p className="font-semibold text-[var(--m-ink)]">{seller.reputationScore.toFixed(1)}</p>
-          <p className="text-xs text-[var(--m-muted)]">Reputation</p>
+          <p className={`font-semibold ${mannerTemperature(seller.reputationScore) >= 36.5 ? 'text-[var(--m-green)]' : 'text-amber-600'}`}>
+            {mannerTemperature(seller.reputationScore)}°
+          </p>
+          <p className="text-xs text-[var(--m-muted)]">Manner temp</p>
         </div>
         <div className="rounded-xl bg-[var(--m-soft)] p-3 text-center">
           <p className="font-semibold text-[var(--m-ink)]">{seller.gmuEmailVerified ? 'Yes' : 'No'}</p>

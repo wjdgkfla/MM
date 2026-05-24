@@ -7,6 +7,7 @@ import {
   listingsFindById,
   usersFindById,
   messagesExistsByUserAndListing,
+  usersAdjustReputationScore,
 } from '@/lib/data/supabaseDataAccess'
 import { RATING_TAGS, RatingTag, RatingScore } from '@/lib/types'
 
@@ -82,6 +83,10 @@ export async function POST(request: NextRequest) {
       score: score as RatingScore,
       tags: validTags,
     })
+
+    // Update seller's manner temperature: delta = price/10 * score (1 decimal place)
+    const delta = Math.round((listing.price / 10) * (score as number) * 10) / 10
+    await usersAdjustReputationScore(String(sellerId), delta).catch(() => {})
 
     return NextResponse.json(rating)
   } catch (err) {

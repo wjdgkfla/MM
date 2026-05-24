@@ -6,6 +6,7 @@ import { Rating, RATING_TAG_LABELS, RatingTag } from '@/lib/types'
 interface SellerRatingProps {
   sellerId: string
   compact?: boolean
+  mannerTemp?: number
 }
 
 /** Maps positive-review ratio to a "manner temperature" like 당근마켓 */
@@ -24,7 +25,7 @@ function getTempColor(temp: number): string {
   return 'text-red-500'
 }
 
-export function SellerRating({ sellerId, compact = false }: SellerRatingProps) {
+export function SellerRating({ sellerId, compact = false, mannerTemp }: SellerRatingProps) {
   const [ratings, setRatings] = useState<Rating[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -38,7 +39,7 @@ export function SellerRating({ sellerId, compact = false }: SellerRatingProps) {
 
   if (loading) return null
 
-  const temp = getMannerTemp(ratings)
+  const temp = mannerTemp !== undefined ? mannerTemp : getMannerTemp(ratings)
   const positiveCount = ratings.filter((r) => r.score === 1).length
   const tagCounts: Partial<Record<RatingTag, number>> = {}
   for (const rating of ratings) {
