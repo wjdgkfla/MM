@@ -13,21 +13,29 @@ export const CONDITIONS = ['new', 'like-new', 'good', 'fair'] as const
 export const CAMPUS_LOCATIONS = ['fairfax', 'arlington', 'sci-tech'] as const
 
 export const PICKUP_ZONES = [
+  // Fairfax (existing)
   'jc-lobby',
   'fenwick-entrance',
   'sub1-desk',
   'engineering-atrium',
   'shenandoah-deck',
   'potomac-courtyard',
+  // Arlington
   'van-metre-hall',
+  'hazel-hall-lobby',
+  'founders-hall-lobby',
+  // Sci-Tech
   'sci-tech-kiosk',
+  'innovation-hall-lobby',
+  // Shared
   'off-campus-fairfax',
+  'off-campus-arlington',
 ] as const
 
 export const CAMPUS_ZONE_MAP: Record<string, string[]> = {
-  fairfax:    ['jc-lobby','fenwick-entrance','sub1-desk','engineering-atrium','shenandoah-deck','potomac-courtyard','off-campus-fairfax'],
-  arlington:  ['van-metre-hall','off-campus-fairfax'],
-  'sci-tech': ['sci-tech-kiosk','off-campus-fairfax'],
+  fairfax:    ['jc-lobby', 'fenwick-entrance', 'sub1-desk', 'engineering-atrium', 'shenandoah-deck', 'potomac-courtyard', 'off-campus-fairfax'],
+  arlington:  ['van-metre-hall', 'hazel-hall-lobby', 'founders-hall-lobby', 'off-campus-arlington'],
+  'sci-tech': ['sci-tech-kiosk', 'innovation-hall-lobby', 'off-campus-fairfax'],
 }
 
 export const LISTING_STATUSES = ['available', 'reserved', 'sold'] as const
@@ -283,8 +291,12 @@ export const PICKUP_ZONE_LABELS: Record<PickupZone, string> = {
   'shenandoah-deck': 'Shenandoah Parking Deck',
   'potomac-courtyard': 'Potomac Heights Courtyard',
   'van-metre-hall': 'Van Metre Hall (Arlington)',
+  'hazel-hall-lobby':      'Hazel Hall Lobby (Arlington)',
+  'founders-hall-lobby':   'Founders Hall Lobby — Law School',
   'sci-tech-kiosk': 'Sci-Tech Student Kiosk',
+  'innovation-hall-lobby': 'Innovation Hall Lobby (Sci-Tech)',
   'off-campus-fairfax': 'Off-campus near Fairfax',
+  'off-campus-arlington':  'Off-campus near Arlington',
 }
 
 export const STATUS_LABELS: Record<ListingStatus, string> = {
