@@ -6,8 +6,7 @@ import { CAMPUS_LOCATIONS, LOCATION_LABELS, CampusLocation } from '@/lib/types'
 
 /* ── Rotating word suggestions (Karrot-style animation) ───── */
 const ROTATING_WORDS = [
-  'Textbooks', 'Desks', 'Bikes', 'Hoodies', 'Mini-fridges',
-  'Monitors', 'Calculators', 'Lab Manuals', 'Moving Boxes', 'Dorm Chairs', 'Desk Lamps',
+  'textbooks', 'desks', 'bikes', 'hoodies', 'monitors', 'printers', 'keyboards', 'lamps',
 ]
 
 const SUGGESTED_BATCHES = [
@@ -212,7 +211,7 @@ export function HeroBlock({ initialSearch = '' }: HeroBlockProps) {
           className="text-[36px] font-bold leading-[1.15] tracking-[-0.02em] sm:text-[48px]"
           style={{ color: 'var(--m-ink)', fontFamily: "var(--font-geist, 'Inter', sans-serif)" }}
         >
-          Find&nbsp;<RotatingWord />&nbsp;at Mason Market.
+          Find&nbsp;<RotatingWord />&nbsp;at Mason Market
         </h1>
 
         {/* ── Subhead ── */}
