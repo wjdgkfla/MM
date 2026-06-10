@@ -32,7 +32,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="flex min-h-screen flex-col">
+      {/* suppressHydrationWarning: browser extensions (e.g. Grammarly) inject
+          attributes into <body> before React hydrates, causing false-positive
+          hydration warnings. This only suppresses attribute mismatches on this
+          element — child component mismatches still surface normally. */}
+      <body className="flex min-h-screen flex-col" suppressHydrationWarning>
         <Header />
         <div className="flex-1">{children}</div>
         <Footer />

@@ -4,7 +4,7 @@ import { isGmuEmail } from '@/lib/validators'
 import { AuthSession } from '@/lib/auth/types'
 import { setSessionCookie } from '@/lib/auth/session'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { usersUpsert } from '@/lib/data/supabaseDataAccess'
+import { usersFindByEmail, usersUpsert } from '@/lib/data/supabaseDataAccess'
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,11 +43,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Same guards as sign-in: suspended accounts get no session, and an existing
+    // user's role is preserved (e.g. admins promoted via the admin panel must not
+    // be demoted just because this endpoint ran for their account again).
+    const existing = await usersFindByEmail(email)
+    if (existing?.accountState === 'suspended') {
+      return NextResponse.json({ error: 'This account is currently suspended' }, { status: 403 })
+    }
+
     const dbUser = await usersUpsert({
       supabaseId: user.id,
       email,
       displayName,
-      role: resolveSessionRole(email),
+      role: existing?.role || resolveSessionRole(email),
       marketingEmailOptIn,
     })
 

@@ -13,29 +13,42 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const session = getSessionFromRequest(request)
-  if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
+  try {
+    const session = getSessionFromRequest(request)
+    if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
 
-  const body = await request.json()
-  const displayName = typeof body.displayName === 'string' ? body.displayName.trim().slice(0, 100) : undefined
-  const bio = typeof body.bio === 'string' ? body.bio.trim().slice(0, 300) : undefined
-  const profileImageUrl = typeof body.profileImageUrl === 'string' ? body.profileImageUrl.trim() : undefined
-  const homeCampus = CAMPUS_LOCATIONS.includes(body.homeCampus) ? body.homeCampus : undefined
-  const marketingEmailOptIn =
-    typeof body.marketingEmailOptIn === 'boolean' ? body.marketingEmailOptIn : undefined
+    const body = await request.json()
+    const displayName = typeof body.displayName === 'string' ? body.displayName.trim().slice(0, 100) : undefined
+    const bio = typeof body.bio === 'string' ? body.bio.trim().slice(0, 300) : undefined
+    const profileImageUrl = typeof body.profileImageUrl === 'string' ? body.profileImageUrl.trim() : undefined
+    const homeCampus = CAMPUS_LOCATIONS.includes(body.homeCampus) ? body.homeCampus : undefined
+    const marketingEmailOptIn =
+      typeof body.marketingEmailOptIn === 'boolean' ? body.marketingEmailOptIn : undefined
 
-  if (displayName !== undefined && displayName.length < 2) {
-    return NextResponse.json({ error: 'Display name must be at least 2 characters' }, { status: 400 })
+    if (displayName !== undefined && displayName.length < 2) {
+      return NextResponse.json({ error: 'Display name must be at least 2 characters' }, { status: 400 })
+    }
+
+    // Empty string clears the photo; anything else must be a plausible http(s) URL —
+    // this value is rendered with next/image `unoptimized`, which skips remotePatterns.
+    if (profileImageUrl !== undefined && profileImageUrl !== '') {
+      if (profileImageUrl.length > 2048 || !/^https?:\/\//i.test(profileImageUrl)) {
+        return NextResponse.json({ error: 'Profile image must be an http(s) URL' }, { status: 400 })
+      }
+    }
+
+    const updated = await usersUpdateProfile(session.userId, {
+      displayName,
+      bio,
+      profileImageUrl,
+      homeCampus,
+      marketingEmailOptIn,
+    })
+
+    if (!updated) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+    return NextResponse.json({ user: updated })
+  } catch (err) {
+    console.error('PATCH /api/profile error:', err)
+    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 })
   }
-
-  const updated = await usersUpdateProfile(session.userId, {
-    displayName,
-    bio,
-    profileImageUrl,
-    homeCampus,
-    marketingEmailOptIn,
-  })
-
-  if (!updated) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-  return NextResponse.json({ user: updated })
 }

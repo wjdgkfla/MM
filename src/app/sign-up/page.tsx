@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { friendlyAuthError } from '@/lib/auth/authErrors'
+import { sanitizeRedirectPath } from '@/lib/validators'
 
 export default function SignUpPage() {
   const [displayName, setDisplayName] = useState('')
@@ -13,10 +14,11 @@ export default function SignUpPage() {
   const [redirect, setRedirect] = useState('/')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [pendingConfirmation, setPendingConfirmation] = useState(false)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    setRedirect(params.get('redirect') || '/')
+    setRedirect(sanitizeRedirectPath(params.get('redirect')))
   }, [])
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -41,8 +43,16 @@ export default function SignUpPage() {
         },
       })
 
-      if (signUpError || !data.session) {
-        throw signUpError || new Error('Sign-up failed — check your email for a confirmation link if required.')
+      if (signUpError || !data.user) {
+        throw signUpError || new Error('Sign-up failed. Please try again.')
+      }
+
+      // With "Confirm email" enabled in Supabase (the production setting), signUp
+      // succeeds but returns no session until the email is confirmed. That is the
+      // expected flow, not an error — show the check-your-inbox state.
+      if (!data.session) {
+        setPendingConfirmation(true)
+        return
       }
 
       const res = await fetch('/api/auth/sign-up', {
@@ -77,6 +87,16 @@ export default function SignUpPage() {
         <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Create account</h1>
         <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>GMU-only access. Sign up with your university email.</p>
 
+        {pendingConfirmation ? (
+          <div className="mt-5 space-y-4">
+            <p className="rounded-lg px-3 py-3 text-sm font-medium" style={{ background: 'var(--m-green-soft)', color: 'var(--m-green)' }}>
+              Account created. Check your GMU inbox for a confirmation link, then sign in.
+            </p>
+            <Link href={`/sign-in?redirect=${encodeURIComponent(redirect)}`} className="ui-btn-primary block w-full text-center">
+              Go to sign in
+            </Link>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>Display name</label>
@@ -131,6 +151,7 @@ export default function SignUpPage() {
             {submitting ? 'Creating account...' : 'Create account'}
           </button>
         </form>
+        )}
 
         <p className="mt-4 text-sm" style={{ color: 'var(--m-muted)' }}>
           Already have access?{' '}

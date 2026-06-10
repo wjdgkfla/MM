@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
+import { isValidEntityId } from '@/lib/validators'
 import {
   listingsFindById,
   messagesListByListing,
@@ -21,6 +22,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const listingId = searchParams.get('listingId')
     const peerId = searchParams.get('peerId')
+
+    // Reject ids that aren't plain UUIDs/nanoids — these values are interpolated
+    // into PostgREST .or() filter strings and must never carry filter syntax.
+    if ((listingId && !isValidEntityId(listingId)) || (peerId && !isValidEntityId(peerId))) {
+      return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
+    }
 
     // Always use session.userId — never trust userId from query params for authorization.
     // Passing userId param is still accepted for compatibility, but the session is the source of truth.
@@ -61,6 +68,10 @@ export async function POST(request: NextRequest) {
 
     if (!listingId || !toUserId || !messageBody) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    if (!isValidEntityId(String(listingId)) || !isValidEntityId(String(toUserId))) {
+      return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
     }
 
     const isOffer = type === 'offer'

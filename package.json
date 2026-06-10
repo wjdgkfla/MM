@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --cache-location .eslintcache-next",
-    "test": "jest --forceExit",
+    "test": "jest --forceExit && tsx --test tests/deployment-hardening.test.ts",
     "test:coverage": "jest --coverage --forceExit"
   },
   "dependencies": {
