@@ -74,6 +74,7 @@ export function FilterDrawer({ open, onClose, filters, onChange, onReset, totalC
         className="fixed bottom-0 right-0 top-0 z-50 flex flex-col border-l bg-white"
         style={{
           width: 380,
+          maxWidth: '100vw',
           borderColor: 'var(--m-line)',
           transform: open ? 'none' : 'translateX(100%)',
           transition: 'transform 280ms cubic-bezier(0.22,1,0.36,1)',

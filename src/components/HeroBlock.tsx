@@ -254,7 +254,7 @@ export function HeroBlock({ initialSearch = '' }: HeroBlockProps) {
                 onFocus={() => setFocused(true)}
                 onBlur={() => setTimeout(() => setFocused(false), 160)}
                 placeholder="What are you looking for?"
-                className="flex-1 bg-transparent text-[15px] font-medium outline-none"
+                className="min-w-0 flex-1 bg-transparent text-[15px] font-medium outline-none"
                 style={{ color: 'var(--m-ink)', border: 'none', padding: '0 14px' }}
               />
 
