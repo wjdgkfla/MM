@@ -69,6 +69,14 @@ export function Header() {
   }, [pathname])
 
   const handleSignOut = async () => {
+    // Clear the Supabase client session too — otherwise its refresh token stays
+    // in localStorage and can mint a new app session on a shared computer.
+    try {
+      const { getSupabaseClient } = await import('@/lib/supabase/client')
+      await getSupabaseClient().auth.signOut()
+    } catch {
+      // Supabase env missing or network error — the cookie clear below still signs out
+    }
     await fetch('/api/auth/sign-out', { method: 'POST' })
     window.location.href = '/'
   }

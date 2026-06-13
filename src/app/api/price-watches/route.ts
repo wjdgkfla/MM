@@ -14,13 +14,18 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = getSessionFromRequest(request)
-  if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
-  const body = await request.json()
-  const listingId = String(body.listingId || '')
-  const listing = await listingsFindById(listingId)
-  if (!listing) return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
-  return NextResponse.json(await priceWatchesUpsert(session.userId, listing.id, listing.price))
+  try {
+    const session = getSessionFromRequest(request)
+    if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
+    const body = await request.json()
+    const listingId = String(body.listingId || '')
+    const listing = await listingsFindById(listingId)
+    if (!listing) return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+    return NextResponse.json(await priceWatchesUpsert(session.userId, listing.id, listing.price))
+  } catch (err) {
+    console.error('POST /api/price-watches error:', err)
+    return NextResponse.json({ error: 'Failed to watch listing' }, { status: 500 })
+  }
 }
 
 export async function DELETE(request: NextRequest) {

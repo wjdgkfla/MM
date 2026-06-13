@@ -42,6 +42,7 @@ Run these SQL files in order in the **Supabase SQL Editor**:
 
 1. `supabase/schema.sql` — base schema (if this is a new project)
 2. `supabase/schema-addons.sql` — additive columns, indexes, constraints, and new tables
+3. `supabase/schema-security.sql` — **required**: enables RLS on all tables and locks down function privileges. Without this, anyone with the anon key (which ships in the browser bundle) can read/write every table directly via the REST API.
 
 > These are idempotent (`IF NOT EXISTS`, `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object`), so safe to re-run.
 

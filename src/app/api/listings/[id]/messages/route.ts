@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
+import { isValidEntityId } from '@/lib/validators'
 import {
   listingsFindById,
   messagesListThread,
@@ -28,6 +29,10 @@ export async function GET(
 
     if (!buyerId) {
       return NextResponse.json({ error: 'buyerId is required' }, { status: 400 })
+    }
+    // buyerId is interpolated into a PostgREST .or() filter — reject filter syntax
+    if (!isValidEntityId(buyerId)) {
+      return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
     }
 
     // Verify requester is a participant in this conversation
@@ -91,7 +96,7 @@ export async function POST(
     const providedBuyerId = String(body.buyerId || '').trim()
     const buyerId = senderRole === 'buyer' ? session.userId : providedBuyerId
 
-    if (!buyerId || buyerId === listing.sellerId) {
+    if (!buyerId || buyerId === listing.sellerId || !isValidEntityId(buyerId)) {
       return NextResponse.json({ error: 'Valid buyer identity is required' }, { status: 400 })
     }
 

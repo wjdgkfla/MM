@@ -38,7 +38,7 @@ function RotatingWord() {
     if (prev === null) return
     const t = setTimeout(() => setPrev(null), 360)
     return () => clearTimeout(t)
-  }, [animKey])
+  }, [animKey, prev])
 
   const wordStyle: React.CSSProperties = {
     whiteSpace: 'nowrap',

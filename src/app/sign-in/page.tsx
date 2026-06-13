@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { DEV_ADMIN_EMAILS } from '@/lib/auth/devAdmin'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { friendlyAuthError } from '@/lib/auth/authErrors'
+import { sanitizeRedirectPath } from '@/lib/validators'
 
 export default function SignInPage() {
   const [email, setEmail] = useState('')
@@ -16,7 +17,7 @@ export default function SignInPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    setRedirect(params.get('redirect') || '/')
+    setRedirect(sanitizeRedirectPath(params.get('redirect')))
     if (params.get('reset') === 'success') setResetSuccess(true)
   }, [])
 
