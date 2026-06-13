@@ -135,19 +135,15 @@ export default function SellPage() {
   )
 
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []).slice(0, 4)
-    if (files.length === 0) {
-      setImagePreviews([])
-      setImageFiles([])
-      setCoverIndex(0)
-      return
-    }
+    const newFiles = Array.from(event.target.files || [])
+    event.target.value = ''
+    if (newFiles.length === 0) return
 
+    const combined = [...imageFiles, ...newFiles].slice(0, 4)
     try {
-      const urls = await filesToDataUrls(files)
+      const urls = await filesToDataUrls(combined)
       setImagePreviews(urls)
-      setImageFiles(files)
-      setCoverIndex(0)
+      setImageFiles(combined)
     } catch {
       setError('Could not load selected images. Please try different files.')
     }
@@ -354,7 +350,7 @@ export default function SellPage() {
                   accept="image/*"
                   multiple
                   onChange={handleImageChange}
-                  className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:px-3 file:py-2 file:text-white"
+                  className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--m-pop)] file:px-3 file:py-2 file:text-white"
                   style={{ color: 'var(--m-muted)' }}
                 />
                 <p className="mt-1 text-xs" style={{ color: 'var(--m-muted)' }}>

@@ -92,8 +92,7 @@ export default function EditListingPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [imagePreviews, setImagePreviews] = useState<string[]>([])
-  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [images, setImages] = useState<{ preview: string; file: File | null }[]>([])
   const [coverIndex, setCoverIndex] = useState(0)
 
   const parsedTags = useMemo(
@@ -139,7 +138,7 @@ export default function EditListingPage() {
           tags: listingData.tags.join(', '),
           listingKind: listingData.listingKind || 'sell',
         })
-        setImagePreviews(listingData.imageUrls || [])
+        setImages((listingData.imageUrls || []).map((url) => ({ preview: url, file: null })))
         setCoverIndex(Math.max(0, (listingData.imageUrls || []).findIndex((url) => url === listingData.coverImageUrl)))
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Failed to load listing')
@@ -152,9 +151,7 @@ export default function EditListingPage() {
   }, [params?.id, session])
 
   const validate = () => {
-    const hasExistingImages = imagePreviews.length > 0
-    const hasNewImages = imageFiles.length > 0
-    if (!hasExistingImages && !hasNewImages) return 'At least 1 photo is required.'
+    if (images.length === 0) return 'At least 1 photo is required.'
     if (form.title.trim().length < 5) return 'Title should be at least 5 characters.'
     if (form.description.trim().length < 15) return 'Description should be at least 15 characters.'
     if (form.pickupNotes.trim().length < 6) return 'Pickup notes should be at least 6 characters.'
@@ -170,34 +167,29 @@ export default function EditListingPage() {
   }
 
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []).slice(0, 4)
-    if (files.length === 0) {
-      setImagePreviews(listing?.imageUrls || [])
-      setImageFiles([])
-      setCoverIndex(0)
-      return
-    }
+    const newFiles = Array.from(event.target.files || [])
+    event.target.value = ''
+    if (newFiles.length === 0) return
+
+    const filesToAdd = newFiles.slice(0, Math.max(0, 4 - images.length))
+    if (filesToAdd.length === 0) return
 
     try {
-      const urls = await filesToDataUrls(files)
-      setImagePreviews(urls)
-      setImageFiles(files)
-      setCoverIndex(0)
+      const urls = await filesToDataUrls(filesToAdd)
+      setImages((current) => [...current, ...filesToAdd.map((file, i) => ({ preview: urls[i], file }))])
     } catch {
       setError('Could not load selected images. Please try different files.')
     }
   }
 
   const movePhoto = (from: number, to: number) => {
-    setImagePreviews((current) => applyPhotoAction(current, { type: 'move', from, to }))
-    setImageFiles((current) => applyPhotoAction(current, { type: 'move', from, to }))
+    setImages((current) => applyPhotoAction(current, { type: 'move', from, to }))
     setCoverIndex((current) => current === from ? to : current)
   }
 
   const removePhoto = (index: number) => {
-    setImagePreviews((current) => applyPhotoAction(current, { type: 'remove', index }))
-    setImageFiles((current) => applyPhotoAction(current, { type: 'remove', index }))
-    setCoverIndex((current) => Math.max(0, Math.min(current > index ? current - 1 : current, imagePreviews.length - 2)))
+    setImages((current) => applyPhotoAction(current, { type: 'remove', index }))
+    setCoverIndex((current) => Math.max(0, Math.min(current > index ? current - 1 : current, images.length - 2)))
   }
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -214,12 +206,11 @@ export default function EditListingPage() {
 
     setSubmitting(true)
     try {
-      // Default to the listing's existing server-side image URLs.
-      // imagePreviews holds local data: URLs (preview only) and must never be saved to the DB.
-      let finalImageUrls = imagePreviews.filter((src) => !src.startsWith('data:'))
-      if (imageFiles.length > 0) {
+      const newFiles = images.filter((img) => img.file).map((img) => img.file as File)
+      let uploadedUrls: string[] = []
+      if (newFiles.length > 0) {
         try {
-          finalImageUrls = await uploadImages(imageFiles)
+          uploadedUrls = await uploadImages(newFiles)
         } catch (uploadErr) {
           const msg = uploadErr instanceof Error ? uploadErr.message : 'Image upload failed'
           setError(`${msg}. Please try again or remove the images before saving.`)
@@ -227,6 +218,8 @@ export default function EditListingPage() {
           return
         }
       }
+      let uploadIndex = 0
+      const finalImageUrls = images.map((img) => (img.file ? uploadedUrls[uploadIndex++] : img.preview))
 
       const res = await fetch(`/api/listings/${listing.id}`, {
         method: 'PUT',
@@ -317,17 +310,17 @@ export default function EditListingPage() {
             onChange={handleImageChange}
             className="block w-full text-sm text-[var(--m-muted)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--m-pop)] file:px-3 file:py-2 file:text-white"
           />
-          {imagePreviews.length > 0 ? (
+          {images.length > 0 ? (
             <div className="mt-3 grid grid-cols-4 gap-2">
-              {imagePreviews.map((src, index) => (
-                <div key={`${src}-${index}`} className="relative aspect-square w-full overflow-hidden rounded-lg border" style={{ borderColor: index === coverIndex ? 'var(--m-green)' : 'var(--m-line)' }}>
-                  <Image src={src} alt={`Preview ${index + 1}`} fill className="object-cover" unoptimized />
+              {images.map((img, index) => (
+                <div key={`${img.preview}-${index}`} className="relative aspect-square w-full overflow-hidden rounded-lg border" style={{ borderColor: index === coverIndex ? 'var(--m-green)' : 'var(--m-line)' }}>
+                  <Image src={img.preview} alt={`Preview ${index + 1}`} fill className="object-cover" unoptimized />
                   <div className="absolute inset-x-1 bottom-1 flex justify-center gap-1">
                     <button type="button" onClick={() => setCoverIndex(index)} className="rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--m-ink)]">
                       {index === coverIndex ? 'Cover' : 'Set'}
                     </button>
                     <button type="button" onClick={() => movePhoto(index, index - 1)} disabled={index === 0} className="rounded bg-white/90 px-1.5 py-0.5 text-[10px] disabled:opacity-40">&lt;</button>
-                    <button type="button" onClick={() => movePhoto(index, index + 1)} disabled={index === imagePreviews.length - 1} className="rounded bg-white/90 px-1.5 py-0.5 text-[10px] disabled:opacity-40">&gt;</button>
+                    <button type="button" onClick={() => movePhoto(index, index + 1)} disabled={index === images.length - 1} className="rounded bg-white/90 px-1.5 py-0.5 text-[10px] disabled:opacity-40">&gt;</button>
                     <button type="button" onClick={() => removePhoto(index)} className="rounded bg-white/90 px-1.5 py-0.5 text-[10px] text-red-700">Remove</button>
                   </div>
                 </div>

@@ -5,14 +5,24 @@
 -- ─── Enable RLS on all tables ────────────────────────────────────────────────
 -- Service-role key bypasses RLS entirely, so all API routes keep working.
 -- This blocks any direct anon/authenticated client from reading/writing tables.
-alter table users          enable row level security;
-alter table listings       enable row level security;
-alter table favorites      enable row level security;
-alter table messages       enable row level security;
-alter table conversations  enable row level security;
-alter table ratings        enable row level security;
-alter table reports        enable row level security;
-alter table admin_activity enable row level security;
+alter table users               enable row level security;
+alter table listings            enable row level security;
+alter table favorites           enable row level security;
+alter table messages            enable row level security;
+alter table conversations       enable row level security;
+alter table ratings             enable row level security;
+alter table reports             enable row level security;
+alter table admin_activity      enable row level security;
+-- Phase-2 tables (added in schema-addons.sql)
+alter table notifications       enable row level security;
+alter table saved_searches      enable row level security;
+alter table price_watches       enable row level security;
+-- push_subscriptions is created in schema-addons.sql — run that first
+do $$ begin
+  if exists (select 1 from information_schema.tables where table_name = 'push_subscriptions') then
+    execute 'alter table push_subscriptions enable row level security';
+  end if;
+end $$;
 
 -- ─── Fix function search paths ───────────────────────────────────────────────
 -- Prevents search_path injection attacks on all three functions.
