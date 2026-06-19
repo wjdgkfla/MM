@@ -196,7 +196,9 @@ export default function MessagesPage() {
           body: JSON.stringify({ action: 'mark-read', conversationId: selectedConversation.key }),
         }).catch(() => {})
         if (showLoadingSpinner) {
-          setConversations((current) => current.map((c) => c.key === selectedConversation.key ? { ...c, unreadCount: 0 } : c))
+          setConversations((current) => current.map((c) =>
+            c.key === selectedConversation.key && c.unreadCount ? { ...c, unreadCount: 0 } : c
+          ))
         }
         const url = `/api/messages?listingId=${selectedConversation.listingId}&peerId=${selectedConversation.peerId}`
         const res = await fetch(url)
