@@ -3,6 +3,7 @@ import './globals.css'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { ToastContainer } from '@/components/Toast'
+import { LocaleProvider } from '@/lib/i18n/LocaleProvider'
 
 export const metadata: Metadata = {
   manifest: '/manifest.json',
@@ -37,10 +38,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           hydration warnings. This only suppresses attribute mismatches on this
           element — child component mismatches still surface normally. */}
       <body className="flex min-h-screen flex-col" suppressHydrationWarning>
-        <Header />
-        <div className="flex-1">{children}</div>
-        <Footer />
-        <ToastContainer />
+        <LocaleProvider>
+          <Header />
+          <div className="flex-1">{children}</div>
+          <Footer />
+          <ToastContainer />
+        </LocaleProvider>
       </body>
     </html>
   )

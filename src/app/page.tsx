@@ -10,6 +10,7 @@ import { SeasonalRibbon } from '@/components/SeasonalRibbon'
 import { useFavorites } from '@/lib/useFavorites'
 import { CATEGORIES, Category, Listing } from '@/lib/types'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
 
 type SortOption = 'newest' | 'oldest' | 'price-asc' | 'price-desc'
 
@@ -39,6 +40,7 @@ function countFilters(f: FilterState): number {
 
 function HomeContent() {
   const router = useRouter()
+  const { t } = useLocale()
   const { session } = useAuthSession()
   const { savedSet, toggleFavorite } = useFavorites(session?.userId)
 
@@ -194,12 +196,12 @@ function HomeContent() {
         <section className="border-y bg-white" style={{ borderColor: 'var(--m-line)' }}>
           <div className="mx-auto flex max-w-[1280px] flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-semibold text-[var(--m-ink)]">Get Mason Market updates</p>
-              <p className="text-sm text-[var(--m-muted)]">Campus seasons, new features, saved deal reminders, and marketplace tips.</p>
+              <p className="font-semibold text-[var(--m-ink)]">{t('home.updatesTitle')}</p>
+              <p className="text-sm text-[var(--m-muted)]">{t('home.updatesBody')}</p>
             </div>
             <div className="flex gap-2">
-              <button type="button" onClick={optIntoEmail} className="ui-btn-primary">Subscribe</button>
-              <button type="button" onClick={() => setShowEmailBanner(false)} className="ui-btn-secondary">Not now</button>
+              <button type="button" onClick={optIntoEmail} className="ui-btn-primary">{t('home.subscribe')}</button>
+              <button type="button" onClick={() => setShowEmailBanner(false)} className="ui-btn-secondary">{t('home.notNow')}</button>
             </div>
           </div>
         </section>

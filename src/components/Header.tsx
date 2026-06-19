@@ -7,9 +7,11 @@ import { useEffect, useState } from 'react'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { Conversation } from '@/lib/data/contracts'
 import { usePushNotifications } from '@/lib/usePushNotifications'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
 
 export function Header() {
   const { session } = useAuthSession()
+  const { locale, setLocale, t } = useLocale()
   usePushNotifications(session?.userId)
   const pathname = usePathname()
   const router = useRouter()
@@ -90,10 +92,10 @@ export function Header() {
   }
 
   const navLinks = [
-    { href: '/', label: 'Browse' },
-    { href: '/saved', label: 'Saved' },
-    { href: '/messages', label: 'Messages' },
-    { href: '/my-listings', label: 'My posts' },
+    { href: '/', label: t('header.browse') },
+    { href: '/saved', label: t('header.saved') },
+    { href: '/messages', label: t('header.messages') },
+    { href: '/my-listings', label: t('header.myPosts') },
   ]
 
   const initials = (session?.displayName || session?.email || '?')
@@ -131,7 +133,7 @@ export function Header() {
             type="search"
             value={headerSearch}
             onChange={(e) => setHeaderSearch(e.target.value)}
-            placeholder="Search campus listings…"
+            placeholder={t('header.search')}
             className="flex-1 bg-transparent text-[13px] outline-none"
             style={{ color: 'var(--m-ink)' }}
           />
@@ -188,7 +190,7 @@ export function Header() {
                   className="hidden h-9 items-center rounded-full px-3 text-[13px] font-semibold lg:flex"
                   style={{ color: 'var(--m-muted)' }}
                 >
-                  Admin
+                  {t('header.admin')}
                 </Link>
               )}
               <Link
@@ -199,13 +201,13 @@ export function Header() {
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
-                <span className="hidden sm:inline">Sell</span>
+                <span className="hidden sm:inline">{t('header.sell')}</span>
               </Link>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setAccountOpen((open) => !open)}
-                  aria-label="Account menu"
+                  aria-label={t('header.accountMenu')}
                   className="relative grid h-10 w-10 place-items-center rounded-full text-[12px] font-black text-white"
                   style={{ background: 'var(--m-ink)' }}
                 >
@@ -220,12 +222,12 @@ export function Header() {
                     <div className="absolute right-0 top-12 z-50 w-56 rounded-xl border bg-white p-2 shadow-xl" style={{ borderColor: 'var(--m-line)' }}>
                       <p className="px-3 py-2 text-xs text-[var(--m-muted)]">{session.email}</p>
                       {[
-                        ['Profile', '/profile'],
-                        ['Settings', '/settings'],
-                        ['Notifications', '/notifications'],
-                        ['My posts', '/my-listings'],
-                        ['Saved', '/saved'],
-                        ['Messages', '/messages'],
+                        [t('header.profile'), '/profile'],
+                        [t('header.settings'), '/settings'],
+                        [t('header.notifications'), '/notifications'],
+                        [t('header.myPosts'), '/my-listings'],
+                        [t('header.saved'), '/saved'],
+                        [t('header.messages'), '/messages'],
                       ].map(([label, href]) => (
                         <Link key={href} href={href} onClick={() => setAccountOpen(false)} className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[var(--m-soft)]" style={{ color: 'var(--m-ink)' }}>
                           {label}
@@ -235,11 +237,11 @@ export function Header() {
                       ))}
                       {session.role === 'admin' ? (
                         <Link href="/admin" onClick={() => setAccountOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[var(--m-soft)]" style={{ color: 'var(--m-ink)' }}>
-                          Admin
+                          {t('header.admin')}
                         </Link>
                       ) : null}
                       <button type="button" onClick={handleSignOut} className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-[var(--m-soft)]" style={{ color: 'var(--m-muted)' }}>
-                        Sign out
+                        {t('header.signOut')}
                       </button>
                     </div>
                   </>
@@ -252,9 +254,20 @@ export function Header() {
               className="flex h-10 items-center rounded-full px-4 text-[13px] font-bold text-white transition-opacity hover:opacity-90"
               style={{ background: 'var(--m-pop)' }}
             >
-              Sign in
+              {t('header.signIn')}
             </Link>
           )}
+
+          {/* Language toggle */}
+          <button
+            type="button"
+            onClick={() => setLocale(locale === 'en' ? 'ko' : 'en')}
+            aria-label="Toggle language"
+            className="flex h-9 shrink-0 items-center rounded-full border px-3 text-[12px] font-bold transition-colors hover:bg-[var(--m-soft)]"
+            style={{ borderColor: 'var(--m-line)', color: 'var(--m-ink)' }}
+          >
+            {locale === 'en' ? '한국어' : 'EN'}
+          </button>
         </div>
       </div>
 
@@ -270,11 +283,11 @@ export function Header() {
               autoFocus
               value={headerSearch}
               onChange={(e) => setHeaderSearch(e.target.value)}
-              placeholder="Search campus listings…"
+              placeholder={t('header.search')}
               className="flex-1 bg-transparent text-[13px] outline-none"
               style={{ color: 'var(--m-ink)' }}
             />
-            <button type="submit" className="text-xs font-semibold" style={{ color: 'var(--m-green)' }}>Search</button>
+            <button type="submit" className="text-xs font-semibold" style={{ color: 'var(--m-green)' }}>{t('header.searchButton')}</button>
           </form>
         </div>
       )}

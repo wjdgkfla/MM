@@ -6,8 +6,10 @@ import { DEV_ADMIN_EMAILS } from '@/lib/auth/devAdmin'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { friendlyAuthError } from '@/lib/auth/authErrors'
 import { sanitizeRedirectPath } from '@/lib/validators'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
 
 export default function SignInPage() {
+  const { t } = useLocale()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [redirect, setRedirect] = useState('/')
@@ -62,8 +64,8 @@ export default function SignInPage() {
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
       <div className="w-full max-w-[400px] rounded-[var(--r-lg)] border bg-white p-8" style={{ borderColor: 'var(--m-line)' }}>
-        <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Sign in</h1>
-        <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>Use your GMU email to access Mason Market.</p>
+        <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>{t('signin.title')}</h1>
+        <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>{t('signin.subtitle')}</p>
 
         {resetSuccess ? (
           <p className="mt-4 rounded-lg px-3 py-2 text-sm font-medium" style={{ background: 'var(--m-green-soft)', color: 'var(--m-green)' }}>
@@ -72,7 +74,7 @@ export default function SignInPage() {
         ) : null}
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>GMU email</label>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>{t('signin.email')}</label>
             <input
               type="email"
               required
@@ -83,7 +85,7 @@ export default function SignInPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>Password</label>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>{t('signin.password')}</label>
             <input
               type="password"
               required
@@ -101,7 +103,7 @@ export default function SignInPage() {
           {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
 
           <button type="submit" disabled={submitting} className="ui-btn-primary w-full">
-            {submitting ? 'Signing in...' : 'Sign in'}
+            {submitting ? t('signin.submitting') : t('signin.submit')}
           </button>
         </form>
 
@@ -126,9 +128,9 @@ export default function SignInPage() {
         ) : null}
 
         <p className="mt-4 text-sm" style={{ color: 'var(--m-muted)' }}>
-          New here?{' '}
+          {t('signin.noAccount')}{' '}
           <Link href={`/sign-up?redirect=${encodeURIComponent(redirect)}`} className="font-medium" style={{ color: 'var(--m-green)' }}>
-            Create account
+            {t('signin.signUpLink')}
           </Link>
         </p>
       </div>

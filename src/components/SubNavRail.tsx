@@ -1,6 +1,7 @@
 'use client'
 
 import { CATEGORIES, CATEGORY_LABELS, Category } from '@/lib/types'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
 
 type SortOption = 'newest' | 'oldest' | 'price-asc' | 'price-desc'
 
@@ -15,21 +16,23 @@ interface SubNavRailProps {
   loading: boolean
 }
 
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: 'newest',     label: 'Newest' },
-  { value: 'oldest',     label: 'Oldest' },
-  { value: 'price-asc',  label: 'Price ↑' },
-  { value: 'price-desc', label: 'Price ↓' },
-]
-
 export function SubNavRail({
   category, onCategoryChange,
   sort, onSortChange,
   filterCount, onFiltersOpen,
   totalCount, loading,
 }: SubNavRailProps) {
+  const { t, locale } = useLocale()
+
+  const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+    { value: 'newest',     label: t('nav.sortNewest') },
+    { value: 'oldest',     label: t('nav.sortOldest') },
+    { value: 'price-asc',  label: t('nav.sortPriceAsc') },
+    { value: 'price-desc', label: t('nav.sortPriceDesc') },
+  ]
+
   const cats: Array<{ id: Category | null; label: string }> = [
-    { id: null, label: 'All' },
+    { id: null, label: t('nav.all') },
     ...CATEGORIES.map(c => ({ id: c, label: CATEGORY_LABELS[c] })),
   ]
 
@@ -72,7 +75,7 @@ export function SubNavRail({
               <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                 <path d="M4 6h10M4 12h6M4 18h14"/><circle cx="18" cy="6" r="2"/><circle cx="14" cy="12" r="2"/><circle cx="20" cy="18" r="2"/>
               </svg>
-              Filters
+              {t('nav.filters')}
               {filterCount > 0 && (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white" style={{ background: 'var(--m-ink)' }}>
                   {filterCount}
@@ -102,7 +105,9 @@ export function SubNavRail({
           {!loading && (
             <p className="flex shrink-0 items-center gap-1.5 text-[12px]" style={{ color: 'var(--m-muted)' }}>
               <span className="inline-block h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: 'var(--m-green)' }} />
-              {totalCount} listing{totalCount !== 1 ? 's' : ''}
+              {locale === 'ko'
+                ? `${totalCount}${t('nav.listings')}`
+                : `${totalCount} ${totalCount === 1 ? t('nav.listing') : t('nav.listings')}`}
             </p>
           )}
         </div>

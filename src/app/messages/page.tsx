@@ -9,6 +9,7 @@ import { Conversation } from '@/lib/data/contracts'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { AuthRequiredCard } from '@/components/AuthRequiredCard'
 import { showToast } from '@/components/Toast'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
 
 type ListingPayload = {
   listing: Listing
@@ -38,6 +39,7 @@ function conversationKey(listingId: string, a: string, b: string) {
 }
 
 export default function MessagesPage() {
+  const { t } = useLocale()
   const { session, loading: authLoading } = useAuthSession()
   const currentUserId = session?.userId || ''
   const [conversations, setConversations] = useState<ConversationSummary[]>([])
@@ -388,9 +390,9 @@ export default function MessagesPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="font-display text-[36px] font-black mb-1" style={{ color: 'var(--m-ink)' }}>Messages</h1>
+      <h1 className="font-display text-[36px] font-black mb-1" style={{ color: 'var(--m-ink)' }}>{t('messages.title')}</h1>
       <p className="text-[13px] mt-1" style={{ color: 'var(--m-muted)' }}>
-        Message sellers about availability, meetup timing, and price.
+        {t('messages.subtitle')}
       </p>
 
       {loadingInbox ? (
@@ -401,9 +403,9 @@ export default function MessagesPage() {
         </div>
       ) : conversations.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed p-8 text-center" style={{ borderColor: 'var(--m-line)' }}>
-          <p style={{ color: 'var(--m-muted)' }}>No conversations yet. Browse listings and message a seller to get started.</p>
+          <p style={{ color: 'var(--m-muted)' }}>{t('messages.empty')}</p>
           <Link href="/" className="mt-3 inline-block text-sm font-medium text-[var(--m-green)]">
-            Browse listings
+            {t('messages.browseListings')}
           </Link>
         </div>
       ) : (
@@ -487,9 +489,9 @@ export default function MessagesPage() {
 
                 <div ref={threadScrollRef} className="mt-4 flex-1 min-h-[280px] overflow-y-auto rounded-xl bg-[var(--m-soft)] p-3">
                   {loadingThread ? (
-                    <p className="text-sm" style={{ color: 'var(--m-muted)' }}>Loading conversation…</p>
+                    <p className="text-sm" style={{ color: 'var(--m-muted)' }}>{t('messages.loading')}</p>
                   ) : thread.length === 0 ? (
-                    <p className="text-sm" style={{ color: 'var(--m-muted)' }}>No messages yet. Say hi or ask about availability.</p>
+                    <p className="text-sm" style={{ color: 'var(--m-muted)' }}>{t('messages.noMessages')}</p>
                   ) : (
                     <div className="space-y-2">
                       {thread.map((message) => {

@@ -7,6 +7,7 @@ import { Category, Condition, CampusLocation, PickupZone, ListingKind } from '@/
 import { CATEGORY_LABELS, CONDITION_LABELS, LOCATION_LABELS, PICKUP_ZONE_LABELS } from '@/lib/types'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { AuthRequiredCard } from '@/components/AuthRequiredCard'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
 import { applyPhotoAction } from '@/lib/photoCollection'
 
 type SellFormState = {
@@ -58,6 +59,7 @@ async function uploadImages(files: File[]): Promise<string[]> {
 
 export default function SellPage() {
   const router = useRouter()
+  const { t, locale } = useLocale()
   const { session, loading: authLoading } = useAuthSession()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -260,10 +262,10 @@ export default function SellPage() {
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_380px]">
         <div className="max-w-[640px]">
           <h1 className="font-display text-[44px] font-black leading-[0.98] mt-2" style={{ color: 'var(--m-ink)' }}>
-            Post something<br />worth keeping.
+            {locale === 'en' ? <>Post something<br />worth keeping.</> : t('sell.title')}
           </h1>
           <p className="text-[14px] mt-2 max-w-[420px]" style={{ color: 'var(--m-muted)' }}>
-            Mason Market is GMU-only, so your stuff stays close.
+            {t('sell.subtitle')}
           </p>
 
           <div className="mt-6 mb-6 rounded-xl border bg-[var(--m-soft)] px-4 py-3 text-sm" style={{ borderColor: 'var(--m-line)', color: 'var(--m-ink)' }}>

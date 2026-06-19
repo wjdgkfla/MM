@@ -7,6 +7,7 @@ import { AuthRequiredCard } from '@/components/AuthRequiredCard'
 import { Listing, STATUS_LABELS } from '@/lib/types'
 import { formatRecency } from '@/lib/time'
 import { StatusBadge } from '@/components/StatusBadge'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
 
 type ListingStatusAction = 'available' | 'reserved' | 'sold'
 
@@ -23,6 +24,7 @@ const statusActionsByCurrentStatus: Record<
 }
 
 export default function MyListingsPage() {
+  const { t } = useLocale()
   const { session, loading: authLoading } = useAuthSession()
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
@@ -137,13 +139,13 @@ export default function MyListingsPage() {
     <div className="max-w-[1280px] mx-auto px-6 py-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-[36px] font-black" style={{ color: 'var(--m-ink)' }}>My posts</h1>
+          <h1 className="font-display text-[36px] font-black" style={{ color: 'var(--m-ink)' }}>{t('header.myPosts')}</h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--m-muted)' }}>
             {totals.all} total • {totals.available} available • {totals.reserved} reserved • {totals.sold} sold
           </p>
         </div>
         <Link href="/sell" className="ui-btn-primary">
-          Post new listing
+          {t('sell.postNew')}
         </Link>
       </div>
 

@@ -8,6 +8,7 @@ import { SellerRating } from '@/components/SellerRating'
 import { RatingForm } from '@/components/RatingForm'
 import { StatusBadge } from '@/components/StatusBadge'
 import { TrustCues } from '@/components/TrustCues'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
 import {
   CATEGORY_LABELS,
   CONDITION_LABELS,
@@ -46,6 +47,7 @@ const statusActionsByCurrentStatus: Record<
 }
 
 export default function ItemPage() {
+  const { t } = useLocale()
   const router = useRouter()
   const params = useParams<{ id: string }>()
   const [listing, setListing] = useState<Listing | null>(null)
@@ -491,10 +493,10 @@ export default function ItemPage() {
                       : ''
                   }`}
                 >
-                  {listingIsSaved ? 'Saved ♥' : 'Save ♡'}
+                  {listingIsSaved ? `${t('item.save')} ♥` : `${t('item.save')} ♡`}
                 </button>
                 <button type="button" onClick={togglePriceWatch} className="ui-btn-secondary">
-                  {watchingPrice ? 'Watching price' : 'Watch price drop'}
+                  {watchingPrice ? 'Watching price' : t('item.watchPrice')}
                 </button>
                 {isSoldListing && !isOwnListing ? (
                   <button type="button" disabled className="w-full h-12 rounded-2xl text-white font-bold text-[14px] flex items-center justify-center gap-2 cursor-not-allowed opacity-60" style={{ background: 'var(--m-ink)' }}>
@@ -507,7 +509,7 @@ export default function ItemPage() {
                     </Link>
                   ) : (
                     <Link href={`/messages?listingId=${listing.id}&quick=available`} className="w-full h-12 rounded-2xl text-white font-bold text-[14px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90" style={{ background: 'var(--m-ink)' }}>
-                      Still available?
+                      {t('item.stillAvailable')}
                     </Link>
                   )
                 ) : (
@@ -519,14 +521,14 @@ export default function ItemPage() {
               {!isSoldListing && !isOwnListing && session ? (
                 <div className="mt-2 flex gap-2">
                   <Link href={`/messages?listingId=${listing.id}`} className="flex-1 rounded-xl border border-[var(--m-green)]/40 py-2 text-center text-sm font-medium text-[var(--m-green)] hover:bg-[var(--m-green-soft)]">
-                    Message seller
+                    {t('item.messageSeller')}
                   </Link>
                   <button
                     type="button"
                     onClick={() => setShowOfferModal(true)}
                     className="flex-1 rounded-xl border border-[#FFB81C]/60 py-2 text-center text-sm font-medium text-[#8a6300] hover:bg-[#FFB81C]/10"
                   >
-                    Make an offer
+                    {t('item.makeOffer')}
                   </button>
                 </div>
               ) : null}

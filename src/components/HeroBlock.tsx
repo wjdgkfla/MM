@@ -3,6 +3,7 @@
 import React, { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CAMPUS_LOCATIONS, LOCATION_LABELS, CampusLocation } from '@/lib/types'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
 
 /* ── Rotating word suggestions (Karrot-style animation) ───── */
 const ROTATING_WORDS = [
@@ -166,6 +167,7 @@ interface HeroBlockProps {
 
 export function HeroBlock({ initialSearch = '' }: HeroBlockProps) {
   const router = useRouter()
+  const { t } = useLocale()
   const [query,     setQuery]   = useState(initialSearch)
   const [campus,    setCampus]  = useState<CampusLocation>('fairfax')
   const [focused,   setFocused] = useState(false)
@@ -216,7 +218,7 @@ export function HeroBlock({ initialSearch = '' }: HeroBlockProps) {
 
         {/* ── Subhead ── */}
         <p className="mt-3 text-[15px] font-medium sm:text-[16px]" style={{ color: 'var(--m-muted)', lineHeight: 1.5 }}>
-          Welcome to your campus buy &amp; sell — GMU students only.
+          {t('home.subhead')}
         </p>
 
         {/* ── Search bar ── */}
@@ -253,7 +255,7 @@ export function HeroBlock({ initialSearch = '' }: HeroBlockProps) {
                 onChange={e => setQuery(e.target.value)}
                 onFocus={() => setFocused(true)}
                 onBlur={() => setTimeout(() => setFocused(false), 160)}
-                placeholder="What are you looking for?"
+                placeholder={t('home.searchPlaceholder')}
                 className="min-w-0 flex-1 bg-transparent text-[15px] font-medium outline-none"
                 style={{ color: 'var(--m-ink)', border: 'none', padding: '0 14px' }}
               />
@@ -293,7 +295,7 @@ export function HeroBlock({ initialSearch = '' }: HeroBlockProps) {
         {/* ── Suggested chips rail ── */}
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
           <span className="shrink-0 text-[11px] font-bold uppercase tracking-[0.07em]" style={{ color: 'var(--m-muted)' }}>
-            ✦ Suggested
+            ✦ {t('home.suggested')}
           </span>
           <span className="shrink-0 text-[12px]" style={{ color: 'var(--m-muted)' }}>·</span>
 
