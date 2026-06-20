@@ -1,8 +1,10 @@
 'use client'
 
 import React, { FormEvent, useEffect, useState } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CAMPUS_LOCATIONS, LOCATION_LABELS, CampusLocation } from '@/lib/types'
+import { CAMPUS_LOCATIONS, LOCATION_LABELS, CampusLocation, Listing } from '@/lib/types'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
 
 /* ── Rotating word suggestions (Karrot-style animation) ───── */
@@ -48,7 +50,7 @@ function RotatingWord() {
   }
 
   return (
-    <span style={{ position: 'relative', display: 'inline-flex', height: '1.2em', verticalAlign: 'bottom' }}>
+    <span style={{ position: 'relative', display: 'inline-flex', height: '1.2em', verticalAlign: 'bottom', overflow: 'hidden' }}>
       {prev !== null && (
         <span style={{ ...wordStyle, position: 'absolute', animation: 'wordOut 320ms cubic-bezier(0.22,1,0.36,1) both' }}>
           {ROTATING_WORDS[prev]}
@@ -160,12 +162,54 @@ function CampusPill({ value, onChange }: { value: CampusLocation; onChange: (c: 
   )
 }
 
+/* ── Featured listings collage (real photos, asymmetric trio) ── */
+function FeaturedCollage({ listings }: { listings: Listing[] }) {
+  const photos = listings
+    .map(l => ({ listing: l, src: l.coverImageUrl || l.imageUrls[0] }))
+    .filter((p): p is { listing: Listing; src: string } => Boolean(p.src))
+    .slice(0, 3)
+
+  if (photos.length < 3) return null
+
+  return (
+    <div className="hidden lg:grid lg:h-[420px] lg:grid-cols-[1.3fr_1fr] lg:grid-rows-2 lg:gap-3">
+      {photos.map(({ listing, src }, i) => (
+        <Link
+          key={listing.id}
+          href={`/item/${listing.id}`}
+          className={`group relative overflow-hidden ${i === 0 ? 'row-span-2' : ''}`}
+          style={{ borderRadius: 20, background: 'var(--m-soft)' }}
+        >
+          <Image
+            src={src}
+            alt={listing.title}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            sizes="(max-width: 1024px) 0px, 40vw"
+            unoptimized={src.startsWith('data:')}
+          />
+          <div
+            className="absolute inset-x-0 bottom-0 p-3"
+            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.45), transparent)' }}
+          >
+            <p className="truncate text-[13px] font-semibold text-white">{listing.title}</p>
+            <p className="text-[12px] font-bold text-white/90">
+              {listing.price === 0 ? 'Free' : `$${listing.price}`}
+            </p>
+          </div>
+        </Link>
+      ))}
+    </div>
+  )
+}
+
 /* ── HeroBlock ───────────────────────────────────────────── */
 interface HeroBlockProps {
   initialSearch?: string
+  featuredListings?: Listing[]
 }
 
-export function HeroBlock({ initialSearch = '' }: HeroBlockProps) {
+export function HeroBlock({ initialSearch = '', featuredListings = [] }: HeroBlockProps) {
   const router = useRouter()
   const { t } = useLocale()
   const [query,     setQuery]   = useState(initialSearch)
@@ -206,12 +250,14 @@ export function HeroBlock({ initialSearch = '' }: HeroBlockProps) {
 
   return (
     <section style={{ background: 'var(--m-soft-warm)' }}>
-      <div className="mx-auto max-w-[800px] px-6 py-14 text-center sm:py-20">
+      <div className="mx-auto max-w-[1280px] px-6 py-14 sm:py-16 lg:py-20">
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
+      <div className="text-center lg:text-left">
 
         {/* ── Headline with rotating word ── */}
         <h1
           className="text-[36px] font-bold leading-[1.15] tracking-[-0.02em] sm:text-[48px]"
-          style={{ color: 'var(--m-ink)', fontFamily: "var(--font-geist, 'Inter', sans-serif)" }}
+          style={{ color: 'var(--m-ink)', fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)' }}
         >
           Find&nbsp;<RotatingWord />&nbsp;at Mason Market
         </h1>
@@ -293,7 +339,7 @@ export function HeroBlock({ initialSearch = '' }: HeroBlockProps) {
         </form>
 
         {/* ── Suggested chips rail ── */}
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
           <span className="shrink-0 text-[11px] font-bold uppercase tracking-[0.07em]" style={{ color: 'var(--m-muted)' }}>
             ✦ {t('home.suggested')}
           </span>
@@ -330,6 +376,10 @@ export function HeroBlock({ initialSearch = '' }: HeroBlockProps) {
           </div>
         </div>
 
+      </div>
+
+      <FeaturedCollage listings={featuredListings} />
+        </div>
       </div>
     </section>
   )

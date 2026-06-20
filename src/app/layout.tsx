@@ -1,9 +1,24 @@
 import type { Metadata, Viewport } from 'next'
+import { GeistSans } from 'geist/font/sans'
+import { Outfit, IBM_Plex_Mono } from 'next/font/google'
 import './globals.css'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { ToastContainer } from '@/components/Toast'
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider'
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  variable: '--font-outfit',
+  display: 'swap',
+})
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['500', '600'],
+  variable: '--font-ibm-plex-mono',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   manifest: '/manifest.json',
@@ -37,7 +52,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           attributes into <body> before React hydrates, causing false-positive
           hydration warnings. This only suppresses attribute mismatches on this
           element — child component mismatches still surface normally. */}
-      <body className="flex min-h-screen flex-col" suppressHydrationWarning>
+      <body
+        className={`${GeistSans.variable} ${outfit.variable} ${ibmPlexMono.variable} flex min-h-screen flex-col`}
+        suppressHydrationWarning
+      >
         <LocaleProvider>
           <Header />
           <div className="flex-1">{children}</div>

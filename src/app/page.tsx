@@ -190,7 +190,7 @@ function HomeContent() {
     <>
       <SeasonalRibbon />
 
-      <HeroBlock initialSearch={search} />
+      <HeroBlock initialSearch={search} featuredListings={listings.slice(0, 3)} />
 
       {showEmailBanner ? (
         <section className="border-y bg-white" style={{ borderColor: 'var(--m-line)' }}>

@@ -136,7 +136,7 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
         </p>
 
         {/* Price */}
-        <p className="mt-1 text-[15px] font-bold tabular-nums" style={{ color: 'var(--m-ink)' }}>
+        <p className="font-display mt-1 text-[18px] font-black tabular-nums" style={{ color: 'var(--m-ink)' }}>
           {priceLabel}
         </p>
 

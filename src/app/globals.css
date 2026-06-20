@@ -30,7 +30,7 @@ html, body {
 }
 
 body {
-  font-family: var(--font-geist, system-ui, -apple-system, sans-serif);
+  font-family: var(--font-geist-sans, system-ui, -apple-system, sans-serif);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -133,7 +133,7 @@ body {
 
 @layer utilities {
   .font-display {
-    font-family: var(--font-instrument-serif, Georgia, serif);
+    font-family: var(--font-outfit, system-ui, sans-serif);
   }
 
   .font-mono-label {
