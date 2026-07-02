@@ -8,7 +8,7 @@ import { CATEGORY_LABELS, CONDITION_LABELS, LOCATION_LABELS, PICKUP_ZONE_LABELS 
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { AuthRequiredCard } from '@/components/AuthRequiredCard'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
-import { applyPhotoAction } from '@/lib/photoCollection'
+import { adjustIndexForPhotoAction, applyPhotoAction } from '@/lib/photoCollection'
 
 type SellFormState = {
   title: string
@@ -152,15 +152,17 @@ export default function SellPage() {
   }
 
   const movePhoto = (from: number, to: number) => {
-    setImagePreviews((current) => applyPhotoAction(current, { type: 'move', from, to }))
-    setImageFiles((current) => applyPhotoAction(current, { type: 'move', from, to }))
-    setCoverIndex((current) => current === from ? to : current)
+    const action = { type: 'move' as const, from, to }
+    setImagePreviews((current) => applyPhotoAction(current, action))
+    setImageFiles((current) => applyPhotoAction(current, action))
+    setCoverIndex((current) => adjustIndexForPhotoAction(current, action))
   }
 
   const removePhoto = (index: number) => {
-    setImagePreviews((current) => applyPhotoAction(current, { type: 'remove', index }))
-    setImageFiles((current) => applyPhotoAction(current, { type: 'remove', index }))
-    setCoverIndex((current) => Math.max(0, Math.min(current > index ? current - 1 : current, imagePreviews.length - 2)))
+    const action = { type: 'remove' as const, index }
+    setImagePreviews((current) => applyPhotoAction(current, action))
+    setImageFiles((current) => applyPhotoAction(current, action))
+    setCoverIndex((current) => Math.max(0, Math.min(adjustIndexForPhotoAction(current, action), imagePreviews.length - 2)))
   }
 
   const validate = () => {

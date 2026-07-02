@@ -39,6 +39,7 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
   const priceLabel  = listing.price === 0 ? 'Free' : `$${listing.price}`
   const coverImage  = listing.coverImageUrl || listing.imageUrls[0] || FALLBACK_IMAGE
   const isReserved  = listing.status === 'reserved'
+  const isSold      = listing.status === 'sold'
   const isFree      = listing.price === 0
   const bg          = CAT_BG[listing.category] || CAT_BG.other
   const initials    = getInitials(listing.sellerProfile?.displayName || '?')
@@ -75,6 +76,15 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
           {(listing.isStale || listing.isExpired) && (
             <div className="absolute bottom-2 right-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-[var(--m-muted)]">
               {listing.isExpired ? 'Expired' : 'Refresh soon'}
+            </div>
+          )}
+
+          {/* Sold scrim */}
+          {isSold && (
+            <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(15,22,17,0.6)' }}>
+              <span className="rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white" style={{ borderColor: 'rgba(255,255,255,0.65)' }}>
+                Sold
+              </span>
             </div>
           )}
 

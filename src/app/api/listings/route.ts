@@ -81,8 +81,11 @@ export async function GET(request: NextRequest) {
         .slice(0, 100)
       if (idList.length === 0) return NextResponse.json([])
       let listings = await listingsFindByIds(idList)
+      // Sold listings are intentionally kept here (unlike the browse feed) — this
+      // endpoint backs saved items and message threads, where a sold listing is
+      // still relevant context, not something to silently disappear.
       if (session?.role !== 'admin') {
-        listings = listings.filter((l) => l.moderationState !== 'hidden' && l.status !== 'sold')
+        listings = listings.filter((l) => l.moderationState !== 'hidden')
       }
       return NextResponse.json(listings)
     }
@@ -109,12 +112,7 @@ export async function GET(request: NextRequest) {
       pageSize: 24,
     }
 
-    let listings = await listingsFindMany(query)
-
-    if (session?.role !== 'admin') {
-      listings = listings.filter((listing) => listing.moderationState !== 'hidden' && listing.status !== 'sold')
-    }
-
+    const listings = await listingsFindMany(query)
     return NextResponse.json(listings)
   } catch (err) {
     console.error('GET /api/listings error:', err)

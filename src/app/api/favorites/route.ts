@@ -40,7 +40,10 @@ export async function POST(request: NextRequest) {
     if (action === 'remove') {
       await favoritesRemove(session.userId, listingId)
     } else {
-      await favoritesAdd(session.userId, listingId)
+      const ok = await favoritesAdd(session.userId, listingId)
+      if (!ok) {
+        return NextResponse.json({ error: 'Could not save favorite. The listing may no longer exist.' }, { status: 400 })
+      }
     }
 
     const listingIds = await favoritesListByUser(session.userId)

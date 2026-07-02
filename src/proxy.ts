@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { checkRateLimit, RATE_LIMITS } from '@/lib/rateLimit'
+import { checkRateLimit, rateLimitKey, RATE_LIMITS } from '@/lib/rateLimit'
 
 function getIp(request: NextRequest): string {
   return (
@@ -43,11 +43,7 @@ export function proxy(request: NextRequest) {
 
   if (config === null) return NextResponse.next()
 
-  const isAuth = pathname.startsWith('/api/auth/')
-  const key = isAuth
-    ? `${ip}:${pathname}`
-    : `${ip}:${pathname.split('/').slice(0, 4).join('/')}`
-
+  const key = rateLimitKey(ip, pathname)
   const { allowed, remaining, resetAt } = checkRateLimit(key, config)
 
   if (!allowed) {

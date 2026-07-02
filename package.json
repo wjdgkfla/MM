@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --cache-location .eslintcache-next",
-    "test": "jest --forceExit && tsx --test tests/deployment-hardening.test.ts",
-    "test:coverage": "jest --coverage --forceExit"
+    "test": "jest && tsx --test tests/deployment-hardening.test.ts",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",

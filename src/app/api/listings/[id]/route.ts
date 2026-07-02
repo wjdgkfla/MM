@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { LISTING_STATUSES, ListingStatus } from '@/lib/types'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { normalizeListingInput } from '@/lib/listingValidation'
+import { canTransitionListingStatus } from '@/lib/marketplaceLifecycle'
 import {
   listingsFindById,
   listingsUpdateStatus,
@@ -10,14 +11,6 @@ import {
   listingsIncrementViewCount,
   usersFindById,
 } from '@/lib/data/supabaseDataAccess'
-
-const canTransitionStatus = (from: ListingStatus, to: ListingStatus) => {
-  if (from === to) return true
-  if (from === 'available') return to === 'reserved'
-  if (from === 'reserved') return to === 'available' || to === 'sold'
-  if (from === 'sold') return to === 'available'
-  return false
-}
 
 export async function GET(
   request: NextRequest,
@@ -88,7 +81,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
-    if (!canTransitionStatus(existing.status, nextStatus)) {
+    if (!canTransitionListingStatus(existing.status, nextStatus)) {
       return NextResponse.json(
         { error: `Invalid status transition from ${existing.status} to ${nextStatus}` },
         { status: 400 }

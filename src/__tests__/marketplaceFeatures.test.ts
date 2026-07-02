@@ -1,4 +1,5 @@
 import {
+  adjustIndexForPhotoAction,
   applyPhotoAction,
   getCoverImageUrl,
 } from '@/lib/photoCollection'
@@ -30,6 +31,42 @@ describe('marketplace feature helpers', () => {
 
     expect(getCoverImageUrl(removed, 'b.jpg')).toBe('b.jpg')
     expect(getCoverImageUrl(removed, 'missing.jpg')).toBe('c.jpg')
+  })
+
+  test('cover index stays pointed at the same photo when another photo is moved past it', () => {
+    // photos: [A, B, C, D], cover is C (index 2)
+    // moving A (index 0) to index 3 shifts B, C, D each left by one
+    const action = { type: 'move' as const, from: 0, to: 3 }
+    expect(adjustIndexForPhotoAction(2, action)).toBe(1) // C moves to index 1
+  })
+
+  test('cover index stays pointed at the same photo when another photo is moved before it', () => {
+    // photos: [A, B, C, D], cover is B (index 1)
+    // moving D (index 3) to index 0 shifts A, B, C each right by one
+    const action = { type: 'move' as const, from: 3, to: 0 }
+    expect(adjustIndexForPhotoAction(1, action)).toBe(2) // B moves to index 2
+  })
+
+  test('cover index follows the cover photo itself when it is the one moved', () => {
+    const action = { type: 'move' as const, from: 1, to: 3 }
+    expect(adjustIndexForPhotoAction(1, action)).toBe(3)
+  })
+
+  test('cover index is unaffected by moves that do not cross it', () => {
+    // photos: [A, B, C, D], cover is A (index 0); moving C to D's slot doesn't touch A
+    const action = { type: 'move' as const, from: 2, to: 3 }
+    expect(adjustIndexForPhotoAction(0, action)).toBe(0)
+  })
+
+  test('cover index shifts down when an earlier photo is removed', () => {
+    const action = { type: 'remove' as const, index: 0 }
+    expect(adjustIndexForPhotoAction(2, action)).toBe(1)
+  })
+
+  test('removing the cover photo hands the cover slot to whatever slides into it', () => {
+    // photos: [A, B, C], cover is B (index 1); removing B leaves [A, C] — C now sits at index 1
+    const action = { type: 'remove' as const, index: 1 }
+    expect(adjustIndexForPhotoAction(1, action)).toBe(1)
   })
 
   test('listing lifecycle marks stale and expired listings from timestamps', () => {

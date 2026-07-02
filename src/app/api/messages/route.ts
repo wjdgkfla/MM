@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { isValidEntityId } from '@/lib/validators'
+import { MEETUP_STATUSES, PICKUP_ZONES } from '@/lib/types'
 import {
   listingsFindById,
   messagesListByListing,
@@ -82,6 +83,17 @@ export async function POST(request: NextRequest) {
       }
       if (offerAmount > 100_000) {
         return NextResponse.json({ error: 'offerAmount cannot exceed $100,000' }, { status: 400 })
+      }
+    }
+    if (isMeetup) {
+      if (!MEETUP_STATUSES.includes(meetupStatus)) {
+        return NextResponse.json({ error: 'Invalid meetupStatus' }, { status: 400 })
+      }
+      if (meetupZone !== undefined && !PICKUP_ZONES.includes(meetupZone)) {
+        return NextResponse.json({ error: 'Invalid meetupZone' }, { status: 400 })
+      }
+      if (meetupTime !== undefined && Number.isNaN(Date.parse(String(meetupTime)))) {
+        return NextResponse.json({ error: 'Invalid meetupTime' }, { status: 400 })
       }
     }
 

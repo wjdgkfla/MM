@@ -240,16 +240,23 @@ export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]>
   const from = page * pageSize
   const to = from + pageSize - 1
 
-  let q = db
-    .from('listings')
-    .select('*')
-    .in('moderation_state', ['visible', 'flagged'])
+  let q = db.from('listings').select('*')
+
+  // Non-admins never see hidden listings. Admins can opt in via showHidden
+  // (e.g. the moderation queue) — otherwise they get the same visible+flagged
+  // view as everyone else.
+  if (!query?.showHidden) q = q.in('moderation_state', ['visible', 'flagged'])
+
+  // Sold listings are excluded from the default browse feed so DB-level
+  // pagination (hasMore) stays accurate. An explicit status filter (e.g. a
+  // seller checking their own sold items) overrides this.
+  if (query?.status)         q = q.eq('status', query.status)
+  else if (!query?.showHidden) q = q.neq('status', 'sold')
 
   if (query?.category)       q = q.eq('category', query.category)
   if (query?.listingKind)    q = q.eq('listing_kind', query.listingKind)
   if (query?.campusLocation) q = q.eq('campus_location', query.campusLocation)
   if (query?.condition)      q = q.eq('condition', query.condition)
-  if (query?.status)         q = q.eq('status', query.status)
   if (query?.pickupZone)     q = q.eq('pickup_zone', query.pickupZone)
   if (query?.freeOnly)       q = q.eq('price', 0)
   if (query?.minPrice != null && query.minPrice >= 0) q = q.gte('price', query.minPrice)
@@ -889,12 +896,16 @@ export async function favoritesListByUser(userId: string): Promise<string[]> {
   return (data as Record<string, unknown>[]).map((r) => String(r.listing_id))
 }
 
-export async function favoritesAdd(userId: string, listingId: string): Promise<void> {
+export async function favoritesAdd(userId: string, listingId: string): Promise<boolean> {
   // INSERT ON CONFLICT DO NOTHING — the DB trigger handles favorite_count increment
   const { error } = await getSupabaseAdmin()
     .from('favorites')
     .upsert({ user_id: userId, listing_id: listingId }, { onConflict: 'user_id,listing_id', ignoreDuplicates: true })
-  if (error) console.error('favoritesAdd error:', error)
+  if (error) {
+    console.error('favoritesAdd error:', error)
+    return false
+  }
+  return true
 }
 
 export async function favoritesRemove(userId: string, listingId: string): Promise<void> {

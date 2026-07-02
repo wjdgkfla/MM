@@ -49,7 +49,10 @@ export function useFavorites(userScope?: string) {
           action: isCurrentlySaved ? 'remove' : 'add',
         }),
       })
-        .then((res) => res.json())
+        .then(async (res) => {
+          if (!res.ok) throw new Error('Failed to update favorite')
+          return res.json()
+        })
         .then((data) => {
           if (Array.isArray(data?.listingIds)) {
             setSavedIds(data.listingIds)

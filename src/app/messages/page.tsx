@@ -11,10 +11,6 @@ import { AuthRequiredCard } from '@/components/AuthRequiredCard'
 import { showToast } from '@/components/Toast'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
 
-type ListingPayload = {
-  listing: Listing
-}
-
 type ConversationSummary = {
   key: string
   listingId: string
@@ -25,6 +21,11 @@ type ConversationSummary = {
   lastMessage: string
   lastMessageAt: string
   unreadCount?: number
+  // True for a conversation injected client-side before any message has been
+  // sent (arriving from a listing page with no existing thread). Its key is
+  // a locally-derived placeholder, not a real conversation row, so it can't
+  // be marked read server-side.
+  isSynthetic?: boolean
 }
 
 const STARTER_MESSAGES = [
@@ -71,57 +72,70 @@ export default function MessagesPage() {
 
         const inboxRes = await fetch(`/api/messages?userId=${currentUserId}`)
         const inbox = (await inboxRes.json()) as Conversation[]
+        const conversationList = Array.isArray(inbox) ? inbox : []
+
+        // Batch-fetch every conversation's listing in one request instead of
+        // one fetch per conversation — avoids N+1 round-trips (slow inboxes,
+        // and risked tripping the per-route rate limit on busy accounts).
+        const listingIds = Array.from(
+          new Set([
+            ...conversationList.map((c) => c.listingId),
+            ...(listingIdFromDetail ? [listingIdFromDetail] : []),
+          ])
+        )
+        const listingsById = new Map<string, Listing>()
+        if (listingIds.length > 0) {
+          const listingsRes = await fetch(`/api/listings?ids=${listingIds.join(',')}`).catch(() => null)
+          if (listingsRes?.ok) {
+            const listings = (await listingsRes.json().catch(() => [])) as Listing[]
+            if (Array.isArray(listings)) {
+              for (const listing of listings) listingsById.set(listing.id, listing)
+            }
+          }
+        }
 
         const summaries: ConversationSummary[] = []
 
-        for (const conversation of Array.isArray(inbox) ? inbox : []) {
-          try {
-            const listingRes = await fetch(`/api/listings/${conversation.listingId}`)
-            const peerId = conversation.participantIds.find((participantId) => participantId !== currentUserId)
-            if (!peerId) continue
+        for (const conversation of conversationList) {
+          const peerId = conversation.participantIds.find((participantId) => participantId !== currentUserId)
+          if (!peerId) continue
 
-            if (!listingRes.ok) {
-              summaries.push({
-                key: conversation.id,
-                listingId: conversation.listingId,
-                listingTitle: 'Listing unavailable',
-                listingStatus: 'available',
-                peerId,
-                peerLabel: 'Marketplace user',
-                lastMessage: conversation.lastMessagePreview,
-                lastMessageAt: conversation.lastMessageAt,
-                unreadCount: conversation.unreadCount || 0,
-              })
-              continue
-            }
+          const listing = listingsById.get(conversation.listingId)
 
-            const payload = (await listingRes.json()) as ListingPayload
-            const listing = payload.listing
-
+          if (!listing) {
             summaries.push({
               key: conversation.id,
               listingId: conversation.listingId,
-              listingTitle: listing.title,
-              listingStatus: listing.status,
+              listingTitle: 'Listing unavailable',
+              listingStatus: 'available',
               peerId,
-              peerLabel:
-                peerId === listing.sellerId ? listing.sellerProfile.displayName : 'Interested buyer',
+              peerLabel: 'Marketplace user',
               lastMessage: conversation.lastMessagePreview,
               lastMessageAt: conversation.lastMessageAt,
               unreadCount: conversation.unreadCount || 0,
             })
-          } catch {
-            // Ignore invalid listing rows in demo mode.
+            continue
           }
+
+          summaries.push({
+            key: conversation.id,
+            listingId: conversation.listingId,
+            listingTitle: listing.title,
+            listingStatus: listing.status,
+            peerId,
+            peerLabel:
+              peerId === listing.sellerId ? listing.sellerProfile.displayName : 'Interested buyer',
+            lastMessage: conversation.lastMessagePreview,
+            lastMessageAt: conversation.lastMessageAt,
+            unreadCount: conversation.unreadCount || 0,
+          })
         }
 
         let merged = summaries
 
         if (listingIdFromDetail) {
-          const listingRes = await fetch(`/api/listings/${listingIdFromDetail}`)
-          if (listingRes.ok) {
-            const payload = (await listingRes.json()) as ListingPayload
-            const listing = payload.listing
+          const listing = listingsById.get(listingIdFromDetail)
+          if (listing) {
             const peerId = listing.sellerId
             const key = conversationKey(listing.id, currentUserId, peerId)
 
@@ -136,6 +150,7 @@ export default function MessagesPage() {
                   peerLabel: listing.sellerProfile.displayName,
                   lastMessage: 'Start a conversation about this listing.',
                   lastMessageAt: listing.updatedAt,
+                  isSynthetic: true,
                 },
                 ...summaries,
               ]
@@ -192,7 +207,7 @@ export default function MessagesPage() {
 
       if (showLoadingSpinner && threadCountRef.current === 0) setLoadingThread(true)
       try {
-        if (showLoadingSpinner) await fetch('/api/messages', {
+        if (showLoadingSpinner && !selectedConversation.isSynthetic) await fetch('/api/messages', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'mark-read', conversationId: selectedConversation.key }),
@@ -320,7 +335,11 @@ export default function MessagesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'sold' }),
       })
-      if (!res.ok) return
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null)
+        showToast(payload?.error || 'Could not mark as sold — try from the listing page', 'error')
+        return
+      }
       // Update local conversation status so button disappears
       setConversations(prev => prev.map(c =>
         c.key === selectedConversation.key ? { ...c, listingStatus: 'sold' } : c

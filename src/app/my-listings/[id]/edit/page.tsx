@@ -18,7 +18,7 @@ import {
 } from '@/lib/types'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { AuthRequiredCard } from '@/components/AuthRequiredCard'
-import { applyPhotoAction } from '@/lib/photoCollection'
+import { adjustIndexForPhotoAction, applyPhotoAction } from '@/lib/photoCollection'
 
 type EditFormState = {
   title: string
@@ -183,13 +183,15 @@ export default function EditListingPage() {
   }
 
   const movePhoto = (from: number, to: number) => {
-    setImages((current) => applyPhotoAction(current, { type: 'move', from, to }))
-    setCoverIndex((current) => current === from ? to : current)
+    const action = { type: 'move' as const, from, to }
+    setImages((current) => applyPhotoAction(current, action))
+    setCoverIndex((current) => adjustIndexForPhotoAction(current, action))
   }
 
   const removePhoto = (index: number) => {
-    setImages((current) => applyPhotoAction(current, { type: 'remove', index }))
-    setCoverIndex((current) => Math.max(0, Math.min(current > index ? current - 1 : current, images.length - 2)))
+    const action = { type: 'remove' as const, index }
+    setImages((current) => applyPhotoAction(current, action))
+    setCoverIndex((current) => Math.max(0, Math.min(adjustIndexForPhotoAction(current, action), images.length - 2)))
   }
 
   const handleSubmit = async (event: React.FormEvent) => {

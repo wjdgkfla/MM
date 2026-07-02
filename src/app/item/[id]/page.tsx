@@ -121,6 +121,24 @@ export default function ItemPage() {
     return deduped.length > 0 ? deduped : [FALLBACK_IMAGE]
   }, [listing])
 
+  // Seed the watch-state toggle from the user's existing price watches so a
+  // returning user sees the correct "Watching price" state instead of always
+  // starting from "Watch price drop".
+  useEffect(() => {
+    if (!session || !listing) return
+    let cancelled = false
+    fetch('/api/price-watches')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((watches: { listingId: string }[]) => {
+        if (cancelled) return
+        if (Array.isArray(watches)) {
+          setWatchingPrice(watches.some((w) => w.listingId === listing.id))
+        }
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [session, listing])
+
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-8">
@@ -272,12 +290,20 @@ export default function ItemPage() {
     }
     const method = watchingPrice ? 'DELETE' : 'POST'
     const url = watchingPrice ? `/api/price-watches?listingId=${listing.id}` : '/api/price-watches'
-    await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: method === 'POST' ? JSON.stringify({ listingId: listing.id }) : undefined,
-    })
-    setWatchingPrice((current) => !current)
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: method === 'POST' ? JSON.stringify({ listingId: listing.id }) : undefined,
+      })
+      if (!res.ok) {
+        showToast('Could not update price watch. Please try again.', 'error')
+        return
+      }
+      setWatchingPrice((current) => !current)
+    } catch {
+      showToast('Could not update price watch. Please try again.', 'error')
+    }
   }
 
   return (

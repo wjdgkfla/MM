@@ -133,7 +133,8 @@ export interface User {
 
 export type MessageType = 'text' | 'offer' | 'meetup'
 export type OfferStatus = 'pending' | 'accepted' | 'declined'
-export type MeetupStatus = 'proposed' | 'confirmed' | 'rescheduled' | 'cancelled' | 'completed'
+export const MEETUP_STATUSES = ['proposed', 'confirmed', 'rescheduled', 'cancelled', 'completed'] as const
+export type MeetupStatus = (typeof MEETUP_STATUSES)[number]
 
 export interface Message {
   id: string

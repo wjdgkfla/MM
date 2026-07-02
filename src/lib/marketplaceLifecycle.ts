@@ -31,3 +31,21 @@ export function calculateListingLifecycle(input: {
 export function shouldCreatePriceDropNotification(previousPrice: number, nextPrice: number): boolean {
   return Number.isFinite(previousPrice) && Number.isFinite(nextPrice) && nextPrice >= 0 && nextPrice < previousPrice
 }
+
+export type ListingLifecycleStatus = 'available' | 'reserved' | 'sold'
+
+/**
+ * Sellers can mark a listing sold directly from "available" (a walk-up sale
+ * that never went through "reserved") as well as from "reserved" (the normal
+ * flow after coordinating a meetup).
+ */
+export function canTransitionListingStatus(
+  from: ListingLifecycleStatus,
+  to: ListingLifecycleStatus
+): boolean {
+  if (from === to) return true
+  if (from === 'available') return to === 'reserved' || to === 'sold'
+  if (from === 'reserved') return to === 'available' || to === 'sold'
+  if (from === 'sold') return to === 'available'
+  return false
+}
