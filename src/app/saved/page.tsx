@@ -13,6 +13,7 @@ export default function SavedPage() {
   const router = useRouter()
   const [savedListings, setSavedListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const { session, loading: authLoading } = useAuthSession()
   const { savedIds, savedSet, toggleFavorite } = useFavorites(session?.userId)
 
@@ -23,11 +24,13 @@ export default function SavedPage() {
     }
     if (savedIds.length === 0) {
       setSavedListings([])
+      setLoadError(false)
       setLoading(false)
       return
     }
 
     setLoading(true)
+    setLoadError(false)
     fetch(`/api/listings?ids=${savedIds.join(',')}`, { credentials: 'include' })
       .then((res) => {
         if (!res.ok) throw new Error(`Server error ${res.status}`)
@@ -37,7 +40,10 @@ export default function SavedPage() {
         const fetched = Array.isArray(data) ? data : []
         setSavedListings(fetched)
       })
-      .catch(() => setSavedListings([]))
+      .catch(() => {
+        setSavedListings([])
+        setLoadError(true)
+      })
       .finally(() => setLoading(false))
   }, [session, savedIds])
 
@@ -77,6 +83,19 @@ export default function SavedPage() {
           {[...Array(8)].map((_, index) => (
             <div key={index} className="aspect-square rounded-2xl bg-[var(--m-soft)] animate-pulse" />
           ))}
+        </div>
+      ) : loadError ? (
+        <div className="mt-12 rounded-[var(--r-lg)] border p-16 text-center max-w-[480px] mx-auto" style={{ borderColor: 'var(--m-line)' }}>
+          <p className="font-display text-[24px] font-black" style={{ color: 'var(--m-ink)' }}>Couldn&apos;t load saved items</p>
+          <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>Something went wrong loading your saved listings.</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-5 inline-flex h-11 items-center rounded-full px-6 text-[13px] font-bold text-white"
+            style={{ background: 'var(--m-pop)' }}
+          >
+            Retry
+          </button>
         </div>
       ) : savedListings.length === 0 ? (
         <div className="mt-12 rounded-[var(--r-lg)] border p-16 text-center max-w-[480px] mx-auto" style={{ borderColor: 'var(--m-line)' }}>

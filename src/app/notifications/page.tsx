@@ -24,21 +24,31 @@ export default function NotificationsPage() {
   useEffect(load, [session])
 
   const markRead = async (id: string) => {
-    await fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    })
-    setNotifications((current) => current.map((n) => n.id === id ? { ...n, isRead: true } : n))
+    try {
+      const res = await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      if (!res.ok) throw new Error('Failed to mark notification read')
+      setNotifications((current) => current.map((n) => n.id === id ? { ...n, isRead: true } : n))
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   const markAllRead = async () => {
-    await fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ all: true }),
-    })
-    setNotifications((current) => current.map((n) => ({ ...n, isRead: true })))
+    try {
+      const res = await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ all: true }),
+      })
+      if (!res.ok) throw new Error('Failed to mark all notifications read')
+      setNotifications((current) => current.map((n) => ({ ...n, isRead: true })))
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   if (loading) return <div className="mx-auto max-w-3xl px-6 py-10 text-sm text-[var(--m-muted)]">Loading...</div>

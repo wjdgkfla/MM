@@ -94,6 +94,7 @@ export default function EditListingPage() {
   const [error, setError] = useState('')
   const [images, setImages] = useState<{ preview: string; file: File | null }[]>([])
   const [coverIndex, setCoverIndex] = useState(0)
+  const [deleting, setDeleting] = useState(false)
 
   const parsedTags = useMemo(
     () =>
@@ -254,6 +255,27 @@ export default function EditListingPage() {
       setError(submitError instanceof Error ? submitError.message : 'Failed to update listing')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!listing) return
+    const ok = window.confirm('Delete this listing? It will be permanently removed from Mason Market.')
+    if (!ok) return
+
+    setDeleting(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/listings/${listing.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null)
+        throw new Error(payload?.error || 'Failed to delete listing')
+      }
+      router.push('/my-listings')
+      router.refresh()
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Failed to delete listing')
+      setDeleting(false)
     }
   }
 
@@ -528,6 +550,14 @@ export default function EditListingPage() {
             Cancel
           </a>
         </div>
+        <button
+          type="button"
+          disabled={deleting}
+          onClick={handleDelete}
+          className="w-full rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+        >
+          {deleting ? 'Deleting...' : 'Delete listing'}
+        </button>
       </form>
     </div>
   )

@@ -219,7 +219,7 @@ export default function MyListingsPage() {
                     onClick={() => archiveListing(listing.id)}
                     className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
                   >
-                    Archive/Delete
+                    Delete
                   </button>
                 </div>
 

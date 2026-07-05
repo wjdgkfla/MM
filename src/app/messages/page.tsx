@@ -49,6 +49,7 @@ export default function MessagesPage() {
   const [thread, setThread] = useState<Message[]>([])
   const [draft, setDraft] = useState('')
   const [loadingInbox, setLoadingInbox] = useState(true)
+  const [inboxError, setInboxError] = useState(false)
   const [loadingThread, setLoadingThread] = useState(false)
   const [sending, setSending] = useState(false)
   const [markingSold, setMarkingSold] = useState(false)
@@ -70,7 +71,9 @@ export default function MessagesPage() {
 
         if (!currentUserId) return
 
+        setInboxError(false)
         const inboxRes = await fetch(`/api/messages?userId=${currentUserId}`)
+        if (!inboxRes.ok) throw new Error('Failed to load conversations')
         const inbox = (await inboxRes.json()) as Conversation[]
         const conversationList = Array.isArray(inbox) ? inbox : []
 
@@ -188,6 +191,7 @@ export default function MessagesPage() {
         }
       } catch {
         setConversations([])
+        setInboxError(true)
       } finally {
         setLoadingInbox(false)
       }
@@ -419,6 +423,17 @@ export default function MessagesPage() {
           {[...Array(4)].map((_, index) => (
             <div key={index} className="h-20 rounded-2xl bg-[var(--m-soft)] animate-pulse" />
           ))}
+        </div>
+      ) : inboxError ? (
+        <div className="mt-8 rounded-2xl border border-dashed p-8 text-center" style={{ borderColor: 'var(--m-line)' }}>
+          <p style={{ color: 'var(--m-muted)' }}>Couldn&apos;t load your conversations.</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-3 inline-block text-sm font-medium text-[var(--m-green)]"
+          >
+            Retry
+          </button>
         </div>
       ) : conversations.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed p-8 text-center" style={{ borderColor: 'var(--m-line)' }}>
