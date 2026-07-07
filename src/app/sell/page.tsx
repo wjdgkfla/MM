@@ -9,6 +9,7 @@ import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { AuthRequiredCard } from '@/components/AuthRequiredCard'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
 import { adjustIndexForPhotoAction, applyPhotoAction, filesToDataUrls, uploadImages } from '@/lib/photoCollection'
+import { formatRecency } from '@/lib/time'
 
 type SellFormState = {
   title: string
@@ -37,6 +38,7 @@ export default function SellPage() {
   const [error, setError] = useState('')
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showDraftBanner, setShowDraftBanner] = useState(false)
+  const [draftPreview, setDraftPreview] = useState<{ title: string; savedAt: string } | null>(null)
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isFirstRender = useRef(true)
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
@@ -77,8 +79,15 @@ export default function SellPage() {
       const saved = localStorage.getItem(DRAFT_KEY)
       if (saved) {
         const parsed = JSON.parse(saved)
-        if (typeof parsed?.title === 'string' && parsed.title || typeof parsed?.description === 'string' && parsed.description) {
+        // Back-compat: older drafts stored the form object directly with no
+        // wrapper/timestamp — treat that shape as a draft with an unknown save time.
+        const draftForm = parsed?.form || parsed
+        if ((typeof draftForm?.title === 'string' && draftForm.title) || (typeof draftForm?.description === 'string' && draftForm.description)) {
           setShowDraftBanner(true)
+          setDraftPreview({
+            title: draftForm.title || draftForm.description.slice(0, 60),
+            savedAt: typeof parsed?.savedAt === 'string' ? parsed.savedAt : new Date().toISOString(),
+          })
         }
       }
     } catch {}
@@ -91,7 +100,7 @@ export default function SellPage() {
     }
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
     draftTimerRef.current = setTimeout(() => {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(form))
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, savedAt: new Date().toISOString() }))
     }, 500)
     return () => {
       if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
@@ -247,17 +256,29 @@ export default function SellPage() {
             <span className="font-medium">{session.role}</span> role.
           </div>
 
-          {showDraftBanner && (
-            <div className="mb-4 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
-              <span style={{ color: 'var(--m-ink)' }}>You have an unsaved draft. Restore it?</span>
-              <div className="flex gap-2">
+          {showDraftBanner && draftPreview && (
+            <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm" style={{ borderColor: 'var(--m-gold)', background: 'var(--m-gold-soft)' }}>
+              <div>
+                <p style={{ color: 'var(--m-ink)' }}>
+                  Unsaved draft from {formatRecency(draftPreview.savedAt)}: <span className="font-medium">&ldquo;{draftPreview.title}&rdquo;</span>
+                </p>
+                <p className="mt-0.5 text-xs" style={{ color: 'var(--m-gold-text)' }}>
+                  Restoring will overwrite anything you&apos;ve typed on this page so far.
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-2">
                 <button
                   type="button"
-                  className="font-semibold text-amber-700 hover:underline"
+                  className="font-semibold hover:underline"
+                  style={{ color: 'var(--m-gold-text)' }}
                   onClick={() => {
                     try {
                       const saved = localStorage.getItem(DRAFT_KEY)
-                      if (saved) setForm(prev => ({ ...prev, ...JSON.parse(saved) }))
+                      if (saved) {
+                        const parsed = JSON.parse(saved)
+                        const draftForm = parsed?.form || parsed
+                        setForm(prev => ({ ...prev, ...draftForm }))
+                      }
                     } catch {}
                     setShowDraftBanner(false)
                   }}
