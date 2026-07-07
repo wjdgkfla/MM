@@ -629,7 +629,11 @@ export default function SellPage() {
               Live preview
             </p>
             <div className="rounded-[var(--r-lg)] border bg-white p-4" style={{ borderColor: 'var(--m-line)' }}>
-              <div className="aspect-square rounded-xl bg-[var(--m-soft)]" />
+              <div className="relative aspect-square overflow-hidden rounded-xl bg-[var(--m-soft)]">
+                {imagePreviews[coverIndex] ? (
+                  <Image src={imagePreviews[coverIndex]} alt="Listing preview" fill className="object-cover" unoptimized />
+                ) : null}
+              </div>
               <p className="font-display font-black text-[26px] mt-3 tabular-nums" style={{ color: form.price ? 'var(--m-ink)' : 'var(--m-muted)' }}>
                 {form.price ? (form.price === '0' ? 'Free' : `$${form.price}`) : '—'}
               </p>

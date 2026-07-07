@@ -11,13 +11,22 @@ export default function NotificationsPage() {
   const { session, loading } = useAuthSession()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loadingList, setLoadingList] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
   const load = () => {
     if (!session) return
     setLoadingList(true)
+    setLoadError(false)
     fetch('/api/notifications')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`Server error ${res.status}`)
+        return res.json()
+      })
       .then((data) => setNotifications(Array.isArray(data) ? data : []))
+      .catch(() => {
+        setNotifications([])
+        setLoadError(true)
+      })
       .finally(() => setLoadingList(false))
   }
 
@@ -73,6 +82,13 @@ export default function NotificationsPage() {
       <div className="mt-6 space-y-2">
         {loadingList ? (
           <div className="h-28 rounded-xl bg-[var(--m-soft)] animate-pulse" />
+        ) : loadError ? (
+          <div className="rounded-xl border border-dashed p-8 text-center text-sm" style={{ borderColor: 'var(--m-line)' }}>
+            <p style={{ color: 'var(--m-ink)' }}>Couldn&apos;t load notifications.</p>
+            <button type="button" onClick={load} className="mt-3 text-sm font-medium" style={{ color: 'var(--m-green)' }}>
+              Retry
+            </button>
+          </div>
         ) : notifications.length === 0 ? (
           <div className="rounded-xl border border-dashed p-8 text-center text-sm text-[var(--m-muted)]" style={{ borderColor: 'var(--m-line)' }}>
             No notifications yet.

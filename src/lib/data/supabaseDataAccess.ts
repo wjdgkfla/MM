@@ -712,8 +712,28 @@ export async function messagesCreate(input: Omit<Message, 'id' | 'createdAt'>): 
     const sellerId = listing.sellerId
     const buyerId = input.fromUserId === sellerId ? input.toUserId : input.fromUserId
 
-    await db.from('conversations').upsert(
-      {
+    // Update the existing conversation, touching only the sender's own read
+    // timestamp. A blind upsert here would overwrite the *recipient's*
+    // last_read_at back to null on every message, making messages they'd
+    // already read incorrectly reappear as unread.
+    const readField = input.fromUserId === buyerId ? 'buyer_last_read_at' : 'seller_last_read_at'
+    const { data: updated, error: updateErr } = await db
+      .from('conversations')
+      .update({
+        last_message: input.body,
+        is_active: true,
+        updated_at: now,
+        [readField]: now,
+      })
+      .eq('id', conversationId)
+      .select('id')
+
+    if (updateErr) {
+      console.error('messagesCreate: conversation update failed (non-fatal):', updateErr.message)
+    } else if (!updated || updated.length === 0) {
+      // No existing conversation row — this is the first message. The
+      // recipient hasn't read anything yet, so their timestamp starts null.
+      const { error: insertErr } = await db.from('conversations').insert({
         id: conversationId,
         listing_id: input.listingId,
         buyer_id: buyerId,
@@ -727,9 +747,11 @@ export async function messagesCreate(input: Omit<Message, 'id' | 'createdAt'>): 
         participants: {},
         updated_at: now,
         created_at: now,
-      },
-      { onConflict: 'id' }
-    )
+      })
+      if (insertErr) {
+        console.error('messagesCreate: conversation insert failed (non-fatal):', insertErr.message)
+      }
+    }
   } catch (convErr) {
     // Log but don't throw — the message was saved; the conversation index is non-critical
     console.error('messagesCreate: conversation upsert failed (non-fatal):', convErr)
@@ -933,8 +955,8 @@ export async function notificationsListByUser(userId: string): Promise<Notificat
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(100)
-  if (error || !data) return []
-  return (data as Record<string, unknown>[]).map(rowToNotification)
+  if (error) throw new Error(error.message)
+  return ((data || []) as Record<string, unknown>[]).map(rowToNotification)
 }
 
 export async function notificationsCreate(input: CreateNotificationInput): Promise<Notification> {

@@ -508,14 +508,23 @@ export function AdminModerationClient({
                 return (
                   <tr key={report.id}>
                     <td className="py-2 pr-4 text-[var(--m-ink)]">
-                      <p>
-                        <Link href={`/item/${report.listingId}`} className="font-medium text-[var(--m-ink)] hover:text-[var(--m-green)]">
-                          {listing?.title || 'Listing removed'}
-                        </Link>
-                      </p>
-                      <p className="text-xs text-[var(--m-muted)]">
-                        {report.includeSeller ? `Seller + listing (${seller?.displayName || report.sellerId})` : 'Listing only'}
-                      </p>
+                      {report.listingId ? (
+                        <>
+                          <p>
+                            <Link href={`/item/${report.listingId}`} className="font-medium text-[var(--m-ink)] hover:text-[var(--m-green)]">
+                              {listing?.title || 'Listing removed'}
+                            </Link>
+                          </p>
+                          <p className="text-xs text-[var(--m-muted)]">
+                            {report.includeSeller ? `Seller + listing (${seller?.displayName || report.sellerId})` : 'Listing only'}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-medium text-[var(--m-ink)]">User report</p>
+                          <p className="text-xs text-[var(--m-muted)]">{seller?.displayName || report.sellerId}</p>
+                        </>
+                      )}
                     </td>
                     <td className="py-2 pr-4 text-[var(--m-muted)]">{REPORT_REASON_LABELS[report.reason]}</td>
                     <td className="py-2 pr-4 text-[var(--m-muted)]">{formatDate(report.createdAt)}</td>

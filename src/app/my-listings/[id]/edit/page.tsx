@@ -152,7 +152,7 @@ export default function EditListingPage() {
   }, [params?.id, session])
 
   const validate = () => {
-    if (images.length === 0) return 'At least 1 photo is required.'
+    if (form.listingKind === 'sell' && images.length === 0) return 'At least 1 photo is required.'
     if (form.title.trim().length < 5) return 'Title should be at least 5 characters.'
     if (form.description.trim().length < 15) return 'Description should be at least 15 characters.'
     if (form.pickupNotes.trim().length < 6) return 'Pickup notes should be at least 6 characters.'

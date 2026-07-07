@@ -82,7 +82,7 @@ export type CreateNotificationInput = Omit<Notification, 'id' | 'createdAt' | 'i
 export type CreateSavedSearchInput = Omit<SavedSearch, 'id' | 'createdAt' | 'lastNotifiedAt'>
 
 export type CreateReportInput = {
-  listingId: string
+  listingId: string | null
   sellerId: string
   reportedByUserId: string
   reason: ReportReason

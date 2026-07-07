@@ -66,6 +66,7 @@ export const translations = {
     'signup.confirming': 'Confirming...',
     'signup.resend': "Didn't get a code? Resend",
     'signup.resending': 'Sending...',
+    'signup.wrongEmail': 'Wrong email? Start over',
 
     'sell.title': 'Post something worth keeping.',
     'sell.subtitle': 'Mason Market is GMU-only, so your stuff stays close.',
@@ -144,6 +145,7 @@ export const translations = {
     'signup.confirming': '확인 중...',
     'signup.resend': '코드를 받지 못하셨나요? 재전송',
     'signup.resending': '전송 중...',
+    'signup.wrongEmail': '이메일이 잘못되었나요? 처음부터 다시',
 
     'sell.title': '소중한 물건을 올려보세요.',
     'sell.subtitle': 'Mason Market은 GMU 학생 전용이라 안전하게 거래할 수 있어요.',

@@ -130,6 +130,13 @@ export default function SignUpPage() {
     }
   }
 
+  const handleStartOver = () => {
+    setPendingConfirmation(false)
+    setOtp('')
+    setError('')
+    setResendMessage('')
+  }
+
   const handleResendCode = async () => {
     setError('')
     setResendMessage('')
@@ -191,6 +198,15 @@ export default function SignUpPage() {
               style={{ color: 'var(--m-green)' }}
             >
               {resending ? t('signup.resending') : t('signup.resend')}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleStartOver}
+              className="block w-full text-center text-sm font-medium"
+              style={{ color: 'var(--m-muted)' }}
+            >
+              {t('signup.wrongEmail')}
             </button>
           </form>
         ) : (

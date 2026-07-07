@@ -12,3 +12,11 @@
 -- never actually changed after a rating, for any user, ever.
 alter table users alter column reputation_score type numeric(6,1) using reputation_score::numeric(6,1);
 alter table users alter column reputation_score set default 0;
+
+-- ─── Allow reporting a user without a listing ────────────────────────────
+-- Every report previously required a listing_id, so there was no way to
+-- report a user for DM harassment once a listing was sold/deleted, or for
+-- abuse that never involved a listing at all. seller_id is reused as "the
+-- reported user id" for these listing-less reports (it was already just a
+-- foreign key to users, not tied to marketplace-seller status specifically).
+alter table reports alter column listing_id drop not null;

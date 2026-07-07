@@ -8,7 +8,7 @@ import { SubNavRail } from '@/components/SubNavRail'
 import { FilterDrawer, FilterState } from '@/components/FilterDrawer'
 import { SeasonalRibbon } from '@/components/SeasonalRibbon'
 import { useFavorites } from '@/lib/useFavorites'
-import { CATEGORIES, Category, Listing } from '@/lib/types'
+import { CAMPUS_LOCATIONS, CampusLocation, CATEGORIES, Category, Listing } from '@/lib/types'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
 
@@ -70,8 +70,13 @@ function HomeContent() {
   useEffect(() => {
     const q = searchParams.get('search') || ''
     const c = searchParams.get('category')
+    const campus = searchParams.get('campusLocation')
     setSearch(q)
     setCategory(c && CATEGORIES.includes(c as Category) ? (c as Category) : null)
+    setFilters((prev) => ({
+      ...prev,
+      campusLocation: campus && CAMPUS_LOCATIONS.includes(campus as CampusLocation) ? (campus as CampusLocation) : '',
+    }))
     setPage(0)
     setHasMore(true)
   }, [searchParams])

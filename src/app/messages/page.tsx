@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Listing, Message } from '@/lib/types'
+import { Listing, Message, REPORT_REASONS, REPORT_REASON_LABELS, ReportReason } from '@/lib/types'
 import { PICKUP_ZONE_LABELS, PickupZone } from '@/lib/types'
 import { formatRecency } from '@/lib/time'
 import { Conversation } from '@/lib/data/contracts'
@@ -53,6 +53,10 @@ export default function MessagesPage() {
   const [loadingThread, setLoadingThread] = useState(false)
   const [sending, setSending] = useState(false)
   const [markingSold, setMarkingSold] = useState(false)
+  const [showReportForm, setShowReportForm] = useState(false)
+  const [reportReason, setReportReason] = useState<ReportReason>('harassment')
+  const [reportNotes, setReportNotes] = useState('')
+  const [reportSubmitting, setReportSubmitting] = useState(false)
   const didAutoSend = useRef(false)
   const isSendingRef = useRef(false)
   const threadScrollRef = useRef<HTMLDivElement>(null)
@@ -266,6 +270,12 @@ export default function MessagesPage() {
     }
   }, [selectedConversation])
 
+  // Reset the report form when switching conversations
+  useEffect(() => {
+    setShowReportForm(false)
+    setReportNotes('')
+  }, [selectedKey])
+
   // Auto-scroll thread to bottom when new messages arrive
   useEffect(() => {
     if (threadScrollRef.current) {
@@ -353,6 +363,35 @@ export default function MessagesPage() {
       showToast('Could not mark as sold — try from the listing page', 'error')
     } finally {
       setMarkingSold(false)
+    }
+  }
+
+  const handleSubmitReport = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!selectedConversation) return
+    setReportSubmitting(true)
+    try {
+      const res = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportedUserId: selectedConversation.peerId,
+          reason: reportReason,
+          notes: reportNotes.trim(),
+        }),
+      })
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null)
+        showToast(payload?.error || 'Could not submit report', 'error')
+        return
+      }
+      showToast('Report submitted to Mason Market moderation')
+      setShowReportForm(false)
+      setReportNotes('')
+    } catch {
+      showToast('Could not submit report', 'error')
+    } finally {
+      setReportSubmitting(false)
     }
   }
 
@@ -517,8 +556,49 @@ export default function MessagesPage() {
                       <Link href={`/item/${selectedConversation.listingId}`} className="text-xs font-medium hover:underline" style={{ color: 'var(--m-green)' }}>
                         View listing →
                       </Link>
+                      <button
+                        type="button"
+                        onClick={() => setShowReportForm((current) => !current)}
+                        className="text-xs font-medium hover:underline"
+                        style={{ color: 'var(--m-muted)' }}
+                      >
+                        {showReportForm ? 'Cancel report' : `Report ${selectedConversation.peerLabel}`}
+                      </button>
                     </div>
                   </div>
+
+                  {showReportForm ? (
+                    <form onSubmit={handleSubmitReport} className="mt-3 space-y-3 rounded-xl border bg-[var(--m-soft)] p-3" style={{ borderColor: 'var(--m-line)' }}>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium" style={{ color: 'var(--m-ink)' }}>Reason</label>
+                        <select
+                          value={reportReason}
+                          onChange={(e) => setReportReason(e.target.value as ReportReason)}
+                          className="ui-input"
+                        >
+                          {REPORT_REASONS.map((reason) => (
+                            <option key={reason} value={reason}>
+                              {REPORT_REASON_LABELS[reason]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium" style={{ color: 'var(--m-ink)' }}>Notes (optional)</label>
+                        <textarea
+                          rows={3}
+                          maxLength={500}
+                          value={reportNotes}
+                          onChange={(e) => setReportNotes(e.target.value)}
+                          placeholder="What happened?"
+                          className="ui-input resize-none"
+                        />
+                      </div>
+                      <button type="submit" disabled={reportSubmitting} className="ui-btn-secondary">
+                        {reportSubmitting ? 'Submitting...' : 'Submit report'}
+                      </button>
+                    </form>
+                  ) : null}
                 </div>
 
                 <div ref={threadScrollRef} className="mt-4 flex-1 min-h-[280px] overflow-y-auto rounded-xl bg-[var(--m-soft)] p-3">

@@ -4,18 +4,45 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { ListingCard } from '@/components/ListingCard'
 import { useFavorites } from '@/lib/useFavorites'
-import { Listing } from '@/lib/types'
+import { Listing, SavedSearch } from '@/lib/types'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { AuthRequiredCard } from '@/components/AuthRequiredCard'
 import { useRouter } from 'next/navigation'
+
+function savedSearchUrl(search: SavedSearch): string {
+  const params = new URLSearchParams()
+  if (search.query) params.set('search', search.query)
+  const category = search.filters?.category
+  if (typeof category === 'string' && category) params.set('category', category)
+  const campusLocation = search.filters?.campusLocation
+  if (typeof campusLocation === 'string' && campusLocation) params.set('campusLocation', campusLocation)
+  return `/?${params.toString()}`
+}
 
 export default function SavedPage() {
   const router = useRouter()
   const [savedListings, setSavedListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([])
   const { session, loading: authLoading } = useAuthSession()
   const { savedIds, savedSet, toggleFavorite } = useFavorites(session?.userId)
+
+  useEffect(() => {
+    if (!session) {
+      setSavedSearches([])
+      return
+    }
+    fetch('/api/saved-searches')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setSavedSearches(Array.isArray(data) ? data : []))
+      .catch(() => setSavedSearches([]))
+  }, [session])
+
+  const removeSavedSearch = async (id: string) => {
+    setSavedSearches((current) => current.filter((s) => s.id !== id))
+    await fetch(`/api/saved-searches?id=${id}`, { method: 'DELETE' }).catch(() => {})
+  }
 
   useEffect(() => {
     if (!session) {
@@ -77,6 +104,36 @@ export default function SavedPage() {
       <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>
         {savedListings.length} {savedListings.length === 1 ? 'item' : 'items'}
       </p>
+
+      {savedSearches.length > 0 ? (
+        <div className="mt-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--m-muted)' }}>
+            Saved searches
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {savedSearches.map((search) => (
+              <div
+                key={search.id}
+                className="flex items-center gap-1 rounded-full border pl-3 pr-1 py-1 text-[13px]"
+                style={{ borderColor: 'var(--m-line)' }}
+              >
+                <Link href={savedSearchUrl(search)} className="font-medium hover:underline" style={{ color: 'var(--m-ink)' }}>
+                  {search.label}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => removeSavedSearch(search.id)}
+                  aria-label={`Remove saved search "${search.label}"`}
+                  className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-[var(--m-soft)]"
+                  style={{ color: 'var(--m-muted)' }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {loading ? (
         <div className="mt-8 grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">

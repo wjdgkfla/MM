@@ -39,18 +39,42 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const listingId = String(body?.listingId || '').trim()
+    const reportedUserId = String(body?.reportedUserId || '').trim()
     const reason = body?.reason as ReportReason
     const notes = String(body?.notes || '').trim()
     const includeSeller = Boolean(body?.includeSeller)
 
-    if (!listingId) {
-      return NextResponse.json({ error: 'Listing is required' }, { status: 400 })
+    if (!listingId && !reportedUserId) {
+      return NextResponse.json({ error: 'A listing or a user is required' }, { status: 400 })
     }
     if (!REPORT_REASONS.includes(reason)) {
       return NextResponse.json({ error: 'Invalid report reason' }, { status: 400 })
     }
     if (notes.length > 500) {
       return NextResponse.json({ error: 'Notes must be 500 characters or less' }, { status: 400 })
+    }
+
+    // Reporting a user directly — no listing involved (e.g. DM harassment
+    // after a sale, or abuse with no listing attached at all).
+    if (!listingId) {
+      const reportedUser = await usersFindById(reportedUserId)
+      if (!reportedUser) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      }
+      if (reportedUserId === session.userId) {
+        return NextResponse.json({ error: 'You cannot report yourself' }, { status: 400 })
+      }
+
+      const report = await reportsCreate({
+        listingId: null,
+        sellerId: reportedUserId,
+        reportedByUserId: session.userId,
+        reason,
+        notes: notes || undefined,
+        includeSeller: true,
+      })
+
+      return NextResponse.json(report, { status: 201 })
     }
 
     const listing = await listingsFindById(listingId)
@@ -115,7 +139,7 @@ export async function PATCH(request: NextRequest) {
           : 'report-reopened',
       targetType: 'report',
       targetId: updated.id,
-      notes: `${updated.reason} (${updated.listingId})`,
+      notes: updated.listingId ? `${updated.reason} (${updated.listingId})` : `${updated.reason} (user report)`,
     })
 
     return NextResponse.json(updated)
