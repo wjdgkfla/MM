@@ -16,6 +16,11 @@
   --m-green-soft:#E5EFE9;
   --m-pop:       #006B3C;
   --m-gold:      #C9A227;
+  --m-gold-soft: #FBF3DF;
+  /* Darker text-safe variant of --m-gold — #C9A227 only contrasts 2.4:1 on
+     white (fails WCAG AA for text); this passes at 5.4:1. Use --m-gold for
+     borders/backgrounds, --m-gold-text for readable text on a light surface. */
+  --m-gold-text: #8A6300;
   /* Radii */
   --r-pill: 9999px;
   --r-card: 12px;

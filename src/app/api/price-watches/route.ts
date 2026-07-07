@@ -8,9 +8,14 @@ import {
 } from '@/lib/data/supabaseDataAccess'
 
 export async function GET(request: NextRequest) {
-  const session = getSessionFromRequest(request)
-  if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
-  return NextResponse.json(await priceWatchesListByUser(session.userId))
+  try {
+    const session = getSessionFromRequest(request)
+    if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
+    return NextResponse.json(await priceWatchesListByUser(session.userId))
+  } catch (err) {
+    console.error('GET /api/price-watches error:', err)
+    return NextResponse.json({ error: 'Failed to load price watches' }, { status: 500 })
+  }
 }
 
 export async function POST(request: NextRequest) {

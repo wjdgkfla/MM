@@ -9,9 +9,19 @@ describe('rateLimitKey', () => {
   })
 
   test('nested id routes still collapse to the route class', () => {
-    expect(rateLimitKey('1.2.3.4', '/api/listings/listing-a/messages')).toBe('1.2.3.4:/api/listings')
     expect(rateLimitKey('1.2.3.4', '/api/messages/msg-123')).toBe('1.2.3.4:/api/messages')
     expect(rateLimitKey('1.2.3.4', '/api/admin/users/user-1')).toBe('1.2.3.4:/api/admin')
+  })
+
+  test('the alternate message-send endpoint shares one bucket with /api/messages, not with /api/listings', () => {
+    // Both routes call messagesCreate — sharing a bucket prevents a client
+    // from doubling their effective send rate by alternating endpoints.
+    expect(rateLimitKey('1.2.3.4', '/api/listings/listing-a/messages')).toBe(
+      rateLimitKey('1.2.3.4', '/api/messages')
+    )
+    expect(rateLimitKey('1.2.3.4', '/api/listings/listing-a/messages')).not.toBe(
+      rateLimitKey('1.2.3.4', '/api/listings/listing-a')
+    )
   })
 
   test('different route classes get different buckets', () => {

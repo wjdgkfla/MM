@@ -65,9 +65,21 @@ export function checkRateLimit(
  * exception: each auth endpoint gets its own exact-path bucket since they're
  * already a short, fixed list (sign-in, sign-up, ...).
  */
+// /api/listings/{id}/messages is an alternate message-send endpoint that
+// shares messagesCreate with /api/messages — both must share one rate-limit
+// class and one combined bucket, or a client can send at 2x the intended
+// rate by alternating endpoints.
+export function isMessageRoute(pathname: string): boolean {
+  return pathname.startsWith('/api/messages') || /^\/api\/listings\/[^/]+\/messages\/?$/.test(pathname)
+}
+
 export function rateLimitKey(ip: string, pathname: string): string {
   const isAuth = pathname.startsWith('/api/auth/')
-  const routeClass = isAuth ? pathname : pathname.split('/').slice(0, 3).join('/')
+  const routeClass = isAuth
+    ? pathname
+    : isMessageRoute(pathname)
+    ? '/api/messages'
+    : pathname.split('/').slice(0, 3).join('/')
   return `${ip}:${routeClass}`
 }
 

@@ -18,6 +18,7 @@ export interface FilterState {
   pickupZone: PickupZone | ''
   condition: Condition | ''
   status: 'available' | 'reserved' | ''
+  listingKind: 'sell' | 'wanted' | ''
   minPrice: string
   maxPrice: string
   freeOnly: boolean
@@ -55,6 +56,7 @@ export function FilterDrawer({ open, onClose, filters, onChange, onReset, totalC
     (filters.pickupZone ? 1 : 0) +
     (filters.condition ? 1 : 0) +
     (filters.status ? 1 : 0) +
+    (filters.listingKind ? 1 : 0) +
     (filters.minPrice ? 1 : 0) +
     (filters.maxPrice ? 1 : 0) +
     (filters.freeOnly ? 1 : 0) +
@@ -90,6 +92,23 @@ export function FilterDrawer({ open, onClose, filters, onChange, onReset, totalC
 
         {/* Body */}
         <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
+
+          {/* Listing kind */}
+          <section>
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--m-muted)' }}>Listing type</p>
+            <div className="flex flex-wrap gap-2">
+              {([['sell', 'For sale'], ['wanted', 'Wanted']] as const).map(([kind, label]) => {
+                const on = filters.listingKind === kind
+                return (
+                  <button key={kind} onClick={() => onChange({ listingKind: on ? '' : kind })}
+                    className="inline-flex h-9 items-center rounded-full border px-3.5 text-[13px] font-semibold transition-all"
+                    style={{ background: on ? 'var(--m-ink)' : 'white', color: on ? 'white' : 'var(--m-ink)', borderColor: on ? 'var(--m-ink)' : 'var(--m-line)', cursor: 'pointer' }}>
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+          </section>
 
           {/* Condition */}
           <section>

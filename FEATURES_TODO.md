@@ -50,10 +50,11 @@ Features to consider adding. Prioritized by impact.
 - Hover/tap to preview multiple photos without opening the listing
 - Affects: `src/components/ListingCard.tsx`
 
-### 8. Saved Searches with Email Alerts
+### 8. Saved Search Match Notifications
 - "Notify me when a TI-84 is listed under $50"
-- Backend table `saved_searches` already exists in schema
-- Needs: cron job or Supabase Edge Function to match new listings
+- Create/list/delete are done (`/saved` page has a "Saved searches" section)
+- Needs: cron job or Supabase Edge Function to match new listings against
+  saved searches and fire a notification
 
 ### 9. Offer Counter / Negotiation Thread
 - Seller can counter an offer instead of just accept/decline
@@ -68,7 +69,10 @@ Features to consider adding. Prioritized by impact.
 - Seller ratings / manner temperature
 - Admin panel
 - Campus + condition + price + zone filters
-- Price watches, saved searches (DB tables only)
+- Price watches (with drop notifications)
+- Saved searches (create/list/delete — match notifications still pending, see item 8)
+- Report a user directly from a conversation (not just via a listing)
+- Push-notification opt-out toggle in Settings
 - PWA manifest + service worker
 - Mark as sold from conversation
 - Favorites / saved listings

@@ -89,7 +89,9 @@ export function normalizeListingInput(input: Record<string, unknown>): Result {
   const images = normalizeImageUrls(input.imageUrls)
 
   if (title.length < 5) return { ok: false, error: 'Title should be at least 5 characters' }
+  if (title.length > 100) return { ok: false, error: 'Title must be 100 characters or less' }
   if (description.length < 15) return { ok: false, error: 'Description should be at least 15 characters' }
+  if (description.length > 3000) return { ok: false, error: 'Description must be 3000 characters or less' }
   if (pickupNotes.length < 6) return { ok: false, error: 'Pickup notes should be at least 6 characters' }
   if (!Number.isFinite(price) || price < 0 || price > 50_000) {
     return { ok: false, error: 'Price must be between $0 and $50,000' }

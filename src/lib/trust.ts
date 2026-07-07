@@ -1,10 +1,10 @@
 import { Listing, PickupZone, TrustBadge, TRUST_BADGE_LABELS } from '@/lib/types'
 
 export const badgeToneByTrust: Record<TrustBadge, string> = {
-  'verified-gmu': 'bg-[#006633]/10 text-[#1d5a3a]',
+  'verified-gmu': 'bg-[var(--m-green-soft)] text-[var(--m-green)]',
   'trusted-seller': 'bg-emerald-100 text-emerald-700',
   'new-seller': 'bg-slate-100 text-slate-700',
-  'verification-pending': 'bg-amber-100 text-amber-800',
+  'verification-pending': 'bg-[var(--m-gold-soft)] text-[var(--m-gold-text)]',
 }
 
 export function trustBadgeLabel(trustBadge: TrustBadge) {

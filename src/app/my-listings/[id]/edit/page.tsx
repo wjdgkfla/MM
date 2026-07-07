@@ -18,7 +18,8 @@ import {
 } from '@/lib/types'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { AuthRequiredCard } from '@/components/AuthRequiredCard'
-import { adjustIndexForPhotoAction, applyPhotoAction } from '@/lib/photoCollection'
+import { adjustIndexForPhotoAction, applyPhotoAction, filesToDataUrls, uploadImages } from '@/lib/photoCollection'
+import { showToast } from '@/components/Toast'
 
 type EditFormState = {
   title: string
@@ -35,34 +36,6 @@ type EditFormState = {
   bundleNotes: string
   tags: string
   listingKind: ListingKind
-}
-
-function filesToDataUrls(files: File[]) {
-  return Promise.all(
-    files.map(
-      (file) =>
-        new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(String(reader.result || ''))
-          reader.onerror = () => reject(new Error('Failed to read file'))
-          reader.readAsDataURL(file)
-        })
-    )
-  )
-}
-
-async function uploadImages(files: File[]): Promise<string[]> {
-  const formData = new FormData()
-  for (const file of files) {
-    formData.append('files', file)
-  }
-  const res = await fetch('/api/upload', { method: 'POST', body: formData })
-  if (!res.ok) {
-    const payload = await res.json().catch(() => null)
-    throw new Error(payload?.error || 'Image upload failed')
-  }
-  const data = await res.json()
-  return Array.isArray(data?.urls) ? data.urls : []
 }
 
 const EMPTY_FORM: EditFormState = {
@@ -158,7 +131,7 @@ export default function EditListingPage() {
     if (form.pickupNotes.trim().length < 6) return 'Pickup notes should be at least 6 characters.'
 
     const price = Number(form.price)
-    if (!Number.isFinite(price) || price < 0) return 'Price must be 0 or higher.'
+    if (!Number.isFinite(price) || price < 0 || price > 50_000) return 'Price must be between $0 and $50,000.'
 
     if (form.category === 'textbooks' && form.courseCode.trim().length > 0 && form.courseCode.trim().length < 3) {
       return 'Course code should be at least 3 characters when provided.'
@@ -249,6 +222,7 @@ export default function EditListingPage() {
         throw new Error(payload?.error || 'Failed to update listing')
       }
 
+      showToast('Listing updated')
       router.push('/my-listings')
       router.refresh()
     } catch (submitError) {
@@ -271,6 +245,7 @@ export default function EditListingPage() {
         const payload = await res.json().catch(() => null)
         throw new Error(payload?.error || 'Failed to delete listing')
       }
+      showToast('Listing deleted')
       router.push('/my-listings')
       router.refresh()
     } catch (deleteError) {
@@ -358,6 +333,7 @@ export default function EditListingPage() {
           <input
             type="text"
             required
+            maxLength={100}
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             className="ui-input"
@@ -430,6 +406,7 @@ export default function EditListingPage() {
           <textarea
             required
             rows={5}
+            maxLength={3000}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             className="ui-input resize-none"

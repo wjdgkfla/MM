@@ -8,6 +8,7 @@ import { Listing, STATUS_LABELS } from '@/lib/types'
 import { formatRecency } from '@/lib/time'
 import { StatusBadge } from '@/components/StatusBadge'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
+import { showToast } from '@/components/Toast'
 
 type ListingStatusAction = 'available' | 'reserved' | 'sold'
 
@@ -75,6 +76,7 @@ export default function MyListingsPage() {
       }
       const updated = (await res.json()) as Listing
       setListings((current) => current.map((item) => (item.id === id ? updated : item)))
+      showToast(`Listing marked as ${nextStatus}`)
     } catch (statusError) {
       setError(statusError instanceof Error ? statusError.message : 'Failed to update status')
     } finally {
@@ -83,7 +85,7 @@ export default function MyListingsPage() {
   }
 
   const archiveListing = async (id: string) => {
-    const ok = window.confirm('Archive this listing? It will be permanently removed from Mason Market.')
+    const ok = window.confirm('Delete this listing? It will be permanently removed from Mason Market.')
     if (!ok) return
 
     setBusyId(id)
@@ -94,6 +96,7 @@ export default function MyListingsPage() {
         throw new Error(payload?.error || 'Failed to archive listing')
       }
       setListings((current) => current.filter((item) => item.id !== id))
+      showToast('Listing archived')
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : 'Failed to archive listing')
     } finally {
@@ -112,6 +115,7 @@ export default function MyListingsPage() {
       if (!res.ok) throw new Error('Failed to refresh listing')
       const updated = (await res.json()) as Listing
       setListings((current) => current.map((item) => (item.id === id ? updated : item)))
+      showToast('Listing refreshed')
     } catch (refreshError) {
       setError(refreshError instanceof Error ? refreshError.message : 'Failed to refresh listing')
     } finally {

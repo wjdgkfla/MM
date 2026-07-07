@@ -8,7 +8,7 @@ import { SubNavRail } from '@/components/SubNavRail'
 import { FilterDrawer, FilterState } from '@/components/FilterDrawer'
 import { SeasonalRibbon } from '@/components/SeasonalRibbon'
 import { useFavorites } from '@/lib/useFavorites'
-import { CAMPUS_LOCATIONS, CampusLocation, CATEGORIES, Category, Listing } from '@/lib/types'
+import { CAMPUS_LOCATIONS, CampusLocation, CATEGORIES, Category, Listing, LISTING_KINDS, ListingKind } from '@/lib/types'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
 
@@ -19,6 +19,7 @@ const EMPTY_FILTERS: FilterState = {
   pickupZone: '',
   condition: '',
   status: '',
+  listingKind: '',
   minPrice: '',
   maxPrice: '',
   freeOnly: false,
@@ -31,6 +32,7 @@ function countFilters(f: FilterState): number {
     (f.pickupZone ? 1 : 0) +
     (f.condition ? 1 : 0) +
     (f.status ? 1 : 0) +
+    (f.listingKind ? 1 : 0) +
     (f.minPrice ? 1 : 0) +
     (f.maxPrice ? 1 : 0) +
     (f.freeOnly ? 1 : 0) +
@@ -71,11 +73,13 @@ function HomeContent() {
     const q = searchParams.get('search') || ''
     const c = searchParams.get('category')
     const campus = searchParams.get('campusLocation')
+    const kind = searchParams.get('listingKind')
     setSearch(q)
     setCategory(c && CATEGORIES.includes(c as Category) ? (c as Category) : null)
     setFilters((prev) => ({
       ...prev,
       campusLocation: campus && CAMPUS_LOCATIONS.includes(campus as CampusLocation) ? (campus as CampusLocation) : '',
+      listingKind: kind && LISTING_KINDS.includes(kind as ListingKind) ? (kind as ListingKind) : '',
     }))
     setPage(0)
     setHasMore(true)
@@ -121,6 +125,7 @@ function HomeContent() {
     if (filters.pickupZone)  p.set('pickupZone', filters.pickupZone)
     if (filters.condition)   p.set('condition', filters.condition)
     if (filters.status)      p.set('status', filters.status)
+    if (filters.listingKind) p.set('listingKind', filters.listingKind)
     if (filters.minPrice)    p.set('minPrice', filters.minPrice)
     if (filters.maxPrice)    p.set('maxPrice', filters.maxPrice)
     if (filters.courseTag)   p.set('courseTag', filters.courseTag)

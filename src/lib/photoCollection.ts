@@ -46,3 +46,31 @@ export function getCoverImageUrl(imageUrls: string[], requestedCover?: string | 
   if (requestedCover && images.includes(requestedCover)) return requestedCover
   return images[0]
 }
+
+export function filesToDataUrls(files: File[]): Promise<string[]> {
+  return Promise.all(
+    files.map(
+      (file) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(String(reader.result || ''))
+          reader.onerror = () => reject(new Error('Failed to read file'))
+          reader.readAsDataURL(file)
+        })
+    )
+  )
+}
+
+export async function uploadImages(files: File[]): Promise<string[]> {
+  const formData = new FormData()
+  for (const file of files) {
+    formData.append('files', file)
+  }
+  const res = await fetch('/api/upload', { method: 'POST', body: formData })
+  if (!res.ok) {
+    const payload = await res.json().catch(() => null)
+    throw new Error(payload?.error || 'Image upload failed')
+  }
+  const data = await res.json()
+  return Array.isArray(data?.urls) ? data.urls : []
+}

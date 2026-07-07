@@ -16,6 +16,7 @@ type ConversationSummary = {
   listingId: string
   listingTitle: string
   listingStatus: Listing['status']
+  listingSellerId: string
   peerId: string
   peerLabel: string
   lastMessage: string
@@ -115,6 +116,7 @@ export default function MessagesPage() {
               listingId: conversation.listingId,
               listingTitle: 'Listing unavailable',
               listingStatus: 'available',
+              listingSellerId: '',
               peerId,
               peerLabel: 'Marketplace user',
               lastMessage: conversation.lastMessagePreview,
@@ -129,6 +131,7 @@ export default function MessagesPage() {
             listingId: conversation.listingId,
             listingTitle: listing.title,
             listingStatus: listing.status,
+            listingSellerId: listing.sellerId,
             peerId,
             peerLabel:
               peerId === listing.sellerId ? listing.sellerProfile.displayName : 'Interested buyer',
@@ -153,6 +156,7 @@ export default function MessagesPage() {
                   listingId: listing.id,
                   listingTitle: listing.title,
                   listingStatus: listing.status,
+                  listingSellerId: listing.sellerId,
                   peerId,
                   peerLabel: listing.sellerProfile.displayName,
                   lastMessage: 'Start a conversation about this listing.',
@@ -402,13 +406,17 @@ export default function MessagesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ offerStatus: status }),
       })
-      if (!res.ok) return
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null)
+        showToast(payload?.error || 'Could not update the offer', 'error')
+        return
+      }
       const updated = (await res.json()) as Message
       setThread((current) => current.map((m) => (m.id === messageId ? updated : m)))
       if (status === 'accepted') showToast('Offer accepted')
       else showToast('Offer declined', 'info')
     } catch {
-      // silently fail; thread refreshes on next load
+      showToast('Could not update the offer', 'error')
     }
   }
 
@@ -431,6 +439,8 @@ export default function MessagesPage() {
     if (res?.ok) {
       const created = await res.json() as Message
       setThread((current) => [...current, created])
+    } else {
+      showToast('Could not send meetup suggestion — try again', 'error')
     }
   }
 
@@ -542,7 +552,7 @@ export default function MessagesPage() {
                     <div className="flex shrink-0 items-center gap-2">
                       {/* Seller-only: mark listing as sold directly from the chat */}
                       {selectedConversation.listingStatus === 'available' &&
-                       selectedConversation.peerId !== currentUserId && (
+                       selectedConversation.listingSellerId === currentUserId && (
                         <button
                           type="button"
                           onClick={handleMarkSold}

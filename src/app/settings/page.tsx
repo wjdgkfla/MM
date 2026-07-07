@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { AuthRequiredCard } from '@/components/AuthRequiredCard'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { User } from '@/lib/types'
+import { getPushSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush } from '@/lib/pushSubscription'
 
 export default function SettingsPage() {
   const { session, loading } = useAuthSession()
@@ -11,6 +12,9 @@ export default function SettingsPage() {
   const [marketingEmailOptIn, setMarketingEmailOptIn] = useState(false)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [pushSupported, setPushSupported] = useState(false)
+  const [pushSubscribed, setPushSubscribed] = useState(false)
+  const [pushBusy, setPushBusy] = useState(false)
 
   useEffect(() => {
     if (!session) return
@@ -22,6 +26,22 @@ export default function SettingsPage() {
       })
       .catch(() => setMessage('Could not load settings.'))
   }, [session])
+
+  useEffect(() => {
+    if (!session || !isPushSupported()) return
+    setPushSupported(true)
+    getPushSubscription().then((sub) => setPushSubscribed(Boolean(sub)))
+  }, [session])
+
+  const togglePush = async () => {
+    setPushBusy(true)
+    try {
+      const ok = pushSubscribed ? await unsubscribeFromPush() : await subscribeToPush()
+      if (ok) setPushSubscribed(!pushSubscribed)
+    } finally {
+      setPushBusy(false)
+    }
+  }
 
   const save = async () => {
     setSaving(true)
@@ -68,6 +88,26 @@ export default function SettingsPage() {
             <span className="block text-sm text-[var(--m-muted)]">Get occasional updates about features, campus seasons, and saved marketplace activity.</span>
           </span>
         </label>
+
+        {pushSupported ? (
+          <div className="flex items-start justify-between gap-3 border-t pt-4" style={{ borderColor: 'var(--m-line)' }}>
+            <span>
+              <span className="block font-semibold text-[var(--m-ink)]">Push notifications</span>
+              <span className="block text-sm text-[var(--m-muted)]">
+                {pushSubscribed ? 'On — you\'ll get alerts for new messages and offers.' : 'Off — turn on to get alerts for new messages and offers.'}
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={togglePush}
+              disabled={pushBusy}
+              className="ui-btn-secondary shrink-0"
+            >
+              {pushBusy ? '...' : pushSubscribed ? 'Turn off' : 'Turn on'}
+            </button>
+          </div>
+        ) : null}
+
         <div className="rounded-xl bg-[var(--m-soft)] p-3 text-sm text-[var(--m-muted)]">
           Theme settings will live here later. For now, Mason Market stays in the current light design.
         </div>

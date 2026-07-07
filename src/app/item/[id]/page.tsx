@@ -191,7 +191,7 @@ export default function ItemPage() {
   }
 
   const handleDelete = async () => {
-    const ok = window.confirm('Archive this listing? It will be permanently removed from Mason Market.')
+    const ok = window.confirm('Delete this listing? It will be permanently removed from Mason Market.')
     if (!ok) return
 
     setActionError('')
@@ -552,7 +552,7 @@ export default function ItemPage() {
                   <button
                     type="button"
                     onClick={() => setShowOfferModal(true)}
-                    className="flex-1 rounded-xl border border-[#FFB81C]/60 py-2 text-center text-sm font-medium text-[#8a6300] hover:bg-[#FFB81C]/10"
+                    className="flex-1 rounded-xl border border-[var(--m-gold)]/60 py-2 text-center text-sm font-medium text-[var(--m-gold-text)] hover:bg-[var(--m-gold-soft)]"
                   >
                     {t('item.makeOffer')}
                   </button>
@@ -598,7 +598,7 @@ export default function ItemPage() {
                     disabled={actionBusy}
                     className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
                   >
-                    Archive/Delete
+                    Delete
                   </button>
                 </div>
                 <p className="mt-3 text-xs text-[var(--m-muted)]">Tip: You can also manage all your listings from the My Listings page.</p>

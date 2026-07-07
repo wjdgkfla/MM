@@ -2,7 +2,7 @@ import { Listing } from '@/lib/types'
 
 const BADGE_STYLES: Record<Listing['status'], string> = {
   available: 'bg-[var(--m-green-soft)] text-[var(--m-green)]',
-  reserved:  'bg-amber-50 text-amber-700',
+  reserved:  'bg-[var(--m-gold-soft)] text-[var(--m-gold-text)]',
   sold:      'bg-[var(--m-soft)] text-[var(--m-muted)]',
 }
 

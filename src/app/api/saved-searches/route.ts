@@ -7,9 +7,14 @@ import {
 } from '@/lib/data/supabaseDataAccess'
 
 export async function GET(request: NextRequest) {
-  const session = getSessionFromRequest(request)
-  if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
-  return NextResponse.json(await savedSearchesListByUser(session.userId))
+  try {
+    const session = getSessionFromRequest(request)
+    if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
+    return NextResponse.json(await savedSearchesListByUser(session.userId))
+  } catch (err) {
+    console.error('GET /api/saved-searches error:', err)
+    return NextResponse.json({ error: 'Failed to load saved searches' }, { status: 500 })
+  }
 }
 
 export async function POST(request: NextRequest) {

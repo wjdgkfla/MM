@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { checkRateLimit, rateLimitKey, RATE_LIMITS } from '@/lib/rateLimit'
+import { checkRateLimit, isMessageRoute, rateLimitKey, RATE_LIMITS } from '@/lib/rateLimit'
 
 function getIp(request: NextRequest): string {
   return (
@@ -18,7 +18,6 @@ function getRateLimitConfig(pathname: string) {
   if (pathname === '/api/auth/sign-in' || pathname === '/api/auth/sign-up') return RATE_LIMITS.auth
 
   if (pathname.startsWith('/api/upload')) return RATE_LIMITS.upload
-  if (pathname.startsWith('/api/messages')) return null
   if (
     pathname.startsWith('/api/listings') ||
     pathname.startsWith('/api/favorites') ||
@@ -37,7 +36,7 @@ export function proxy(request: NextRequest) {
 
   const ip = getIp(request)
   const messageMethod = request.method.toUpperCase()
-  const config = pathname.startsWith('/api/messages')
+  const config = isMessageRoute(pathname)
     ? (messageMethod === 'POST' ? RATE_LIMITS.message : RATE_LIMITS.messageRead)
     : getRateLimitConfig(pathname)
 

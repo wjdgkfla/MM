@@ -312,7 +312,8 @@ export async function listingsFindByIds(ids: string[]): Promise<Listing[]> {
     .from('listings')
     .select('*')
     .in('id', ids)
-  if (error || !data) return []
+  if (error) throw new Error(error.message)
+  if (!data) return []
   const byId = new Map(
     (data as Record<string, unknown>[]).map((r) => {
       const l = rowToListing(r)
@@ -328,8 +329,8 @@ export async function listingsFindBySellerId(sellerId: string): Promise<Listing[
     .select('*')
     .eq('seller_id', sellerId)
     .order('created_at', { ascending: false })
-  if (error || !data) return []
-  return (data as Record<string, unknown>[]).map(rowToListing)
+  if (error) throw new Error(error.message)
+  return ((data || []) as Record<string, unknown>[]).map(rowToListing)
 }
 
 export async function listingsListAllForAdmin(): Promise<Listing[]> {
@@ -337,17 +338,8 @@ export async function listingsListAllForAdmin(): Promise<Listing[]> {
     .from('listings')
     .select('*')
     .order('created_at', { ascending: false })
-  if (error || !data) return []
-  return (data as Record<string, unknown>[]).map(rowToListing)
-}
-
-export async function listingsCountBySellerId(sellerId: string): Promise<number> {
-  const { count, error } = await getSupabaseAdmin()
-    .from('listings')
-    .select('*', { count: 'exact', head: true })
-    .eq('seller_id', sellerId)
-  if (error) return 0
-  return count ?? 0
+  if (error) throw new Error(error.message)
+  return ((data || []) as Record<string, unknown>[]).map(rowToListing)
 }
 
 export async function listingsCreate(input: CreateListingInput): Promise<Listing> {
@@ -479,8 +471,8 @@ export async function usersFindAll(): Promise<User[]> {
     .from('users')
     .select('*')
     .order('joined_at', { ascending: false })
-  if (error || !data) return []
-  return (data as Record<string, unknown>[]).map(rowToUser)
+  if (error) throw new Error(error.message)
+  return ((data || []) as Record<string, unknown>[]).map(rowToUser)
 }
 
 export async function usersFindById(id: string): Promise<User | undefined> {
@@ -610,24 +602,15 @@ export async function usersUpdateProfile(id: string, input: UpdateProfileInput):
 }
 
 export async function usersAdjustReputationScore(userId: string, delta: number): Promise<void> {
-  const { data, error: selectError } = await getSupabaseAdmin()
-    .from('users')
-    .select('reputation_score')
-    .eq('id', userId)
-    .single()
-  if (selectError || !data) {
-    console.error(`usersAdjustReputationScore(${userId}) select error:`, selectError?.message)
-    return
-  }
-  const current = Number(data.reputation_score) || 0
-  // Clamp so temperature stays in [0, 99]: display = 36.5 + score, so score ∈ [-36.5, 62.5]
-  const newScore = Math.round(Math.min(62.5, Math.max(-36.5, current + delta)) * 10) / 10
-  const { error: updateError } = await getSupabaseAdmin()
-    .from('users')
-    .update({ reputation_score: newScore })
-    .eq('id', userId)
-  if (updateError) {
-    console.error(`usersAdjustReputationScore(${userId}) update error:`, updateError.message)
+  // Atomic RPC (UPDATE ... SET x = x + delta) — a plain select-then-update
+  // here would race when two ratings for the same seller land close
+  // together, silently dropping one rating's effect on the score.
+  const { error } = await getSupabaseAdmin().rpc('adjust_reputation_score', {
+    user_id: userId,
+    delta,
+  })
+  if (error) {
+    console.error(`usersAdjustReputationScore(${userId}) rpc error:`, error.message)
   }
 }
 
@@ -645,8 +628,8 @@ export async function messagesListByListing(listingId: string, userId?: string):
   }
 
   const { data, error } = await q
-  if (error || !data) return []
-  return (data as Record<string, unknown>[]).map(rowToMessage)
+  if (error) throw new Error(error.message)
+  return ((data || []) as Record<string, unknown>[]).map(rowToMessage)
 }
 
 export async function messagesListThread(listingId: string, userA: string, userB: string): Promise<Message[]> {
@@ -920,8 +903,8 @@ export async function favoritesListByUser(userId: string): Promise<string[]> {
     .from('favorites')
     .select('listing_id')
     .eq('user_id', userId)
-  if (error || !data) return []
-  return (data as Record<string, unknown>[]).map((r) => String(r.listing_id))
+  if (error) throw new Error(error.message)
+  return ((data || []) as Record<string, unknown>[]).map((r) => String(r.listing_id))
 }
 
 export async function favoritesAdd(userId: string, listingId: string): Promise<boolean> {
@@ -1007,8 +990,8 @@ export async function savedSearchesListByUser(userId: string): Promise<SavedSear
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
-  if (error || !data) return []
-  return (data as Record<string, unknown>[]).map(rowToSavedSearch)
+  if (error) throw new Error(error.message)
+  return ((data || []) as Record<string, unknown>[]).map(rowToSavedSearch)
 }
 
 export async function savedSearchesCreate(input: CreateSavedSearchInput): Promise<SavedSearch> {
@@ -1044,8 +1027,8 @@ export async function priceWatchesListByUser(userId: string): Promise<PriceWatch
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
-  if (error || !data) return []
-  return (data as Record<string, unknown>[]).map(rowToPriceWatch)
+  if (error) throw new Error(error.message)
+  return ((data || []) as Record<string, unknown>[]).map(rowToPriceWatch)
 }
 
 export async function priceWatchesUpsert(userId: string, listingId: string, lastSeenPrice: number): Promise<PriceWatch> {
@@ -1101,8 +1084,8 @@ export async function reportsListAll(): Promise<Report[]> {
     .from('reports')
     .select('*')
     .order('created_at', { ascending: false })
-  if (error || !data) return []
-  return (data as Record<string, unknown>[]).map(rowToReport)
+  if (error) throw new Error(error.message)
+  return ((data || []) as Record<string, unknown>[]).map(rowToReport)
 }
 
 export async function reportsFindByUserAndListing(userId: string, listingId: string): Promise<Report | null> {
@@ -1155,8 +1138,8 @@ export async function adminActivityListAll(): Promise<AdminActivityLog[]> {
     .from('admin_activity')
     .select('*')
     .order('created_at', { ascending: false })
-  if (error || !data) return []
-  return (data as Record<string, unknown>[]).map(rowToAdminActivity)
+  if (error) throw new Error(error.message)
+  return ((data || []) as Record<string, unknown>[]).map(rowToAdminActivity)
 }
 
 export async function adminActivityCreate(
@@ -1214,8 +1197,8 @@ export async function ratingsFindBySellerId(sellerId: string): Promise<Rating[]>
     .select('*')
     .eq('seller_id', sellerId)
     .order('created_at', { ascending: false })
-  if (error || !data) return []
-  return (data as Record<string, unknown>[]).map(rowToRating)
+  if (error) throw new Error(error.message)
+  return ((data || []) as Record<string, unknown>[]).map(rowToRating)
 }
 
 export async function ratingsFindByBuyerAndListing(

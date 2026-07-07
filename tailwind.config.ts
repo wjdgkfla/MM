@@ -7,13 +7,7 @@ const config: Config = {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-    extend: {
-      colors: {
-        'mason-green': '#006633',
-        'mason-gold': '#FFCC00',
-        'mason-dark': '#1a1a1a',
-      },
-    },
+    extend: {},
   },
   plugins: [],
 }

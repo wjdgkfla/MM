@@ -13,12 +13,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid subscription' }, { status: 400 })
     }
 
-    await getSupabaseAdmin()
+    const { error } = await getSupabaseAdmin()
       .from('push_subscriptions')
       .upsert(
         { user_id: session.userId, endpoint, p256dh: keys.p256dh, auth: keys.auth },
         { onConflict: 'user_id,endpoint', ignoreDuplicates: false }
       )
+    if (error) {
+      console.error('POST /api/push/subscribe upsert error:', error.message)
+      return NextResponse.json({ error: 'Failed to save subscription' }, { status: 500 })
+    }
 
     return NextResponse.json({ ok: true })
   } catch (err) {
@@ -32,11 +36,15 @@ export async function DELETE(request: NextRequest) {
     const session = getSessionFromRequest(request)
     if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     const { endpoint } = await request.json()
-    await getSupabaseAdmin()
+    const { error } = await getSupabaseAdmin()
       .from('push_subscriptions')
       .delete()
       .eq('user_id', session.userId)
       .eq('endpoint', endpoint)
+    if (error) {
+      console.error('DELETE /api/push/subscribe error:', error.message)
+      return NextResponse.json({ error: 'Failed to remove subscription' }, { status: 500 })
+    }
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('DELETE /api/push/subscribe error:', err)

@@ -20,3 +20,21 @@ alter table users alter column reputation_score set default 0;
 -- reported user id" for these listing-less reports (it was already just a
 -- foreign key to users, not tied to marketplace-seller status specifically).
 alter table reports alter column listing_id drop not null;
+
+-- ─── Atomic reputation score adjustment ──────────────────────────────────
+-- usersAdjustReputationScore() previously did a plain select-then-update in
+-- JS, which races: two ratings landing close together (different buyers
+-- rating the same seller) can both read the same starting value, and the
+-- second write silently overwrites the first, dropping one rating's effect.
+-- A single UPDATE ... SET x = x + delta is atomic at the row level in
+-- Postgres — mirrors the existing increment_view_count() RPC.
+create or replace function adjust_reputation_score(user_id text, delta numeric)
+returns void language sql security invoker set search_path = public as $$
+  update users
+  set reputation_score = round(least(62.5, greatest(-36.5, reputation_score + delta)) * 10) / 10
+  where id = user_id;
+$$;
+
+revoke execute on function adjust_reputation_score(text, numeric) from public;
+revoke execute on function adjust_reputation_score(text, numeric) from anon;
+revoke execute on function adjust_reputation_score(text, numeric) from authenticated;
