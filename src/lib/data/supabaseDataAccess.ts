@@ -610,19 +610,25 @@ export async function usersUpdateProfile(id: string, input: UpdateProfileInput):
 }
 
 export async function usersAdjustReputationScore(userId: string, delta: number): Promise<void> {
-  const { data } = await getSupabaseAdmin()
+  const { data, error: selectError } = await getSupabaseAdmin()
     .from('users')
     .select('reputation_score')
     .eq('id', userId)
     .single()
-  if (!data) return
+  if (selectError || !data) {
+    console.error(`usersAdjustReputationScore(${userId}) select error:`, selectError?.message)
+    return
+  }
   const current = Number(data.reputation_score) || 0
   // Clamp so temperature stays in [0, 99]: display = 36.5 + score, so score ∈ [-36.5, 62.5]
   const newScore = Math.round(Math.min(62.5, Math.max(-36.5, current + delta)) * 10) / 10
-  await getSupabaseAdmin()
+  const { error: updateError } = await getSupabaseAdmin()
     .from('users')
     .update({ reputation_score: newScore })
     .eq('id', userId)
+  if (updateError) {
+    console.error(`usersAdjustReputationScore(${userId}) update error:`, updateError.message)
+  }
 }
 
 // ─── Messages ──────────────────────────────────────────────────────────────

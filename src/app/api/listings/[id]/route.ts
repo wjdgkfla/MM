@@ -5,6 +5,7 @@ import { normalizeListingInput } from '@/lib/listingValidation'
 import { canTransitionListingStatus } from '@/lib/marketplaceLifecycle'
 import {
   listingsFindById,
+  listingsFindBySellerId,
   listingsUpdateStatus,
   listingsUpdate,
   listingsRemove,
@@ -34,8 +35,12 @@ export async function GET(
     }
 
     const seller = await usersFindById(listing.sellerId)
-    // Use the denormalized listingCount from the user row — avoids a second DB round-trip
-    const sellerListingCount = seller?.listingCount ?? 0
+    // users.listing_count is never actually incremented anywhere in the codebase — always 0.
+    // Compute active listings live instead, matching the seller profile page's own logic.
+    const sellerListings = await listingsFindBySellerId(listing.sellerId)
+    const sellerListingCount = sellerListings.filter(
+      (l) => l.moderationState !== 'hidden' && l.status !== 'sold'
+    ).length
 
     // Fire-and-forget view count increment — skip for the seller viewing their own listing
     if (!session || session.userId !== listing.sellerId) {

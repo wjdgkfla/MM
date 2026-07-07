@@ -51,7 +51,7 @@ export function SellerTrustCard({ seller, sellerListingCount = 0 }: SellerTrustC
           <p className="text-xs text-[var(--m-muted)]">Campus Verified</p>
         </div>
         <div className="rounded-xl bg-[var(--m-soft)] p-3 text-center">
-          <p className="font-semibold text-[var(--m-ink)]">{seller.listingCount || sellerListingCount}</p>
+          <p className="font-semibold text-[var(--m-ink)]">{sellerListingCount}</p>
           <p className="text-xs text-[var(--m-muted)]">Active Listings</p>
         </div>
         <div className="rounded-xl bg-[var(--m-soft)] p-3 text-center">

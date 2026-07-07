@@ -233,6 +233,16 @@ export function AdminModerationClient({
   const reports = payload?.reports || []
   const activity = payload?.activity || []
 
+  // users.listing_count is never actually incremented anywhere in the codebase — always 0.
+  // Derive the real (lifetime) count from listings already loaded in this payload.
+  const listingCountByUserId = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const listing of listings) {
+      counts.set(listing.sellerId, (counts.get(listing.sellerId) || 0) + 1)
+    }
+    return counts
+  }, [listings])
+
   return (
     <div className="max-w-[1280px] mx-auto px-6 py-8">
       <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Admin</h1>
@@ -444,7 +454,7 @@ export function AdminModerationClient({
                   <td className="py-2 pr-4 text-[var(--m-muted)]">
                     {user.gmuEmailVerified ? 'GMU email verified' : 'Verification pending'}
                   </td>
-                  <td className="py-2 pr-4 text-[var(--m-muted)]">{user.listingCount}</td>
+                  <td className="py-2 pr-4 text-[var(--m-muted)]">{listingCountByUserId.get(user.id) || 0}</td>
                   <td className="py-2 pr-4 text-[var(--m-muted)] capitalize">{user.accountState}</td>
                   <td className="py-2">
                     <div className="flex flex-wrap gap-1">
