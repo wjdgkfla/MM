@@ -17,7 +17,7 @@ export function Header() {
   const router = useRouter()
   const [headerSearch, setHeaderSearch] = useState('')
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
-  const hasUnread = useUnreadMessages(session?.userId)
+  const hasUnread = useUnreadMessages()
   const [unreadNotifications, setUnreadNotifications] = useState(0)
   const [accountOpen, setAccountOpen] = useState(false)
 
@@ -90,7 +90,7 @@ export function Header() {
           className="hidden sm:flex flex-1 max-w-[480px] items-center gap-2 h-11 rounded-full border bg-white px-4 transition-colors focus-within:border-[var(--m-ink)]"
           style={{ borderColor: 'var(--m-line)' }}
         >
-          <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--m-muted)' }}>
+          <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--m-muted)' }}>
             <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
           </svg>
           <input
@@ -162,7 +162,7 @@ export function Header() {
                 className="flex h-10 items-center gap-1.5 rounded-full px-4 text-[13px] font-bold text-white transition-opacity hover:opacity-90"
                 style={{ background: 'var(--m-pop)' }}
               >
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
                 <span className="hidden sm:inline">{t('header.sell')}</span>
@@ -182,7 +182,7 @@ export function Header() {
                 </button>
                 {accountOpen ? (
                   <>
-                    <button type="button" className="fixed inset-0 z-40 cursor-default bg-transparent" onClick={() => setAccountOpen(false)} aria-label="Close account menu" />
+                    <button type="button" className="fixed inset-0 z-[45] cursor-default bg-transparent" onClick={() => setAccountOpen(false)} aria-label="Close account menu" />
                     <div className="absolute right-0 top-12 z-50 w-56 rounded-xl border bg-white p-2 shadow-xl" style={{ borderColor: 'var(--m-line)' }}>
                       <p className="px-3 py-2 text-xs text-[var(--m-muted)]">{session.email}</p>
                       {[
@@ -239,7 +239,7 @@ export function Header() {
       {mobileSearchOpen && (
         <div className="border-t px-4 py-3 sm:hidden" style={{ borderColor: 'var(--m-line)', background: 'var(--m-bg)' }}>
           <form onSubmit={handleHeaderSearch} className="flex items-center gap-2 h-11 rounded-full border bg-white px-4" style={{ borderColor: 'var(--m-line)' }}>
-            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--m-muted)' }}>
+            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--m-muted)' }}>
               <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
             </svg>
             <input

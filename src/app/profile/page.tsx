@@ -27,6 +27,7 @@ export default function ProfilePage() {
   const [profileImageUrl, setProfileImageUrl] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
     if (!session) return
@@ -41,6 +42,7 @@ export default function ProfilePage() {
         setProfileImageUrl(nextUser.profileImageUrl || '')
       })
       .catch(() => setMessage('Could not load profile.'))
+      .finally(() => setDataLoading(false))
   }, [session])
 
   const saveProfile = async (event: React.FormEvent) => {
@@ -76,7 +78,24 @@ export default function ProfilePage() {
     }
   }
 
-  if (loading) return <div className="mx-auto max-w-narrow px-6 py-10 text-sm text-[var(--m-muted)]">Loading...</div>
+  const skeleton = (
+    <div className="mx-auto max-w-content px-6 py-8">
+      <div className="h-9 w-32 rounded-lg bg-[var(--m-soft)] animate-pulse" />
+      <div className="mt-2 h-4 w-72 rounded bg-[var(--m-soft)] animate-pulse" />
+      <div className="mt-6 grid gap-6 lg:grid-cols-[240px_1fr]">
+        <div className="ui-surface p-5 text-center">
+          <div className="mx-auto h-28 w-28 rounded-full bg-[var(--m-soft)] animate-pulse" />
+        </div>
+        <div className="ui-surface space-y-4 p-5">
+          <div className="h-10 w-full rounded-xl bg-[var(--m-soft)] animate-pulse" />
+          <div className="h-24 w-full rounded-xl bg-[var(--m-soft)] animate-pulse" />
+          <div className="h-10 w-2/3 rounded-xl bg-[var(--m-soft)] animate-pulse" />
+        </div>
+      </div>
+    </div>
+  )
+
+  if (loading) return skeleton
   if (!session) {
     return (
       <div className="mx-auto max-w-narrow px-6 py-8">
@@ -84,6 +103,7 @@ export default function ProfilePage() {
       </div>
     )
   }
+  if (dataLoading) return skeleton
 
   return (
     <div className="mx-auto max-w-content px-6 py-8">
@@ -109,10 +129,12 @@ export default function ProfilePage() {
           <div>
             <label className="mb-2 block text-sm font-medium text-[var(--m-ink)]">Display name</label>
             <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="ui-input" maxLength={100} required />
+            <p className="mt-1 text-right text-xs" style={{ color: 'var(--m-muted)' }}>{displayName.length}/100</p>
           </div>
           <div>
             <label className="mb-2 block text-sm font-medium text-[var(--m-ink)]">Bio</label>
             <textarea value={bio} onChange={(e) => setBio(e.target.value)} className="ui-input resize-none" rows={4} maxLength={300} placeholder="Textbooks, dorm gear, electronics, or what you usually sell." />
+            <p className="mt-1 text-right text-xs" style={{ color: 'var(--m-muted)' }}>{bio.length}/300</p>
           </div>
           <div>
             <label className="mb-2 block text-sm font-medium text-[var(--m-ink)]">Home campus</label>

@@ -86,9 +86,9 @@ function TypeAheadPanel({ query, onSelect }: { query: string; onSelect: (v: stri
     >
       <span style={{ color: 'var(--m-muted)', flexShrink: 0 }}>
         {icon === 'clock' ? (
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
         ) : (
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></svg>
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></svg>
         )}
       </span>
       {label}
@@ -129,11 +129,11 @@ function CampusPill({ value, onChange }: { value: CampusLocation; onChange: (c: 
         className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold transition-colors hover:bg-[var(--m-soft)]"
         style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--m-ink)', whiteSpace: 'nowrap' }}
       >
-        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--m-green)' }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--m-green)' }} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
           <path d="M12 22s7-7.5 7-13a7 7 0 0 0-14 0c0 5.5 7 13 7 13Z"/><circle cx="12" cy="9" r="2.5"/>
         </svg>
         {LOCATION_LABELS[value]}
-        <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ color: 'var(--m-muted)' }}>
+        <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ color: 'var(--m-muted)' }}>
           <path d="m6 9 6 6 6-6"/>
         </svg>
       </button>
@@ -257,7 +257,7 @@ export function HeroBlock({ initialSearch = '', featuredListings = [] }: HeroBlo
 
         {/* ── Headline with rotating word ── */}
         <h1
-          className="text-[36px] font-bold leading-[1.15] tracking-[-0.02em] sm:text-[48px]"
+          className="text-display-lg font-bold leading-[1.15] tracking-[-0.02em] sm:text-display-xl"
           style={{ color: 'var(--m-ink)', fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)' }}
         >
           Find&nbsp;<RotatingWord />&nbsp;at Mason Market
@@ -315,7 +315,7 @@ export function HeroBlock({ initialSearch = '', featuredListings = [] }: HeroBlo
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-[var(--m-soft)]"
                   style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--m-muted)' }}
                 >
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
                 </button>
               )}
 
@@ -326,7 +326,7 @@ export function HeroBlock({ initialSearch = '', featuredListings = [] }: HeroBlo
                 className="mr-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition-opacity hover:opacity-80"
                 style={{ background: 'var(--m-green)', border: 'none', cursor: 'pointer' }}
               >
-                <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                   <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
                 </svg>
               </button>
@@ -369,7 +369,7 @@ export function HeroBlock({ initialSearch = '', featuredListings = [] }: HeroBlo
                 className="flex h-8 w-8 items-center justify-center opacity-50 hover:opacity-100 transition-opacity sm:h-3.5 sm:w-[18px]"
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--m-muted)', padding: 0 }}
               >
-                <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                   <path d={dir === 'up' ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6'} />
                 </svg>
               </button>

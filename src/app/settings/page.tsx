@@ -15,6 +15,7 @@ export default function SettingsPage() {
   const [pushSupported, setPushSupported] = useState(false)
   const [pushSubscribed, setPushSubscribed] = useState(false)
   const [pushBusy, setPushBusy] = useState(false)
+  const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
     if (!session) return
@@ -25,6 +26,7 @@ export default function SettingsPage() {
         setMarketingEmailOptIn(Boolean(payload.user?.marketingEmailOptIn))
       })
       .catch(() => setMessage('Could not load settings.'))
+      .finally(() => setDataLoading(false))
   }, [session])
 
   useEffect(() => {
@@ -61,7 +63,18 @@ export default function SettingsPage() {
     }
   }
 
-  if (loading) return <div className="mx-auto max-w-narrow px-6 py-10 text-sm text-[var(--m-muted)]">Loading...</div>
+  const skeleton = (
+    <div className="mx-auto max-w-narrow px-6 py-8">
+      <div className="h-9 w-40 rounded-lg bg-[var(--m-soft)] animate-pulse" />
+      <div className="mt-2 h-4 w-64 rounded bg-[var(--m-soft)] animate-pulse" />
+      <div className="ui-surface mt-6 space-y-4 p-5">
+        <div className="h-5 w-full rounded bg-[var(--m-soft)] animate-pulse" />
+        <div className="h-5 w-3/4 rounded bg-[var(--m-soft)] animate-pulse" />
+      </div>
+    </div>
+  )
+
+  if (loading) return skeleton
   if (!session) {
     return (
       <div className="mx-auto max-w-narrow px-6 py-8">
@@ -69,6 +82,7 @@ export default function SettingsPage() {
       </div>
     )
   }
+  if (dataLoading) return skeleton
 
   return (
     <div className="mx-auto max-w-narrow px-6 py-8">

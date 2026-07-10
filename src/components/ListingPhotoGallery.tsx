@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 type ListingPhotoGalleryProps = {
   images: string[]
@@ -27,9 +27,9 @@ export function ListingPhotoGallery({ images, title, coverImageUrl }: ListingPho
   const canGoPrevious = activeIndex > 0
   const canGoNext = activeIndex < gallery.length - 1
 
-  const go = (direction: -1 | 1) => {
+  const go = useCallback((direction: -1 | 1) => {
     setActiveIndex((current) => Math.min(gallery.length - 1, Math.max(0, current + direction)))
-  }
+  }, [gallery.length])
 
   const handleTouchEnd = (x: number) => {
     if (touchStart == null) return
@@ -37,6 +37,18 @@ export function ListingPhotoGallery({ images, title, coverImageUrl }: ListingPho
     if (Math.abs(delta) > 40) go(delta > 0 ? -1 : 1)
     setTouchStart(null)
   }
+
+  // Keyboard navigation while the lightbox is open
+  useEffect(() => {
+    if (!lightboxOpen) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setLightboxOpen(false)
+      else if (event.key === 'ArrowLeft') go(-1)
+      else if (event.key === 'ArrowRight') go(1)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [lightboxOpen, go])
 
   return (
     <>
@@ -73,16 +85,16 @@ export function ListingPhotoGallery({ images, title, coverImageUrl }: ListingPho
           >
             <Image src={selectedImage} alt={title} fill className="object-contain" unoptimized={selectedImage.startsWith('data:')} />
             <button type="button" onClick={() => setLightboxOpen(false)} aria-label="Close photo viewer" className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-[var(--m-ink)]">
-              <span aria-hidden="true">x</span>
+              <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
             {canGoPrevious ? (
               <button type="button" onClick={() => go(-1)} aria-label="Previous photo" className="absolute left-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-[var(--m-ink)]">
-                <span aria-hidden="true">&lt;</span>
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
               </button>
             ) : null}
             {canGoNext ? (
               <button type="button" onClick={() => go(1)} aria-label="Next photo" className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-[var(--m-ink)]">
-                <span aria-hidden="true">&gt;</span>
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
               </button>
             ) : null}
             {gallery.length > 1 ? (

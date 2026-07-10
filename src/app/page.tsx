@@ -282,7 +282,7 @@ function HomeContent() {
       />
 
       <main>
-        <div id="listings-anchor" className="mx-auto w-full max-w-wide px-6 py-7">
+        <div id="listings-anchor" className="mx-auto w-full max-w-wide px-6 pt-4 pb-7">
 
           {/* Active search label */}
           {search && (
@@ -307,7 +307,7 @@ function HomeContent() {
                 <span className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] font-medium" style={{ borderColor: 'var(--m-ink)', color: 'var(--m-ink)' }}>
                   {category}
                   <button onClick={() => setCategory(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', color: 'var(--m-muted)' }}>
-                    <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
                   </button>
                 </span>
               )}
@@ -315,7 +315,7 @@ function HomeContent() {
                 <span key={chip.key} className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] font-medium" style={{ borderColor: 'var(--m-line)', color: 'var(--m-ink)' }}>
                   {chip.label}
                   <button onClick={() => clearFilterChip(chip.key)} aria-label={`Remove filter: ${chip.label}`} style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', color: 'var(--m-muted)' }}>
-                    <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
                   </button>
                 </span>
               ))}

@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
   if (sent) {
     return (
       <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
-        <div className="w-full max-w-[400px] rounded-[var(--r-lg)] border bg-white p-8 text-center" style={{ borderColor: 'var(--m-line)' }}>
+        <div className="w-full max-w-auth rounded-[var(--r-lg)] border bg-white p-8 text-center" style={{ borderColor: 'var(--m-line)' }}>
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--m-green-soft)]">
             <svg viewBox="0 0 24 24" className="h-6 w-6 text-[var(--m-green)]" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5"/></svg>
           </div>
@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
-      <div className="w-full max-w-[400px] rounded-[var(--r-lg)] border bg-white p-8" style={{ borderColor: 'var(--m-line)' }}>
+      <div className="w-full max-w-auth rounded-[var(--r-lg)] border bg-white p-8" style={{ borderColor: 'var(--m-line)' }}>
         <h1 className="font-display text-display-md font-black" style={{ color: 'var(--m-ink)' }}>Forgot password?</h1>
         <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>Enter your GMU email and we&apos;ll send a reset link.</p>
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">

@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { useUnreadMessages } from '@/lib/useUnreadMessages'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
 
@@ -16,9 +15,8 @@ function TabIcon({ d, filled }: { d: string; filled?: boolean }) {
 
 export function MobileTabBar() {
   const pathname = usePathname()
-  const { session } = useAuthSession()
   const { t } = useLocale()
-  const hasUnread = useUnreadMessages(session?.userId)
+  const hasUnread = useUnreadMessages()
 
   const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href))
 
@@ -58,7 +56,7 @@ export function MobileTabBar() {
           className="flex h-11 w-11 items-center justify-center rounded-full text-white shadow-md"
           style={{ background: 'var(--m-green)' }}
         >
-          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
             <path d="M12 5v14M5 12h14" />
           </svg>
         </span>

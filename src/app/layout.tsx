@@ -7,6 +7,7 @@ import { Footer } from '@/components/Footer'
 import { MobileTabBar } from '@/components/MobileTabBar'
 import { ToastContainer } from '@/components/Toast'
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider'
+import { UnreadMessagesProvider } from '@/lib/useUnreadMessages'
 
 const outfit = Outfit({
   subsets: ['latin'],
@@ -58,11 +59,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         suppressHydrationWarning
       >
         <LocaleProvider>
-          <Header />
-          <div className="flex-1 pb-[60px] sm:pb-0">{children}</div>
-          <Footer />
-          <MobileTabBar />
-          <ToastContainer />
+          <UnreadMessagesProvider>
+            <Header />
+            <div className="flex flex-1 flex-col pb-[60px] sm:pb-0">
+              <div className="flex-1">{children}</div>
+              <Footer />
+            </div>
+            <MobileTabBar />
+            <ToastContainer />
+          </UnreadMessagesProvider>
         </LocaleProvider>
       </body>
     </html>

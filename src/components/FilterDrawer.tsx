@@ -86,7 +86,7 @@ export function FilterDrawer({ open, onClose, filters, onChange, onReset, totalC
         <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: 'var(--m-line)' }}>
           <h2 className="text-[16px] font-bold" style={{ color: 'var(--m-ink)' }}>Filters</h2>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[var(--m-soft)]" style={{ color: 'var(--m-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}>
-            <svg viewBox="0 0 24 24" className="h-[17px] w-[17px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            <svg viewBox="0 0 24 24" className="h-[17px] w-[17px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
           </button>
         </div>
 

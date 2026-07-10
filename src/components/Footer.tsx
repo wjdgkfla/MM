@@ -10,7 +10,7 @@ export function Footer() {
             <p className="mt-0.5 text-sm text-[var(--m-muted)]">The student marketplace for George Mason University</p>
           </div>
 
-          <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-[var(--m-muted)]">
+          <nav className="hidden flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-[var(--m-muted)] sm:flex">
             <Link href="/" className="hover:text-[var(--m-green)]">Browse</Link>
             <Link href="/sell" className="hover:text-[var(--m-green)]">Sell</Link>
             <Link href="/saved" className="hover:text-[var(--m-green)]">Saved</Link>

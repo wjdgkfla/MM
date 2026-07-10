@@ -338,6 +338,7 @@ export default function EditListingPage() {
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             className="ui-input"
           />
+          <p className="mt-1 text-right text-xs" style={{ color: 'var(--m-muted)' }}>{form.title.length}/100</p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
@@ -358,16 +359,19 @@ export default function EditListingPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Price ($) *</label>
-            <input
-              type="number"
-              required
-              min="0"
-              step="1"
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
-              className="ui-input"
-            />
+            <label className="block text-sm font-medium mb-2">Price *</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--m-muted)]">$</span>
+              <input
+                type="number"
+                required
+                min="0"
+                step="1"
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
+                className="ui-input pl-7"
+              />
+            </div>
           </div>
 
           <div>
@@ -411,6 +415,7 @@ export default function EditListingPage() {
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             className="ui-input resize-none"
           />
+          <p className="mt-1 text-right text-xs" style={{ color: 'var(--m-muted)' }}>{form.description.length}/3000</p>
         </div>
 
         {form.category === 'textbooks' ? (
@@ -504,6 +509,7 @@ export default function EditListingPage() {
             placeholder="e.g. Johnson Center lobby near the info desk, weekdays after 2pm"
             className="ui-input resize-none"
           />
+          <p className="mt-1 text-right text-xs" style={{ color: 'var(--m-muted)' }}>{form.pickupNotes.length}/300</p>
         </div>
 
         <div>

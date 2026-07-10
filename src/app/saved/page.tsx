@@ -143,7 +143,7 @@ export default function SavedPage() {
         </div>
       ) : loadError ? (
         <div className="mt-12 rounded-[var(--r-lg)] border p-16 text-center max-w-[480px] mx-auto" style={{ borderColor: 'var(--m-line)' }}>
-          <p className="font-display text-[24px] font-black" style={{ color: 'var(--m-ink)' }}>Couldn&apos;t load saved items</p>
+          <p className="font-display text-display-xs font-black" style={{ color: 'var(--m-ink)' }}>Couldn&apos;t load saved items</p>
           <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>Something went wrong loading your saved listings.</p>
           <button
             type="button"
@@ -159,7 +159,7 @@ export default function SavedPage() {
           <svg viewBox="0 0 24 24" className="mx-auto h-9 w-9 mb-3" fill="none" stroke="currentColor" strokeWidth="1.6" style={{ color: 'var(--m-pop)' }}>
             <path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 0 0-7.1 7.1l8.8 8.9 8.8-8.9a5 5 0 0 0 0-7.1Z" />
           </svg>
-          <p className="font-display text-[24px] font-black" style={{ color: 'var(--m-ink)' }}>Nothing saved yet</p>
+          <p className="font-display text-display-xs font-black" style={{ color: 'var(--m-ink)' }}>Nothing saved yet</p>
           <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>Tap the heart on a listing to save it here.</p>
           <Link href="/" className="mt-5 inline-flex h-11 items-center rounded-full px-6 text-[13px] font-bold text-white" style={{ background: 'var(--m-pop)' }}>
             Browse feed

@@ -243,7 +243,7 @@ export default function SellPage() {
   return (
     <div className="max-w-wide mx-auto px-6 py-8">
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_380px]">
-        <div className="max-w-[640px]">
+        <div className="max-w-narrow">
           <h1 className="font-display text-display-lg font-black leading-[0.98] mt-2" style={{ color: 'var(--m-ink)' }}>
             {locale === 'en' ? <>Post something<br />worth keeping.</> : t('sell.title')}
           </h1>
@@ -299,14 +299,14 @@ export default function SellPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form id="sell-form" onSubmit={handleSubmit} className="space-y-5">
             {/* Section 1: Listing type */}
             <section className="rounded-[var(--r-lg)] border bg-white p-6" style={{ borderColor: 'var(--m-line)' }}>
               <div className="mb-4 flex items-center gap-2">
                 <span className="grid h-6 w-6 place-items-center rounded-full font-mono-label text-[10px] font-bold text-white" style={{ background: 'var(--m-ink)' }}>
                   1
                 </span>
-                <p className="font-display text-[20px] font-black">What are you posting?</p>
+                <p className="font-display text-display-xs font-black">What are you posting?</p>
               </div>
               <div className="flex rounded-xl border bg-[var(--m-soft)] p-1" style={{ borderColor: 'var(--m-line)' }}>
                 {([
@@ -336,7 +336,7 @@ export default function SellPage() {
                 >
                   2
                 </span>
-                <p className="font-display text-[20px] font-black">Photos</p>
+                <p className="font-display text-display-xs font-black">Photos</p>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>
@@ -382,7 +382,7 @@ export default function SellPage() {
                 >
                   3
                 </span>
-                <p className="font-display text-[20px] font-black">Basics</p>
+                <p className="font-display text-display-xs font-black">Basics</p>
               </div>
 
               <div className="space-y-4">
@@ -397,23 +397,27 @@ export default function SellPage() {
                     placeholder="e.g. TI-84 calculator used in STAT 250"
                     className="ui-input"
                   />
+                  <p className="mt-1 text-right text-xs" style={{ color: 'var(--m-muted)' }}>{form.title.length}/100</p>
                 </div>
 
                 <div className="rounded-xl bg-[var(--m-soft)] p-3 sm:p-4">
                   <p className="text-sm font-medium mb-3" style={{ color: 'var(--m-ink)' }}>Basic details</p>
                   <div className="grid gap-4 sm:grid-cols-3">
                     <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>Price ($) *</label>
-                      <input
-                        type="number"
-                        required
-                        min="0"
-                        step="1"
-                        value={form.price}
-                        onChange={(e) => setForm({ ...form, price: e.target.value })}
-                        placeholder="0"
-                        className="ui-input"
-                      />
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--m-ink)' }}>Price *</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--m-muted)]">$</span>
+                        <input
+                          type="number"
+                          required
+                          min="0"
+                          step="1"
+                          value={form.price}
+                          onChange={(e) => setForm({ ...form, price: e.target.value })}
+                          placeholder="0"
+                          className="ui-input pl-7"
+                        />
+                      </div>
                     </div>
 
                     <div>
@@ -459,6 +463,7 @@ export default function SellPage() {
                     placeholder="Condition details, what is included, and best pickup time."
                     className="ui-input resize-none"
                   />
+                  <p className="mt-1 text-right text-xs" style={{ color: 'var(--m-muted)' }}>{form.description.length}/3000</p>
                 </div>
 
                 {form.category === 'textbooks' ? (
@@ -517,7 +522,7 @@ export default function SellPage() {
                     className="flex items-center gap-1.5 text-[13px] font-medium"
                     style={{ color: 'var(--m-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
                   >
-                    <svg viewBox="0 0 24 24" className="h-4 w-4 transition-transform" style={{ transform: showAdvanced ? 'rotate(180deg)' : 'none' }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m6 9 6 6 6-6"/></svg>
+                    <svg viewBox="0 0 24 24" className="h-4 w-4 transition-transform" style={{ transform: showAdvanced ? 'rotate(180deg)' : 'none' }} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="m6 9 6 6 6-6"/></svg>
                     {showAdvanced ? 'Hide' : 'Show'} advanced options (tags)
                   </button>
                   {showAdvanced && (
@@ -546,7 +551,7 @@ export default function SellPage() {
                 >
                   4
                 </span>
-                <p className="font-display text-[20px] font-black">Pickup zone</p>
+                <p className="font-display text-display-xs font-black">Pickup zone</p>
               </div>
 
               <div className="space-y-4">
@@ -596,13 +601,15 @@ export default function SellPage() {
                     placeholder="e.g. Johnson Center lobby near the info desk, weekdays after 2pm"
                     className="ui-input resize-none"
                   />
+                  <p className="mt-1 text-right text-xs" style={{ color: 'var(--m-muted)' }}>{form.pickupNotes.length}/300</p>
                 </div>
               </div>
             </section>
 
             {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
 
-            <div className="flex gap-3">
+            {/* Desktop/tablet submit row — hidden on mobile in favor of the sticky bar below */}
+            <div className="hidden gap-3 sm:flex">
               <button
                 type="submit"
                 disabled={submitting}
@@ -615,7 +622,31 @@ export default function SellPage() {
                 Cancel
               </a>
             </div>
+
+            {/* Mobile-only spacer so content isn't hidden behind the sticky submit bar */}
+            <div className="h-20 sm:hidden" />
           </form>
+
+          {/* Mobile-only sticky submit bar, above the bottom tab bar */}
+          <div
+            className="fixed inset-x-0 bottom-[60px] z-30 border-t bg-white/95 px-4 py-3 backdrop-blur-xl sm:hidden"
+            style={{ borderColor: 'var(--m-line)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+          >
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                form="sell-form"
+                disabled={submitting}
+                className="w-full h-12 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
+                style={{ background: 'var(--m-pop)' }}
+              >
+                {submitting ? 'Posting…' : 'Post listing →'}
+              </button>
+              <a href="/my-listings" className="ui-btn-secondary flex items-center">
+                Cancel
+              </a>
+            </div>
+          </div>
         </div>
 
         <div className="hidden lg:block">

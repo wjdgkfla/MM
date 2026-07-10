@@ -162,9 +162,13 @@ export default function MyListingsPage() {
           ))}
         </div>
       ) : listings.length === 0 ? (
-        <div className="ui-surface mt-6 p-8 text-center">
-          <p style={{ color: 'var(--m-ink)' }}>You have no listings yet.</p>
-          <Link href="/sell" className="mt-3 inline-block text-sm font-medium" style={{ color: 'var(--m-green)' }}>
+        <div className="mt-12 rounded-[var(--r-lg)] border p-16 text-center max-w-[480px] mx-auto" style={{ borderColor: 'var(--m-line)' }}>
+          <svg viewBox="0 0 24 24" className="mx-auto h-9 w-9 mb-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ color: 'var(--m-pop)' }}>
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <p className="font-display text-display-xs font-black" style={{ color: 'var(--m-ink)' }}>You have no listings yet</p>
+          <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>Post something to start selling on campus.</p>
+          <Link href="/sell" className="mt-5 inline-flex h-11 items-center rounded-full px-6 text-[13px] font-bold text-white" style={{ background: 'var(--m-pop)' }}>
             Create your first listing
           </Link>
         </div>

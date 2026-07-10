@@ -535,7 +535,7 @@ export default function MessagesPage() {
                     className="mb-2 flex items-center gap-1 text-xs font-medium lg:hidden"
                     style={{ color: 'var(--m-green)' }}
                   >
-                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M15 18l-6-6 6-6"/></svg>
                     Back to conversations
                   </button>
                   <div className="flex items-start justify-between gap-2">
@@ -635,7 +635,7 @@ export default function MessagesPage() {
                                   : undefined
                               }>
                                 <p className="font-mono-label text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--m-muted)' }}>Offer</p>
-                                <p className="font-display font-black text-[28px] tabular-nums mt-1" style={{ color: 'var(--m-ink)' }}>${message.offerAmount}</p>
+                                <p className="font-display font-black text-display-md tabular-nums mt-1" style={{ color: 'var(--m-ink)' }}>${message.offerAmount}</p>
                                 <p className="text-[12px] mt-0.5" style={{ color: 'var(--m-muted)' }}>{message.body}</p>
                                 {message.offerStatus === 'pending' && !fromCurrentUser && (
                                   <div className="mt-2 flex gap-2">

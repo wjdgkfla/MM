@@ -43,7 +43,7 @@ export function SeasonalRibbon() {
     <div
       role="banner"
       style={{ background: 'var(--m-green)', color: 'white', position: 'relative' }}
-      className="flex items-center justify-center gap-2 px-12 py-2.5 text-[13px] font-medium"
+      className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-6 py-2.5 pr-11 text-[13px] font-medium sm:px-12"
     >
       <span className="text-[15px]">{season.emoji}</span>
       <span>
@@ -61,10 +61,10 @@ export function SeasonalRibbon() {
       <button
         onClick={handleDismiss}
         aria-label="Dismiss"
-        className="absolute right-3 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full opacity-70 hover:opacity-100 transition-opacity"
+        className="absolute right-3 top-2 flex h-7 w-7 items-center justify-center rounded-full opacity-70 hover:opacity-100 transition-opacity"
         style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}
       >
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
           <path d="M6 6l12 12M18 6 6 18" />
         </svg>
       </button>

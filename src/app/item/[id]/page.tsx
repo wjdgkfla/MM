@@ -308,7 +308,8 @@ export default function ItemPage() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
-      <Link href="/" className="mb-6 inline-block text-sm text-[var(--m-muted)] hover:text-[var(--m-green)]">
+      <Link href="/" className="mb-6 inline-flex items-center gap-1 text-sm text-[var(--m-muted)] hover:text-[var(--m-green)]">
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         Back to Mason Market
       </Link>
 
@@ -358,15 +359,33 @@ export default function ItemPage() {
 
             <div className="ui-surface p-5 sm:p-6">
               <h2 className="text-base font-semibold text-[var(--m-ink)]">Trust & safety</h2>
-              <ul className="mt-3 space-y-2 text-sm text-[var(--m-ink)]">
-                <li>GMU-only marketplace. Only verified university emails can post or message.</li>
-                <li>
-                  {isCampusMeetupRecommended(listing.pickupZone)
-                    ? 'Campus meetup recommended for first-time exchanges.'
-                    : 'This listing uses off-campus meetup. Choose a busy public location.'}
-                </li>
-                <li>Check the item before payment and meet in visible public areas.</li>
-              </ul>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--m-soft)] px-2.5 py-1 text-xs font-medium text-[var(--m-ink)]"
+                  title="GMU-only marketplace. Only verified university emails can post or message."
+                >
+                  <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  GMU-only
+                </span>
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--m-soft)] px-2.5 py-1 text-xs font-medium text-[var(--m-ink)]"
+                  title={
+                    isCampusMeetupRecommended(listing.pickupZone)
+                      ? 'Campus meetup recommended for first-time exchanges.'
+                      : 'This listing uses off-campus meetup. Choose a busy public location.'
+                  }
+                >
+                  <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  {isCampusMeetupRecommended(listing.pickupZone) ? 'Meet on campus' : 'Meet in public'}
+                </span>
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--m-soft)] px-2.5 py-1 text-xs font-medium text-[var(--m-ink)]"
+                  title="Check the item before payment and meet in visible public areas."
+                >
+                  <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  Check before paying
+                </span>
+              </div>
 
               {!isOwnListing ? (
                 <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--m-line)' }}>
@@ -490,15 +509,25 @@ export default function ItemPage() {
                 ) : null}
               </div>
 
-              <div className="mt-4 space-y-1 text-sm text-[var(--m-muted)]">
-                <p>
-                  Pickup: {LOCATION_LABELS[listing.campusLocation]} - {PICKUP_ZONE_LABELS[listing.pickupZone]}
-                </p>
-                <p>{listing.pickupNotes}</p>
-                <p>
-                  Posted {formatRecency(listing.createdAt)} ({formatPostedDate(listing.createdAt)})
-                </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--m-soft)] px-2.5 py-1 text-xs font-medium text-[var(--m-ink)]"
+                  title={`${LOCATION_LABELS[listing.campusLocation]} - ${PICKUP_ZONE_LABELS[listing.pickupZone]}`}
+                >
+                  <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 22s7-7.5 7-13a7 7 0 0 0-14 0c0 5.5 7 13 7 13Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                  {LOCATION_LABELS[listing.campusLocation]} · {PICKUP_ZONE_LABELS[listing.pickupZone]}
+                </span>
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--m-soft)] px-2.5 py-1 text-xs font-medium text-[var(--m-ink)]"
+                  title={formatPostedDate(listing.createdAt)}
+                >
+                  <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                  Posted {formatRecency(listing.createdAt)}
+                </span>
               </div>
+              {listing.pickupNotes ? (
+                <p className="mt-2 text-sm text-[var(--m-muted)]">{listing.pickupNotes}</p>
+              ) : null}
               <div className="mt-3">
                 <TrustCues listing={listing} />
               </div>
@@ -569,7 +598,7 @@ export default function ItemPage() {
 
             <div className="rounded-[var(--r-lg)] p-5 text-white relative overflow-hidden" style={{ background: 'var(--m-green)' }}>
               <p className="font-mono-label text-[10px] uppercase tracking-[0.16em] opacity-80">Pickup zone</p>
-              <p className="font-display text-[20px] font-black mt-0.5">{PICKUP_ZONE_LABELS[listing.pickupZone]}</p>
+              <p className="font-display text-display-xs font-black mt-0.5">{PICKUP_ZONE_LABELS[listing.pickupZone]}</p>
               <p className="text-[12px] opacity-90 mt-1">{listing.pickupNotes}</p>
             </div>
 

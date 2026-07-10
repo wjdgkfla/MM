@@ -1,12 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Conversation } from '@/lib/data/contracts'
+import { useAuthSession } from '@/lib/auth/useAuthSession'
 
-export function useUnreadMessages(userId: string | undefined) {
+const UnreadMessagesContext = createContext<boolean>(false)
+
+export function UnreadMessagesProvider({ children }: { children: React.ReactNode }) {
+  const { session } = useAuthSession()
   const pathname = usePathname()
   const [hasUnread, setHasUnread] = useState(false)
+  const userId = session?.userId
 
   useEffect(() => {
     if (!userId) return
@@ -33,7 +38,8 @@ export function useUnreadMessages(userId: string | undefined) {
     }
 
     checkUnread()
-    // Poll every 30s so the badge updates without a page reload
+    // Poll every 30s so the badge updates without a page reload — a single
+    // shared poll for the whole app, rather than one per consumer component.
     const interval = setInterval(checkUnread, 30_000)
     return () => clearInterval(interval)
   }, [userId])
@@ -44,5 +50,13 @@ export function useUnreadMessages(userId: string | undefined) {
     }
   }, [pathname])
 
-  return hasUnread
+  return (
+    <UnreadMessagesContext.Provider value={hasUnread}>
+      {children}
+    </UnreadMessagesContext.Provider>
+  )
+}
+
+export function useUnreadMessages(): boolean {
+  return useContext(UnreadMessagesContext)
 }
