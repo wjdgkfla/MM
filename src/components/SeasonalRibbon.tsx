@@ -53,8 +53,8 @@ export function SeasonalRibbon() {
       </span>
       <a
         href={season.href}
-        className="font-bold underline underline-offset-2 hover:no-underline"
-        style={{ color: 'white' }}
+        className="font-bold underline decoration-2 underline-offset-2 hover:no-underline"
+        style={{ color: 'white', textDecorationColor: 'var(--m-gold)' }}
       >
         {season.cta}
       </a>

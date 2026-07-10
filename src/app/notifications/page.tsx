@@ -60,20 +60,20 @@ export default function NotificationsPage() {
     }
   }
 
-  if (loading) return <div className="mx-auto max-w-3xl px-6 py-10 text-sm text-[var(--m-muted)]">Loading...</div>
+  if (loading) return <div className="mx-auto max-w-narrow px-6 py-10 text-sm text-[var(--m-muted)]">Loading...</div>
   if (!session) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-8">
+      <div className="mx-auto max-w-narrow px-6 py-8">
         <AuthRequiredCard title="Sign in to view notifications" description="Notifications are available for signed-in GMU users." redirectTo="/notifications" />
       </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-8">
+    <div className="mx-auto max-w-content px-6 py-8">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-[36px] font-black text-[var(--m-ink)]">Notifications</h1>
+          <h1 className="font-display text-display-lg font-black text-[var(--m-ink)]">Notifications</h1>
           <p className="mt-1 text-sm text-[var(--m-muted)]">Messages, offers, saved searches, price drops, and listing reminders.</p>
         </div>
         <button type="button" onClick={markAllRead} className="ui-btn-secondary">Mark all read</button>

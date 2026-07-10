@@ -76,18 +76,18 @@ export default function ProfilePage() {
     }
   }
 
-  if (loading) return <div className="mx-auto max-w-3xl px-6 py-10 text-sm text-[var(--m-muted)]">Loading...</div>
+  if (loading) return <div className="mx-auto max-w-narrow px-6 py-10 text-sm text-[var(--m-muted)]">Loading...</div>
   if (!session) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-8">
+      <div className="mx-auto max-w-narrow px-6 py-8">
         <AuthRequiredCard title="Sign in to edit your profile" description="Profiles are available for signed-in GMU users." redirectTo="/profile" />
       </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-8">
-      <h1 className="font-display text-[36px] font-black text-[var(--m-ink)]">Profile</h1>
+    <div className="mx-auto max-w-content px-6 py-8">
+      <h1 className="font-display text-display-lg font-black text-[var(--m-ink)]">Profile</h1>
       <p className="mt-1 text-sm text-[var(--m-muted)]">Manage the public info other Mason Market users see.</p>
 
       <form onSubmit={saveProfile} className="mt-6 grid gap-6 lg:grid-cols-[240px_1fr]">

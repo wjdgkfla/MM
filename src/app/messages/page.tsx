@@ -445,12 +445,12 @@ export default function MessagesPage() {
   }
 
   if (authLoading) {
-    return <div className="max-w-6xl mx-auto px-4 py-10 text-sm" style={{ color: 'var(--m-muted)' }}>Loading…</div>
+    return <div className="max-w-content mx-auto px-4 py-10 text-sm" style={{ color: 'var(--m-muted)' }}>Loading…</div>
   }
 
   if (!session) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-narrow mx-auto px-4 py-8">
         <AuthRequiredCard
           title="Sign in to access messages"
           description="Messaging is available for signed-in GMU users."
@@ -461,8 +461,8 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="font-display text-[36px] font-black mb-1" style={{ color: 'var(--m-ink)' }}>{t('messages.title')}</h1>
+    <div className="max-w-content mx-auto px-4 py-8">
+      <h1 className="font-display text-display-lg font-black mb-1" style={{ color: 'var(--m-ink)' }}>{t('messages.title')}</h1>
       <p className="text-[13px] mt-1" style={{ color: 'var(--m-muted)' }}>
         {t('messages.subtitle')}
       </p>

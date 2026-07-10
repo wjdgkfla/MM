@@ -52,7 +52,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
       <div className="w-full max-w-[400px] rounded-[var(--r-lg)] border bg-white p-8" style={{ borderColor: 'var(--m-line)' }}>
-        <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>New password</h1>
+        <h1 className="font-display text-display-md font-black" style={{ color: 'var(--m-ink)' }}>New password</h1>
         <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>Choose a new password for your account.</p>
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>

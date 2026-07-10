@@ -13,9 +13,9 @@ export default async function AdminPage() {
 
   if (!session) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="max-w-narrow mx-auto px-6 py-8">
         <div className="ui-surface p-6 text-center">
-          <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Admin access requires sign-in</h1>
+          <h1 className="font-display text-display-md font-black" style={{ color: 'var(--m-ink)' }}>Admin access requires sign-in</h1>
           <p className="mt-2 text-sm" style={{ color: 'var(--m-muted)' }}>Sign in with an authorized admin account to review marketplace activity.</p>
           {showDevAdminHints ? (
             <p className="mt-2 text-xs" style={{ color: 'var(--m-muted)' }}>Demo admin emails: {DEV_ADMIN_EMAILS.join(', ')}</p>
@@ -30,9 +30,9 @@ export default async function AdminPage() {
 
   if (session.role !== 'admin') {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="max-w-narrow mx-auto px-6 py-8">
         <div className="ui-surface p-6 text-center">
-          <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Admin only</h1>
+          <h1 className="font-display text-display-md font-black" style={{ color: 'var(--m-ink)' }}>Admin only</h1>
           <p className="mt-2 text-sm" style={{ color: 'var(--m-muted)' }}>
             You are signed in as {session.displayName} ({session.email}) with the <span className="font-medium">{session.role}</span> role.
           </p>

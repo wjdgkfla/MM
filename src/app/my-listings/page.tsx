@@ -124,12 +124,12 @@ export default function MyListingsPage() {
   }
 
   if (authLoading) {
-    return <div className="max-w-[1280px] mx-auto px-6 py-10 text-sm" style={{ color: 'var(--m-muted)' }}>Loading…</div>
+    return <div className="max-w-wide mx-auto px-6 py-10 text-sm" style={{ color: 'var(--m-muted)' }}>Loading…</div>
   }
 
   if (!session) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="max-w-narrow mx-auto px-6 py-8">
         <AuthRequiredCard
           title="Sign in to manage your listings"
           description="Listing management is available for signed-in GMU users."
@@ -140,10 +140,10 @@ export default function MyListingsPage() {
   }
 
   return (
-    <div className="max-w-[1280px] mx-auto px-6 py-8">
+    <div className="max-w-wide mx-auto px-6 py-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-[36px] font-black" style={{ color: 'var(--m-ink)' }}>{t('header.myPosts')}</h1>
+          <h1 className="font-display text-display-lg font-black" style={{ color: 'var(--m-ink)' }}>{t('header.myPosts')}</h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--m-muted)' }}>
             {totals.all} total • {totals.available} available • {totals.reserved} reserved • {totals.sold} sold
           </p>

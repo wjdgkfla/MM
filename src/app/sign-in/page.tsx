@@ -64,7 +64,7 @@ export default function SignInPage() {
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
       <div className="w-full max-w-[400px] rounded-[var(--r-lg)] border bg-white p-8" style={{ borderColor: 'var(--m-line)' }}>
-        <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>{t('signin.title')}</h1>
+        <h1 className="font-display text-display-md font-black" style={{ color: 'var(--m-ink)' }}>{t('signin.title')}</h1>
         <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>{t('signin.subtitle')}</p>
 
         {resetSuccess ? (

@@ -141,7 +141,7 @@ export default function ItemPage() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-content mx-auto px-4 py-8">
         <div className="bg-[var(--m-soft)] rounded-2xl aspect-[4/3] animate-pulse" />
         <div className="mt-6 h-8 bg-[var(--m-soft)] rounded animate-pulse w-2/3" />
         <div className="mt-4 h-4 bg-[var(--m-soft)] rounded animate-pulse w-1/3" />
@@ -151,7 +151,7 @@ export default function ItemPage() {
 
   if (!listing) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+      <div className="max-w-narrow mx-auto px-4 py-16 text-center">
         <p className="text-[var(--m-muted)] text-lg">Listing not found</p>
         <Link href="/" className="mt-4 inline-block font-medium text-[var(--m-green)]">
           Back to listings
@@ -307,7 +307,7 @@ export default function ItemPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="max-w-content mx-auto px-4 py-8">
       <Link href="/" className="mb-6 inline-block text-sm text-[var(--m-muted)] hover:text-[var(--m-green)]">
         Back to Mason Market
       </Link>
@@ -318,7 +318,7 @@ export default function ItemPage() {
 
           <div className="mt-6 space-y-5">
             <div>
-              <h1 className="font-display text-[26px] font-black leading-tight" style={{ color: 'var(--m-ink)' }}>
+              <h1 className="font-display text-display-sm font-black leading-tight" style={{ color: 'var(--m-ink)' }}>
                 {listing.title}
               </h1>
               <p className="mt-2 text-sm text-[var(--m-muted)]">Condition: {CONDITION_LABELS[listing.condition]}</p>

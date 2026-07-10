@@ -225,12 +225,12 @@ export default function SellPage() {
   }
 
   if (authLoading) {
-    return <div className="max-w-2xl mx-auto px-4 py-10 text-sm" style={{ color: 'var(--m-muted)' }}>Loading…</div>
+    return <div className="max-w-narrow mx-auto px-4 py-10 text-sm" style={{ color: 'var(--m-muted)' }}>Loading…</div>
   }
 
   if (!session) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-narrow mx-auto px-4 py-8">
         <AuthRequiredCard
           title="Sign in to post listings"
           description="Posting is restricted to signed-in GMU users."
@@ -241,10 +241,10 @@ export default function SellPage() {
   }
 
   return (
-    <div className="max-w-[1280px] mx-auto px-6 py-8">
+    <div className="max-w-wide mx-auto px-6 py-8">
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_380px]">
         <div className="max-w-[640px]">
-          <h1 className="font-display text-[44px] font-black leading-[0.98] mt-2" style={{ color: 'var(--m-ink)' }}>
+          <h1 className="font-display text-display-lg font-black leading-[0.98] mt-2" style={{ color: 'var(--m-ink)' }}>
             {locale === 'en' ? <>Post something<br />worth keeping.</> : t('sell.title')}
           </h1>
           <p className="text-[14px] mt-2 max-w-[420px]" style={{ color: 'var(--m-muted)' }}>

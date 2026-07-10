@@ -4,6 +4,7 @@ import { Outfit, IBM_Plex_Mono } from 'next/font/google'
 import './globals.css'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { MobileTabBar } from '@/components/MobileTabBar'
 import { ToastContainer } from '@/components/Toast'
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider'
 
@@ -58,8 +59,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <LocaleProvider>
           <Header />
-          <div className="flex-1">{children}</div>
+          <div className="flex-1 pb-[60px] sm:pb-0">{children}</div>
           <Footer />
+          <MobileTabBar />
           <ToastContainer />
         </LocaleProvider>
       </body>

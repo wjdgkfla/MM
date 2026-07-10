@@ -122,7 +122,7 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
               aria-pressed={isSaved}
               className="absolute right-2 top-2 grid h-11 w-11 place-items-center rounded-full transition-all duration-200"
               style={{
-                background: isSaved ? 'var(--m-pop)' : 'rgba(0,0,0,0.15)',
+                background: isSaved ? 'var(--m-gold)' : 'rgba(0,0,0,0.15)',
                 color: '#fff',
                 filter: isSaved ? 'none' : 'drop-shadow(0 1px 3px rgba(0,0,0,0.4))',
               }}
@@ -139,7 +139,7 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
       <Link href={`/item/${listing.id}`} className="block pt-3">
         {/* Title */}
         <p
-          className="min-h-[2.6em] line-clamp-2 text-[13px] leading-snug"
+          className="min-h-[2.6em] line-clamp-2 text-[14px] font-medium leading-snug"
           style={{ color: 'var(--m-ink)' }}
         >
           {listing.title}
@@ -156,59 +156,60 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
           <span>·</span>
           <span className="shrink-0">{formatRecency(listing.createdAt)}</span>
         </div>
-
-        {/* Stats row: saves · views · seller avatar */}
-        <div className="mt-2 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {listing.favoriteCount > 0 && (
-              <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--m-muted)' }}>
-                <svg viewBox="0 0 24 24" className="h-[11px] w-[11px]" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 0 0-7.1 7.1l8.8 8.9 8.8-8.9a5 5 0 0 0 0-7.1Z" />
-                </svg>
-                {listing.favoriteCount}
-              </span>
-            )}
-            {(listing.viewCount ?? 0) > 0 && (
-              <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--m-muted)' }}>
-                <svg viewBox="0 0 24 24" className="h-[11px] w-[11px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                {listing.viewCount}
-              </span>
-            )}
-            {/* Condition chip */}
-            <span
-              className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-              style={{ background: 'var(--m-soft)', color: 'var(--m-muted)' }}
-            >
-              {CONDITION_LABELS[listing.condition]}
-            </span>
-          </div>
-
-          {/* Seller avatar — shows initials, hint on hover */}
-          {initials && (
-            <div
-              onMouseEnter={() => setSellerHovered(true)}
-              onMouseLeave={() => setSellerHovered(false)}
-              className="relative flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
-              style={{ background: 'var(--m-ink)' }}
-              title={listing.sellerProfile?.displayName}
-            >
-              {initials}
-              {/* Tooltip */}
-              {sellerHovered && listing.sellerProfile?.displayName && (
-                <div
-                  className="pointer-events-none absolute bottom-full right-0 mb-1.5 whitespace-nowrap rounded-lg px-2 py-1 text-[11px] font-medium text-white"
-                  style={{ background: 'rgba(0,0,0,0.8)' }}
-                >
-                  {listing.sellerProfile.displayName}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
       </Link>
+
+      {/* Stats row: saves · views · seller avatar (kept outside the item Link so the avatar can link to the seller page) */}
+      <div className="mt-2 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {listing.favoriteCount > 0 && (
+            <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--m-muted)' }}>
+              <svg viewBox="0 0 24 24" className="h-[11px] w-[11px]" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 0 0-7.1 7.1l8.8 8.9 8.8-8.9a5 5 0 0 0 0-7.1Z" />
+              </svg>
+              {listing.favoriteCount}
+            </span>
+          )}
+          {(listing.viewCount ?? 0) > 0 && (
+            <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--m-muted)' }}>
+              <svg viewBox="0 0 24 24" className="h-[11px] w-[11px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              {listing.viewCount}
+            </span>
+          )}
+          {/* Condition chip */}
+          <span
+            className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+            style={{ background: 'var(--m-soft)', color: 'var(--m-muted)' }}
+          >
+            {CONDITION_LABELS[listing.condition]}
+          </span>
+        </div>
+
+        {/* Seller avatar — links to the seller page (was hover-only tooltip, dead on touch) */}
+        {initials && (
+          <Link
+            href={`/seller/${listing.sellerId}`}
+            onMouseEnter={() => setSellerHovered(true)}
+            onMouseLeave={() => setSellerHovered(false)}
+            className="relative flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
+            style={{ background: 'var(--m-ink)' }}
+            title={listing.sellerProfile?.displayName}
+          >
+            {initials}
+            {/* Tooltip */}
+            {sellerHovered && listing.sellerProfile?.displayName && (
+              <div
+                className="pointer-events-none absolute bottom-full right-0 mb-1.5 whitespace-nowrap rounded-lg px-2 py-1 text-[11px] font-medium text-white"
+                style={{ background: 'rgba(0,0,0,0.8)' }}
+              >
+                {listing.sellerProfile.displayName}
+              </div>
+            )}
+          </Link>
+        )}
+      </div>
     </article>
   )
 }

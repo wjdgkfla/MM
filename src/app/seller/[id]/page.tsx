@@ -21,13 +21,13 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
   const soldCount = allSellerListings.filter((listing) => listing.status === 'sold').length
 
   return (
-    <div className="max-w-[1280px] mx-auto px-6 py-8">
+    <div className="max-w-wide mx-auto px-6 py-8">
       <Link href="/" className="text-sm hover:underline" style={{ color: 'var(--m-muted)' }}>
         Back to Mason Market
       </Link>
 
       <div className="mt-4 ui-surface p-5 sm:p-6">
-        <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>{seller.displayName}</h1>
+        <h1 className="font-display text-display-md font-black" style={{ color: 'var(--m-ink)' }}>{seller.displayName}</h1>
         <p className="mt-1 text-sm" style={{ color: 'var(--m-muted)' }}>
           Trust details for {seller.displayName}. GMU verification and activity cues help buyers decide quickly.
         </p>

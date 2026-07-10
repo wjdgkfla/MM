@@ -8,7 +8,7 @@ import { SubNavRail } from '@/components/SubNavRail'
 import { FilterDrawer, FilterState } from '@/components/FilterDrawer'
 import { SeasonalRibbon } from '@/components/SeasonalRibbon'
 import { useFavorites } from '@/lib/useFavorites'
-import { CAMPUS_LOCATIONS, CampusLocation, CATEGORIES, Category, Listing, LISTING_KINDS, ListingKind } from '@/lib/types'
+import { CAMPUS_LOCATIONS, CampusLocation, CATEGORIES, Category, Listing, LISTING_KINDS, ListingKind, CONDITION_LABELS, LOCATION_LABELS, PICKUP_ZONE_LABELS } from '@/lib/types'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
 
@@ -24,6 +24,21 @@ const EMPTY_FILTERS: FilterState = {
   maxPrice: '',
   freeOnly: false,
   courseTag: '',
+}
+
+function filterChips(f: FilterState): { key: keyof FilterState; label: string }[] {
+  const chips: { key: keyof FilterState; label: string }[] = []
+  if (f.campusLocation) chips.push({ key: 'campusLocation', label: LOCATION_LABELS[f.campusLocation] })
+  if (f.pickupZone) chips.push({ key: 'pickupZone', label: PICKUP_ZONE_LABELS[f.pickupZone] })
+  if (f.condition) chips.push({ key: 'condition', label: CONDITION_LABELS[f.condition] })
+  if (f.status) chips.push({ key: 'status', label: f.status === 'available' ? 'Available' : 'Reserved' })
+  if (f.listingKind) chips.push({ key: 'listingKind', label: f.listingKind === 'sell' ? 'For sale' : 'Wanted' })
+  if (f.minPrice && f.maxPrice) chips.push({ key: 'minPrice', label: `$${f.minPrice}–$${f.maxPrice}` })
+  else if (f.minPrice) chips.push({ key: 'minPrice', label: `Over $${f.minPrice}` })
+  else if (f.maxPrice) chips.push({ key: 'maxPrice', label: `Under $${f.maxPrice}` })
+  if (f.freeOnly) chips.push({ key: 'freeOnly', label: 'Free only' })
+  if (f.courseTag) chips.push({ key: 'courseTag', label: f.courseTag })
+  return chips
 }
 
 function countFilters(f: FilterState): number {
@@ -117,6 +132,22 @@ function HomeContent() {
     toggleFavorite(listingId)
   }
 
+  // Debounce the free-text filter fields (price/course) so typing doesn't fire a fetch per keystroke.
+  // Button/chip-driven filters stay on `filters` directly so they still apply instantly.
+  const [debouncedText, setDebouncedText] = useState({
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    courseTag: filters.courseTag,
+  })
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedText({
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      courseTag: filters.courseTag,
+    }), 300)
+    return () => clearTimeout(id)
+  }, [filters.minPrice, filters.maxPrice, filters.courseTag])
+
   const buildParams = (pg = 0) => {
     const p = new URLSearchParams()
     if (search)              p.set('search', search)
@@ -126,9 +157,9 @@ function HomeContent() {
     if (filters.condition)   p.set('condition', filters.condition)
     if (filters.status)      p.set('status', filters.status)
     if (filters.listingKind) p.set('listingKind', filters.listingKind)
-    if (filters.minPrice)    p.set('minPrice', filters.minPrice)
-    if (filters.maxPrice)    p.set('maxPrice', filters.maxPrice)
-    if (filters.courseTag)   p.set('courseTag', filters.courseTag)
+    if (debouncedText.minPrice)  p.set('minPrice', debouncedText.minPrice)
+    if (debouncedText.maxPrice)  p.set('maxPrice', debouncedText.maxPrice)
+    if (debouncedText.courseTag) p.set('courseTag', debouncedText.courseTag)
     if (filters.freeOnly)    p.set('freeOnly', 'true')
     p.set('sort', sort)
     p.set('page', String(pg))
@@ -162,7 +193,7 @@ function HomeContent() {
       .catch(() => setFetchError('Failed to load listings. Check your connection and try again.'))
       .finally(() => setLoading(false))
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, category, sort, filters])
+  }, [search, category, sort, filters.campusLocation, filters.pickupZone, filters.condition, filters.status, filters.listingKind, filters.freeOnly, debouncedText])
 
   const loadMore = async () => {
     const next = page + 1
@@ -193,6 +224,12 @@ function HomeContent() {
     router.replace('/')
   }
 
+  const clearFilterChip = (key: keyof FilterState) => {
+    if (key === 'minPrice') setFilters(prev => ({ ...prev, minPrice: '', maxPrice: '' }))
+    else if (key === 'freeOnly') setFilters(prev => ({ ...prev, freeOnly: false }))
+    else setFilters(prev => ({ ...prev, [key]: '' }))
+  }
+
   const filterCount = countFilters(filters)
   const hasAnyFilter = !!search || !!category || filterCount > 0
 
@@ -204,7 +241,7 @@ function HomeContent() {
 
       {showEmailBanner ? (
         <section className="border-y bg-white" style={{ borderColor: 'var(--m-line)' }}>
-          <div className="mx-auto flex max-w-[1280px] flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mx-auto flex max-w-wide flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-[var(--m-ink)]">{t('home.updatesTitle')}</p>
               <p className="text-sm text-[var(--m-muted)]">{t('home.updatesBody')}</p>
@@ -245,7 +282,7 @@ function HomeContent() {
       />
 
       <main>
-        <div id="listings-anchor" className="mx-auto w-full max-w-[1280px] px-6 py-7">
+        <div id="listings-anchor" className="mx-auto w-full max-w-wide px-6 py-7">
 
           {/* Active search label */}
           {search && (
@@ -264,7 +301,7 @@ function HomeContent() {
           )}
 
           {/* Active filter chips */}
-          {(hasAnyFilter && !search) && (
+          {(category || filterCount > 0) && (
             <div className="mb-5 flex flex-wrap items-center gap-2">
               {category && (
                 <span className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] font-medium" style={{ borderColor: 'var(--m-ink)', color: 'var(--m-ink)' }}>
@@ -274,9 +311,14 @@ function HomeContent() {
                   </button>
                 </span>
               )}
-              {filterCount > 0 && (
-                <span className="text-[12px]" style={{ color: 'var(--m-muted)' }}>+{filterCount} filter{filterCount !== 1 ? 's' : ''}</span>
-              )}
+              {filterChips(filters).map(chip => (
+                <span key={chip.key} className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] font-medium" style={{ borderColor: 'var(--m-line)', color: 'var(--m-ink)' }}>
+                  {chip.label}
+                  <button onClick={() => clearFilterChip(chip.key)} aria-label={`Remove filter: ${chip.label}`} style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', color: 'var(--m-muted)' }}>
+                    <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                  </button>
+                </span>
+              ))}
               <button onClick={clearAll} className="text-[12px] hover:underline" style={{ color: 'var(--m-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}>
                 Reset all
               </button>

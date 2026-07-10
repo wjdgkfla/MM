@@ -61,18 +61,18 @@ export default function SettingsPage() {
     }
   }
 
-  if (loading) return <div className="mx-auto max-w-3xl px-6 py-10 text-sm text-[var(--m-muted)]">Loading...</div>
+  if (loading) return <div className="mx-auto max-w-narrow px-6 py-10 text-sm text-[var(--m-muted)]">Loading...</div>
   if (!session) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-8">
+      <div className="mx-auto max-w-narrow px-6 py-8">
         <AuthRequiredCard title="Sign in to manage settings" description="Settings are available for signed-in GMU users." redirectTo="/settings" />
       </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
-      <h1 className="font-display text-[36px] font-black text-[var(--m-ink)]">Settings</h1>
+    <div className="mx-auto max-w-narrow px-6 py-8">
+      <h1 className="font-display text-display-lg font-black text-[var(--m-ink)]">Settings</h1>
       <p className="mt-1 text-sm text-[var(--m-muted)]">Manage account preferences for {user?.gmuEmail || session.email}.</p>
 
       <section className="ui-surface mt-6 space-y-4 p-5">

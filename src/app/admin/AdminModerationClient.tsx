@@ -244,8 +244,8 @@ export function AdminModerationClient({
   }, [listings])
 
   return (
-    <div className="max-w-[1280px] mx-auto px-6 py-8">
-      <h1 className="font-display text-[32px] font-black" style={{ color: 'var(--m-ink)' }}>Admin</h1>
+    <div className="max-w-wide mx-auto px-6 py-8">
+      <h1 className="font-display text-display-md font-black" style={{ color: 'var(--m-ink)' }}>Admin</h1>
       <p className="mt-1 text-sm" style={{ color: 'var(--m-muted)' }}>
         Signed in as {adminName} ({adminEmail})
       </p>

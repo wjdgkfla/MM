@@ -41,7 +41,7 @@ export function SubNavRail({
       className="sticky z-40 border-b"
       style={{ top: 68, background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', borderColor: 'var(--m-line)' }}
     >
-      <div className="mx-auto flex max-w-[1280px] flex-col gap-2 px-6 py-2 sm:h-[54px] sm:flex-row sm:items-center sm:gap-3 sm:py-0">
+      <div className="mx-auto flex max-w-wide flex-col gap-2 px-6 py-2 sm:h-[54px] sm:flex-row sm:items-center sm:gap-3 sm:py-0">
         {/* Category pills — horizontally scrollable */}
         <div className="flex flex-1 items-center gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {cats.map(c => {

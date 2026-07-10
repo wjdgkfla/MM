@@ -75,12 +75,12 @@ export default function SavedPage() {
   }, [session, savedIds])
 
   if (authLoading) {
-    return <div className="max-w-[1280px] mx-auto px-6 py-10 text-sm" style={{ color: 'var(--m-muted)' }}>Loading…</div>
+    return <div className="max-w-wide mx-auto px-6 py-10 text-sm" style={{ color: 'var(--m-muted)' }}>Loading…</div>
   }
 
   if (!session) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="max-w-narrow mx-auto px-6 py-8">
         <AuthRequiredCard
           title="Sign in to view saved items"
           description="Saved listings are tied to your GMU account session."
@@ -99,8 +99,8 @@ export default function SavedPage() {
   }
 
   return (
-    <div className="max-w-[1280px] mx-auto px-6 py-6 sm:py-8">
-      <h1 className="font-display text-[36px] font-black" style={{ color: 'var(--m-ink)' }}>Saved finds</h1>
+    <div className="max-w-wide mx-auto px-6 py-6 sm:py-8">
+      <h1 className="font-display text-display-lg font-black" style={{ color: 'var(--m-ink)' }}>Saved finds</h1>
       <p className="mt-1 text-[13px]" style={{ color: 'var(--m-muted)' }}>
         {savedListings.length} {savedListings.length === 1 ? 'item' : 'items'}
       </p>

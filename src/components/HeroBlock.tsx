@@ -43,20 +43,21 @@ function RotatingWord() {
     return () => clearTimeout(t)
   }, [animKey, prev])
 
+  const colorFor = (i: number): string => (i % 2 === 0 ? 'var(--m-green)' : 'var(--m-gold-text)')
+
   const wordStyle: React.CSSProperties = {
     whiteSpace: 'nowrap',
-    color: 'var(--m-green)',
     fontWeight: 700,
   }
 
   return (
     <span style={{ position: 'relative', display: 'inline-flex', height: '1.2em', verticalAlign: 'bottom', overflow: 'hidden' }}>
       {prev !== null && (
-        <span style={{ ...wordStyle, position: 'absolute', animation: 'wordOut 320ms cubic-bezier(0.22,1,0.36,1) both' }}>
+        <span style={{ ...wordStyle, color: colorFor(prev), position: 'absolute', animation: 'wordOut 320ms cubic-bezier(0.22,1,0.36,1) both' }}>
           {ROTATING_WORDS[prev]}
         </span>
       )}
-      <span key={animKey} style={{ ...wordStyle, animation: animKey > 0 ? 'wordIn 320ms cubic-bezier(0.22,1,0.36,1) both' : 'none' }}>
+      <span key={animKey} style={{ ...wordStyle, color: colorFor(current), animation: animKey > 0 ? 'wordIn 320ms cubic-bezier(0.22,1,0.36,1) both' : 'none' }}>
         {ROTATING_WORDS[current]}
       </span>
     </span>
@@ -250,7 +251,7 @@ export function HeroBlock({ initialSearch = '', featuredListings = [] }: HeroBlo
 
   return (
     <section style={{ background: 'var(--m-soft-warm)' }}>
-      <div className="mx-auto max-w-[1280px] px-6 py-14 sm:py-16 lg:py-20">
+      <div className="mx-auto max-w-wide px-6 py-14 sm:py-16 lg:py-20">
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
       <div className="text-center lg:text-left">
 
@@ -341,7 +342,7 @@ export function HeroBlock({ initialSearch = '', featuredListings = [] }: HeroBlo
         {/* ── Suggested chips rail ── */}
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
           <span className="shrink-0 text-[11px] font-bold uppercase tracking-[0.07em]" style={{ color: 'var(--m-muted)' }}>
-            ✦ {t('home.suggested')}
+            <span style={{ color: 'var(--m-gold-text)' }}>✦</span> {t('home.suggested')}
           </span>
           <span className="shrink-0 text-[12px]" style={{ color: 'var(--m-muted)' }}>·</span>
 
@@ -365,7 +366,7 @@ export function HeroBlock({ initialSearch = '', featuredListings = [] }: HeroBlo
                 type="button"
                 onClick={() => setBatch(b => (b + delta + batches) % batches)}
                 aria-label={`${label} suggestions`}
-                className="flex h-3.5 w-[18px] items-center justify-center opacity-50 hover:opacity-100 transition-opacity"
+                className="flex h-8 w-8 items-center justify-center opacity-50 hover:opacity-100 transition-opacity sm:h-3.5 sm:w-[18px]"
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--m-muted)', padding: 0 }}
               >
                 <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">

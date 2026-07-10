@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
-import { Conversation } from '@/lib/data/contracts'
 import { usePushNotifications } from '@/lib/usePushNotifications'
+import { useUnreadMessages } from '@/lib/useUnreadMessages'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
 
 export function Header() {
@@ -17,39 +17,9 @@ export function Header() {
   const router = useRouter()
   const [headerSearch, setHeaderSearch] = useState('')
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
-  const [hasUnread, setHasUnread] = useState(false)
+  const hasUnread = useUnreadMessages(session?.userId)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
   const [accountOpen, setAccountOpen] = useState(false)
-
-  useEffect(() => {
-    if (!session) return
-
-    const checkUnread = async () => {
-      try {
-        const res = await fetch('/api/messages')
-        if (!res.ok) return
-        const conversations = (await res.json()) as Conversation[]
-        if (!Array.isArray(conversations) || conversations.length === 0) return
-        const apiUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
-        if (apiUnread > 0) {
-          setHasUnread(true)
-          return
-        }
-        const lastSeen = parseInt(localStorage.getItem('mm_msgs_last_seen') || '0', 10)
-        const hasNew = conversations.some(
-          (c) => c.lastMessageAt && new Date(c.lastMessageAt).getTime() > lastSeen
-        )
-        setHasUnread(hasNew)
-      } catch {
-        // silently ignore — unread dot is non-critical
-      }
-    }
-
-    checkUnread()
-    // Poll every 30s so the badge updates without a page reload
-    const interval = setInterval(checkUnread, 30_000)
-    return () => clearInterval(interval)
-  }, [session])
 
   useEffect(() => {
     if (!session) return
@@ -63,12 +33,6 @@ export function Header() {
     const interval = setInterval(loadNotifications, 30_000)
     return () => clearInterval(interval)
   }, [session])
-
-  useEffect(() => {
-    if (pathname === '/messages') {
-      setHasUnread(false)
-    }
-  }, [pathname])
 
   const handleSignOut = async () => {
     // Clear the Supabase client session too — otherwise its refresh token stays
@@ -106,7 +70,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b bg-[var(--m-bg)]/85 backdrop-blur-xl" style={{ borderColor: 'var(--m-line)' }}>
-      <div className="mx-auto flex h-[68px] max-w-[1280px] items-center gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex h-[68px] max-w-wide items-center gap-4 px-4 sm:px-6">
 
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center">
