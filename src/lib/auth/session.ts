@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { AUTH_COOKIE_NAME } from '@/lib/auth/constants'
 import { AuthSession } from '@/lib/auth/types'
 import { UserRole } from '@/lib/types'
+import { usersFindById } from '@/lib/data/supabaseDataAccess'
 
 // SESSION_SECRET must be set in production.
 // Generate with: openssl rand -hex 32
@@ -81,6 +82,9 @@ export function decodeSession(raw: string | undefined): AuthSession | null {
         displayName: parsed.displayName,
         gmuVerified: parsed.gmuVerified,
         issuedAt: parsed.issuedAt,
+        // Cookies issued before session_version existed have no claim — treat
+        // as version 0, matching every user's DB default until a reset bumps it.
+        sessionVersion: typeof parsed?.sessionVersion === 'number' ? parsed.sessionVersion : 0,
       }
     }
 
@@ -90,9 +94,19 @@ export function decodeSession(raw: string | undefined): AuthSession | null {
   }
 }
 
-export function getSessionFromRequest(request: NextRequest) {
+// Verifies the signature/expiry (decodeSession) AND that the cookie's
+// embedded session_version still matches the user's current row — a
+// password reset bumps that row, which invalidates every previously-issued
+// cookie for that user on their very next request, not just new sign-ins.
+export async function getSessionFromRequest(request: NextRequest): Promise<AuthSession | null> {
   const raw = request.cookies.get(AUTH_COOKIE_NAME)?.value
-  return decodeSession(raw)
+  const session = decodeSession(raw)
+  if (!session) return null
+
+  const user = await usersFindById(session.userId)
+  if (!user || user.sessionVersion !== session.sessionVersion) return null
+
+  return session
 }
 
 export function setSessionCookie(response: NextResponse, session: AuthSession) {

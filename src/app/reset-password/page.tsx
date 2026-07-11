@@ -29,6 +29,22 @@ export default function ResetPasswordPage() {
       const supabase = getSupabaseClient()
       const { error: sbError } = await supabase.auth.updateUser({ password })
       if (sbError) throw sbError
+
+      // Invalidate any already-issued Mason Market app cookie (e.g. one
+      // stolen from a shared device) before the access token below is
+      // revoked by the global signOut — a Supabase-only signOut doesn't
+      // touch our separate signed cookie, so this step is what actually
+      // closes that gap.
+      const { data: currentSession } = await supabase.auth.getSession()
+      const accessToken = currentSession?.session?.access_token
+      if (accessToken) {
+        await fetch('/api/auth/invalidate-sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessToken }),
+        }).catch((err) => console.error('Failed to invalidate old sessions:', err))
+      }
+
       // Sign out all sessions globally — invalidates any attacker sessions too
       await supabase.auth.signOut({ scope: 'global' })
       // Clear our own session cookie via the sign-out API

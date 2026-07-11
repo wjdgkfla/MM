@@ -27,7 +27,7 @@ import {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const mine = searchParams.get('mine')
-  const session = getSessionFromRequest(request)
+  const session = await getSessionFromRequest(request)
   const category = searchParams.get('category')
   const search = searchParams.get('search')
   const campusLocation = searchParams.get('campusLocation')
@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json(
         { error: 'Sign in required before posting. Your session may have expired.' },

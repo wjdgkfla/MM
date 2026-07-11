@@ -12,7 +12,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
 
     const user = await usersFindById(session.userId)

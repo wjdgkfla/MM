@@ -8,7 +8,7 @@ import {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     return NextResponse.json(await savedSearchesListByUser(session.userId))
   } catch (err) {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     const body = await request.json()
     const label = String(body.label || body.query || 'Saved search').trim().slice(0, 80)
@@ -37,10 +37,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = getSessionFromRequest(request)
+  const session = await getSessionFromRequest(request)
   if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'Missing saved search id' }, { status: 400 })
-  return NextResponse.json({ ok: await savedSearchesRemove(session.userId, id) })
+  const deleted = await savedSearchesRemove(session.userId, id)
+  if (!deleted) return NextResponse.json({ error: 'Saved search not found' }, { status: 404 })
+  return NextResponse.json({ ok: true })
 }

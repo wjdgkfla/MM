@@ -13,6 +13,7 @@ const session: AuthSession = {
   displayName: 'Admin',
   gmuVerified: true,
   issuedAt: new Date().toISOString(),
+  sessionVersion: 0,
 }
 
 const activeAdmin: User = {
@@ -30,6 +31,7 @@ const activeAdmin: User = {
   trustBadge: 'verified-gmu',
   reputationScore: 5,
   listingCount: 0,
+  sessionVersion: 0,
 }
 
 test('active admin check requires both signed admin session and active admin database user', () => {

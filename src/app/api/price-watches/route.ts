@@ -9,7 +9,7 @@ import {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     return NextResponse.json(await priceWatchesListByUser(session.userId))
   } catch (err) {
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     const body = await request.json()
     const listingId = String(body.listingId || '')
@@ -34,10 +34,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = getSessionFromRequest(request)
+  const session = await getSessionFromRequest(request)
   if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
   const { searchParams } = new URL(request.url)
   const listingId = searchParams.get('listingId')
   if (!listingId) return NextResponse.json({ error: 'Missing listing id' }, { status: 400 })
-  return NextResponse.json({ ok: await priceWatchesRemove(session.userId, listingId) })
+  const deleted = await priceWatchesRemove(session.userId, listingId)
+  if (!deleted) return NextResponse.json({ error: 'Price watch not found' }, { status: 404 })
+  return NextResponse.json({ ok: true })
 }

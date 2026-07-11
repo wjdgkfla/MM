@@ -17,7 +17,7 @@ export async function requireActiveAdmin(request: NextRequest): Promise<
   | { ok: true; session: AuthSession; user: User }
   | { ok: false; response: NextResponse }
 > {
-  const session = getSessionFromRequest(request)
+  const session = await getSessionFromRequest(request)
   if (!session) {
     return { ok: false, response: NextResponse.json({ error: 'Sign in required' }, { status: 401 }) }
   }

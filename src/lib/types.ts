@@ -129,6 +129,7 @@ export interface User {
   trustBadge: TrustBadge
   reputationScore: number
   listingCount: number
+  sessionVersion: number
 }
 
 export type MessageType = 'text' | 'offer' | 'meetup'

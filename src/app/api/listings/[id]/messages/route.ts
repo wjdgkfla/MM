@@ -14,7 +14,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     }
@@ -66,7 +66,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     }

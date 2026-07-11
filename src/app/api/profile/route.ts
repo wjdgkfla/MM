@@ -4,7 +4,7 @@ import { CAMPUS_LOCATIONS } from '@/lib/types'
 import { usersFindById, usersUpdateProfile } from '@/lib/data/supabaseDataAccess'
 
 export async function GET(request: NextRequest) {
-  const session = getSessionFromRequest(request)
+  const session = await getSessionFromRequest(request)
   if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
 
   const user = await usersFindById(session.userId)
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
 
     const body = await request.json()

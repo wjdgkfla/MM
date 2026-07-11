@@ -135,6 +135,7 @@ function rowToUser(row: Record<string, unknown>): User {
     trustBadge: (row.trust_badge as User['trustBadge']) || 'new-seller',
     reputationScore: Number(row.reputation_score) || 0,
     listingCount: Number(row.listing_count) || 0,
+    sessionVersion: Number(row.session_version) || 0,
   }
 }
 
@@ -233,13 +234,13 @@ function rowToRating(row: Record<string, unknown>): Rating {
 
 export const DEFAULT_PAGE_SIZE = 24
 
-export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]> {
-  const db = getSupabaseAdmin()
-  const pageSize = query?.pageSize ?? DEFAULT_PAGE_SIZE
-  const page = query?.page ?? 0
-  const from = page * pageSize
-  const to = from + pageSize - 1
+// Upper bound on how many rows we'll pull into JS to apply the courseTag
+// filter (matches against course_code and tags, which PostgREST can't do a
+// combined substring match on in one query). Campus-marketplace scale, not
+// meant to hold at very large listing counts.
+const COURSE_TAG_PREFILTER_CAP = 2000
 
+function buildListingsQuery(db: ReturnType<typeof getSupabaseAdmin>, query: ListingQuery | undefined) {
   let q = db.from('listings').select('*')
 
   // Non-admins never see hidden listings. Admins can opt in via showHidden
@@ -272,27 +273,48 @@ export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]>
   else if (query?.sort === 'oldest')     q = q.order('created_at', { ascending: true })
   else                                   q = q.order('created_at', { ascending: false })
 
-  // Apply pagination at the DB level
-  q = q.range(from, to)
+  return q
+}
 
+function matchesCourseTag(listing: Listing, courseTag: string): boolean {
+  const normalized = courseTag.toLowerCase().replace(/[^a-z0-9]/g, '')
+  if (listing.courseCode && listing.courseCode.toLowerCase().replace(/[^a-z0-9]/g, '').includes(normalized)) {
+    return true
+  }
+  return listing.tags.some((tag) => tag.toLowerCase().replace(/[^a-z0-9]/g, '').includes(normalized))
+}
+
+export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]> {
+  const db = getSupabaseAdmin()
+  const pageSize = query?.pageSize ?? DEFAULT_PAGE_SIZE
+  const page = query?.page ?? 0
+  const from = page * pageSize
+  const to = from + pageSize - 1
+
+  // courseTag matches against course_code (structured field) and tags (free
+  // text), which PostgREST can't express as one substring-OR query — so we
+  // filter in JS, but BEFORE paginating, not after, so page boundaries stay
+  // accurate against the filtered set.
+  if (query?.courseTag) {
+    const q = buildListingsQuery(db, query).limit(COURSE_TAG_PREFILTER_CAP)
+    const { data, error } = await q
+    if (error) {
+      console.error('listingsFindMany error:', error)
+      return []
+    }
+    const all = (data || []).map((r) => rowToListing(r as Record<string, unknown>))
+    const filtered = all.filter((l) => matchesCourseTag(l, query.courseTag!))
+    return filtered.slice(from, to + 1)
+  }
+
+  const q = buildListingsQuery(db, query).range(from, to)
   const { data, error } = await q
   if (error) {
     console.error('listingsFindMany error:', error)
     return []
   }
 
-  let results = (data || []).map((r) => rowToListing(r as Record<string, unknown>))
-
-  if (query?.courseTag) {
-    const normalized = query.courseTag.toLowerCase().replace(/[^a-z0-9]/g, '')
-    results = results.filter((l) =>
-      l.tags.some((tag) => tag.toLowerCase().replace(/[^a-z0-9]/g, '').includes(normalized))
-    )
-  }
-
-  // Price sort is now applied at the DB level above — no JS sort needed
-
-  return results
+  return (data || []).map((r) => rowToListing(r as Record<string, unknown>))
 }
 
 export async function listingsFindById(id: string): Promise<Listing | undefined> {
@@ -559,6 +581,13 @@ export async function usersUpsert(input: {
 
   if (error || !data) throw new Error(error?.message || 'Failed to create user')
   return rowToUser(data as Record<string, unknown>)
+}
+
+// Bumps session_version so every previously-issued app session cookie for
+// this user fails its version check on the next request — used on password
+// reset so a cookie stolen before the reset can't keep working afterward.
+export async function usersBumpSessionVersion(id: string): Promise<void> {
+  await getSupabaseAdmin().rpc('increment_session_version', { user_id: id })
 }
 
 export async function usersUpdateRole(id: string, role: UserRole): Promise<User | null> {
@@ -1013,12 +1042,16 @@ export async function savedSearchesCreate(input: CreateSavedSearchInput): Promis
 }
 
 export async function savedSearchesRemove(userId: string, id: string): Promise<boolean> {
-  const { error } = await getSupabaseAdmin()
+  // .select() after .delete() returns the deleted rows, so we can tell "0
+  // rows matched" (wrong id, or someone else's saved search) apart from
+  // "deleted" — plain .delete() reports success either way.
+  const { data, error } = await getSupabaseAdmin()
     .from('saved_searches')
     .delete()
     .eq('id', id)
     .eq('user_id', userId)
-  return !error
+    .select('id')
+  return !error && Array.isArray(data) && data.length > 0
 }
 
 export async function priceWatchesListByUser(userId: string): Promise<PriceWatch[]> {
@@ -1047,12 +1080,13 @@ export async function priceWatchesUpsert(userId: string, listingId: string, last
 }
 
 export async function priceWatchesRemove(userId: string, listingId: string): Promise<boolean> {
-  const { error } = await getSupabaseAdmin()
+  const { data, error } = await getSupabaseAdmin()
     .from('price_watches')
     .delete()
     .eq('user_id', userId)
     .eq('listing_id', listingId)
-  return !error
+    .select('id')
+  return !error && Array.isArray(data) && data.length > 0
 }
 
 async function notifyPriceWatchers(listing: Listing, previousPrice: number): Promise<void> {
@@ -1064,7 +1098,7 @@ async function notifyPriceWatchers(listing: Listing, previousPrice: number): Pro
 
   await Promise.all((data as Record<string, unknown>[]).map(async (row) => {
     const watch = rowToPriceWatch(row)
-    if (!shouldCreatePriceDropNotification(watch.lastSeenPrice || previousPrice, listing.price)) return
+    if (!shouldCreatePriceDropNotification(watch.lastSeenPrice ?? previousPrice, listing.price)) return
     await notificationsCreate({
       userId: watch.userId,
       type: 'price-drop',

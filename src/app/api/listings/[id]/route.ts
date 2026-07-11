@@ -19,7 +19,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     const listing = await listingsFindById(id)
 
     if (!listing) {
@@ -60,7 +60,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     }
@@ -107,7 +107,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     }
@@ -188,7 +188,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     }

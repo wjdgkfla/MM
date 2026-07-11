@@ -9,7 +9,7 @@ function getIp(request: NextRequest): string {
   )
 }
 
-function getRateLimitConfig(pathname: string) {
+function getRateLimitConfig(pathname: string, method: string) {
   // Session check and sign-out are cookie-only operations with no DB writes.
   // Throttling them breaks the app for normal users - exempt entirely.
   if (pathname === '/api/auth/session' || pathname === '/api/auth/sign-out') return null
@@ -24,7 +24,10 @@ function getRateLimitConfig(pathname: string) {
     pathname.startsWith('/api/reports') ||
     pathname.startsWith('/api/ratings')
   ) {
-    return RATE_LIMITS.write
+    // Browsing/reading (GET) shouldn't share a bucket with mutations — campus
+    // wifi NATs many students behind one IP, so plain browsing traffic could
+    // otherwise exhaust the write budget and block posting from that IP too.
+    return method === 'GET' ? RATE_LIMITS.read : RATE_LIMITS.write
   }
   return RATE_LIMITS.read
 }
@@ -38,7 +41,7 @@ export function proxy(request: NextRequest) {
   const messageMethod = request.method.toUpperCase()
   const config = isMessageRoute(pathname)
     ? (messageMethod === 'POST' ? RATE_LIMITS.message : RATE_LIMITS.messageRead)
-    : getRateLimitConfig(pathname)
+    : getRateLimitConfig(pathname, messageMethod)
 
   if (config === null) return NextResponse.next()
 

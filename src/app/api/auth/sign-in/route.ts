@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
       displayName: dbUser.displayName,
       gmuVerified: true,
       issuedAt: new Date().toISOString(),
+      sessionVersion: dbUser.sessionVersion,
     }
 
     const response = NextResponse.json({ session })

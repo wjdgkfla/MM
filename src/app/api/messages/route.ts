@@ -15,7 +15,7 @@ import { sendPushToUser } from '@/lib/pushNotification'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
 
     // All message reads require authentication
     if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     if (!session) {
       return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
     }
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const session = getSessionFromRequest(request)
+    const session = await getSessionFromRequest(request)
     if (!session) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
 
     const body = await request.json()

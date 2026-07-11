@@ -16,6 +16,7 @@ const BASE_SESSION: AuthSession = {
   displayName: 'Test Student',
   gmuVerified: true,
   issuedAt: new Date().toISOString(),
+  sessionVersion: 0,
 }
 
 describe('Session HMAC — encode + decode round-trip', () => {
@@ -97,5 +98,25 @@ describe('Session HMAC — encode + decode round-trip', () => {
     const token = encodeSession(session)
     const decoded = decodeSession(token)
     expect(decoded?.role).toBe('student')
+  })
+
+  it('preserves a non-zero sessionVersion through encode/decode', () => {
+    const session = { ...BASE_SESSION, sessionVersion: 3 }
+    const token = encodeSession(session)
+    const decoded = decodeSession(token)
+    expect(decoded?.sessionVersion).toBe(3)
+  })
+
+  it('defaults sessionVersion to 0 for a legacy cookie payload with no claim', () => {
+    // Simulates a cookie signed before session_version existed
+    const legacyPayload = { ...BASE_SESSION } as Partial<AuthSession>
+    delete legacyPayload.sessionVersion
+    const payload = Buffer.from(JSON.stringify(legacyPayload), 'utf8').toString('base64url')
+    const sig = require('crypto')
+      .createHmac('sha256', process.env.SESSION_SECRET)
+      .update(payload)
+      .digest('base64url')
+    const decoded = decodeSession(`${payload}.${sig}`)
+    expect(decoded?.sessionVersion).toBe(0)
   })
 })

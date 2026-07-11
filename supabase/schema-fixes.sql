@@ -38,3 +38,25 @@ $$;
 revoke execute on function adjust_reputation_score(text, numeric) from public;
 revoke execute on function adjust_reputation_score(text, numeric) from anon;
 revoke execute on function adjust_reputation_score(text, numeric) from authenticated;
+
+-- ─── Session versioning for password-reset invalidation ─────────────────
+-- The app session cookie is a self-contained signed token with no
+-- server-side revocation list — decodeSession() only checked the HMAC
+-- signature and 14-day expiry. Resetting a password called Supabase's
+-- global signOut (revokes Supabase refresh tokens) but never touched the
+-- separate Mason Market app cookie, so an already-issued cookie (e.g.
+-- stolen via a shared device) kept working for up to 14 days after the
+-- legitimate user "reset and signed out everywhere." session_version is
+-- embedded in each cookie at issue time and bumped on password reset;
+-- getSessionFromRequest() now rejects any cookie whose embedded version
+-- doesn't match the user's current row.
+alter table users add column if not exists session_version integer not null default 0;
+
+create or replace function increment_session_version(user_id text)
+returns void language sql security invoker set search_path = public as $$
+  update users set session_version = session_version + 1 where id = user_id;
+$$;
+
+revoke execute on function increment_session_version(text) from public;
+revoke execute on function increment_session_version(text) from anon;
+revoke execute on function increment_session_version(text) from authenticated;

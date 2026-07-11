@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ListingCard } from '@/components/ListingCard'
 import { HeroBlock } from '@/components/HeroBlock'
@@ -82,6 +82,10 @@ function HomeContent() {
   const [page, setPage]               = useState(0)
   const [hasMore, setHasMore]         = useState(true)
   const PAGE_SIZE = 24
+  // Bumped every time the main filter/search/sort fetch starts. loadMore and
+  // the main fetch itself check this before applying their response, so a
+  // slow request whose filters have since changed can't clobber newer state.
+  const requestIdRef = useRef(0)
 
   // Sync state when URL search params change (chip clicks, seasonal ribbon, back/forward)
   useEffect(() => {
@@ -168,6 +172,7 @@ function HomeContent() {
 
   // Main fetch — reset on any filter/search/sort/category change
   useEffect(() => {
+    const requestId = ++requestIdRef.current
     setPage(0)
     setHasMore(true)
     setLoading(true)
@@ -178,6 +183,7 @@ function HomeContent() {
         return res.json()
       })
       .then((data: Listing[]) => {
+        if (requestIdRef.current !== requestId) return // filters changed since this fetch started
         const result = Array.isArray(data) ? data : []
         setListings(result)
         setHasMore(result.length === PAGE_SIZE)
@@ -190,18 +196,24 @@ function HomeContent() {
           }).catch(() => {})
         }
       })
-      .catch(() => setFetchError('Failed to load listings. Check your connection and try again.'))
-      .finally(() => setLoading(false))
+      .catch(() => {
+        if (requestIdRef.current === requestId) setFetchError('Failed to load listings. Check your connection and try again.')
+      })
+      .finally(() => {
+        if (requestIdRef.current === requestId) setLoading(false)
+      })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, category, sort, filters.campusLocation, filters.pickupZone, filters.condition, filters.status, filters.listingKind, filters.freeOnly, debouncedText])
 
   const loadMore = async () => {
+    const requestId = requestIdRef.current
     const next = page + 1
     setLoadingMore(true)
     try {
       const res = await fetch(`/api/listings?${buildParams(next).toString()}`)
       if (!res.ok) return
       const data = await res.json() as Listing[]
+      if (requestIdRef.current !== requestId) return // filters changed while this page was loading
       if (Array.isArray(data) && data.length > 0) {
         setListings(prev => [...prev, ...data])
         setPage(next)

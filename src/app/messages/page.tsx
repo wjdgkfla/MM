@@ -202,12 +202,13 @@ export default function MessagesPage() {
         setInboxError(true)
       } finally {
         setLoadingInbox(false)
+        // Mark messages as seen so the header badge clears — after the inbox
+        // actually finishes loading, not immediately on mount.
+        localStorage.setItem('mm_msgs_last_seen', Date.now().toString())
       }
     }
 
     loadInbox()
-    // Mark messages as seen so the header badge clears
-    localStorage.setItem('mm_msgs_last_seen', Date.now().toString())
   }, [currentUserId])
 
   useEffect(() => {
