@@ -75,7 +75,7 @@ textarea:focus-visible {
   }
 
   .ui-btn-primary {
-    @apply rounded-xl px-4 py-3 text-sm font-semibold text-white transition-opacity;
+    @apply rounded-xl px-4 py-3 text-sm font-semibold text-white transition-opacity active:scale-[0.98];
     background: var(--m-pop);
   }
 
@@ -93,7 +93,7 @@ textarea:focus-visible {
   }
 
   .ui-btn-secondary {
-    @apply rounded-xl border bg-white px-4 py-3 text-sm font-medium transition-colors;
+    @apply rounded-xl border bg-white px-4 py-3 text-sm font-medium transition-colors active:scale-[0.98];
     border-color: var(--m-line);
     color: var(--m-ink);
   }
@@ -108,7 +108,7 @@ textarea:focus-visible {
   }
 
   .ui-pill {
-    @apply inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-colors;
+    @apply inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-colors active:scale-[0.98];
   }
 
   .ui-pill:focus-visible {

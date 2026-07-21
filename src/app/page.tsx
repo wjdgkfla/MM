@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { motion } from 'motion/react'
 import { ListingCard } from '@/components/ListingCard'
 import { HeroBlock } from '@/components/HeroBlock'
 import { SubNavRail } from '@/components/SubNavRail'
@@ -416,16 +417,28 @@ function HomeContent() {
 
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+              <motion.div
+                className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4"
+                initial="hidden"
+                animate="visible"
+                variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
+              >
                 {listings.map(listing => (
-                  <ListingCard
+                  <motion.div
                     key={listing.id}
-                    listing={listing}
-                    isSaved={savedSet.has(listing.id)}
-                    onToggleSave={handleToggleFavorite}
-                  />
+                    variants={{
+                      hidden: { opacity: 0, y: 12 },
+                      visible: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' } },
+                    }}
+                  >
+                    <ListingCard
+                      listing={listing}
+                      isSaved={savedSet.has(listing.id)}
+                      onToggleSave={handleToggleFavorite}
+                    />
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
 
               {/* Load more */}
               {hasMore && (
