@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Listing, Message, REPORT_REASONS, REPORT_REASON_LABELS, ReportReason } from '@/lib/types'
-import { PICKUP_ZONE_LABELS, PickupZone } from '@/lib/types'
+import { Listing, Message, REPORT_REASONS, REPORT_REASON_LABELS, ReportReason, Transaction } from '@/lib/types'
+import { CAMPUS_ZONE_MAP, CampusLocation, LOCATION_LABELS, PICKUP_ZONE_LABELS, PickupZone } from '@/lib/types'
 import { formatRecency } from '@/lib/time'
 import { Conversation } from '@/lib/data/contracts'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
@@ -59,6 +59,17 @@ export default function MessagesPage() {
   const [reportNotes, setReportNotes] = useState('')
   const [reportSubmitting, setReportSubmitting] = useState(false)
   const [blocking, setBlocking] = useState(false)
+  const [transaction, setTransaction] = useState<Transaction | null>(null)
+  const [showMeetupPicker, setShowMeetupPicker] = useState(false)
+  const [meetupCampus, setMeetupCampus] = useState<CampusLocation>('fairfax')
+  const [meetupZone, setMeetupZone] = useState<PickupZone>('jc-lobby')
+  const [meetupDate, setMeetupDate] = useState('')
+  const [meetupTimeInput, setMeetupTimeInput] = useState('')
+  const [schedulingMeetup, setSchedulingMeetup] = useState(false)
+  const [counteringId, setCounteringId] = useState<string | null>(null)
+  const [counterAmount, setCounterAmount] = useState('')
+  const [offerActionPending, setOfferActionPending] = useState<string | null>(null)
+  const [confirmingCompletion, setConfirmingCompletion] = useState(false)
   const didAutoSend = useRef(false)
   const isSendingRef = useRef(false)
   const threadScrollRef = useRef<HTMLDivElement>(null)
@@ -280,7 +291,30 @@ export default function MessagesPage() {
   useEffect(() => {
     setShowReportForm(false)
     setReportNotes('')
+    setShowMeetupPicker(false)
+    setCounteringId(null)
   }, [selectedKey])
+
+  // Load the transaction (if any) behind this conversation — it's what meetup
+  // scheduling and completion confirmation act on.
+  useEffect(() => {
+    const loadTransaction = async () => {
+      if (!selectedConversation || selectedConversation.isSynthetic) {
+        setTransaction(null)
+        return
+      }
+      try {
+        const res = await fetch(
+          `/api/transactions?listingId=${selectedConversation.listingId}&peerId=${selectedConversation.peerId}`
+        )
+        const data = res.ok ? await res.json().catch(() => null) : null
+        setTransaction(data || null)
+      } catch {
+        setTransaction(null)
+      }
+    }
+    loadTransaction()
+  }, [selectedConversation])
 
   // Auto-scroll thread to bottom when new messages arrive
   useEffect(() => {
@@ -428,7 +462,8 @@ export default function MessagesPage() {
     }
   }
 
-  const handleOfferResponse = async (messageId: string, status: 'accepted' | 'declined') => {
+  const handleOfferResponse = async (messageId: string, status: 'accepted' | 'declined' | 'withdrawn') => {
+    setOfferActionPending(messageId)
     try {
       const res = await fetch(`/api/messages/${messageId}`, {
         method: 'PATCH',
@@ -443,22 +478,64 @@ export default function MessagesPage() {
       const updated = (await res.json()) as Message
       setThread((current) => current.map((m) => (m.id === messageId ? updated : m)))
       if (status === 'accepted') showToast('Offer accepted')
+      else if (status === 'withdrawn') showToast('Offer withdrawn', 'info')
       else showToast('Offer declined', 'info')
     } catch {
       showToast('Could not update the offer', 'error')
+    } finally {
+      setOfferActionPending(null)
     }
   }
 
-  const sendMeetup = async (status: Message['meetupStatus'], zone: PickupZone = 'jc-lobby') => {
+  const handleCounterOffer = async (messageId: string) => {
+    const amount = Number(counterAmount)
+    if (!amount || amount <= 0) {
+      showToast('Enter a valid counter amount', 'error')
+      return
+    }
+    setOfferActionPending(messageId)
+    try {
+      const res = await fetch(`/api/messages/${messageId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ counterAmount: amount }),
+      })
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null)
+        showToast(payload?.error || 'Could not send counteroffer', 'error')
+        return
+      }
+      const created = (await res.json()) as Message
+      setThread((current) => [
+        ...current.map((m) => (m.id === messageId ? { ...m, offerStatus: 'superseded' as const } : m)),
+        created,
+      ])
+      setCounteringId(null)
+      setCounterAmount('')
+      showToast('Counteroffer sent')
+    } catch {
+      showToast('Could not send counteroffer', 'error')
+    } finally {
+      setOfferActionPending(null)
+    }
+  }
+
+  const sendMeetup = async (status: Message['meetupStatus'], zone: PickupZone, time: string) => {
     if (!selectedConversation || !status) return
-    const time = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    const label = PICKUP_ZONE_LABELS[zone]
+    const bodyText =
+      status === 'proposed'
+        ? `Proposed meetup: ${label} on ${new Date(time).toLocaleString()}.`
+        : status === 'confirmed'
+          ? `Meetup confirmed: ${label} on ${new Date(time).toLocaleString()}.`
+          : 'Meetup cancelled.'
     const res = await fetch('/api/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         listingId: selectedConversation.listingId,
         toUserId: selectedConversation.peerId,
-        body: `Meetup ${status}: ${PICKUP_ZONE_LABELS[zone]} tomorrow.`,
+        body: bodyText,
         type: 'meetup',
         meetupStatus: status,
         meetupZone: zone,
@@ -469,7 +546,138 @@ export default function MessagesPage() {
       const created = await res.json() as Message
       setThread((current) => [...current, created])
     } else {
-      showToast('Could not send meetup suggestion — try again', 'error')
+      showToast('Could not send meetup update — try again', 'error')
+    }
+  }
+
+  const handleProposeMeetup = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!selectedConversation || !transaction) return
+    if (!meetupDate || !meetupTimeInput) {
+      showToast('Pick a date and time', 'error')
+      return
+    }
+    const meetupTime = new Date(`${meetupDate}T${meetupTimeInput}`).toISOString()
+    if (Number.isNaN(Date.parse(meetupTime))) {
+      showToast('Invalid date or time', 'error')
+      return
+    }
+    setSchedulingMeetup(true)
+    try {
+      const res = await fetch(`/api/transactions/${transaction.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'propose-meetup', meetupZone, meetupTime }),
+      })
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null)
+        showToast(payload?.error || 'Could not propose meetup', 'error')
+        return
+      }
+      const updated = (await res.json()) as Transaction
+      setTransaction(updated)
+      setShowMeetupPicker(false)
+      await sendMeetup('proposed', meetupZone, meetupTime)
+    } catch {
+      showToast('Could not propose meetup', 'error')
+    } finally {
+      setSchedulingMeetup(false)
+    }
+  }
+
+  const handleConfirmMeetup = async () => {
+    if (!transaction || !transaction.meetupZone || !transaction.meetupTime) return
+    try {
+      const res = await fetch(`/api/transactions/${transaction.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'confirm-meetup' }),
+      })
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null)
+        showToast(payload?.error || 'Could not confirm meetup', 'error')
+        return
+      }
+      const updated = (await res.json()) as Transaction
+      setTransaction(updated)
+      await sendMeetup('confirmed', transaction.meetupZone, transaction.meetupTime)
+    } catch {
+      showToast('Could not confirm meetup', 'error')
+    }
+  }
+
+  const handleCancelMeetup = async () => {
+    if (!transaction) return
+    const zone = transaction.meetupZone || 'jc-lobby'
+    const time = transaction.meetupTime || new Date().toISOString()
+    try {
+      const res = await fetch(`/api/transactions/${transaction.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel-meetup' }),
+      })
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null)
+        showToast(payload?.error || 'Could not cancel meetup', 'error')
+        return
+      }
+      const updated = (await res.json()) as Transaction
+      setTransaction(updated)
+      await sendMeetup('cancelled', zone, time)
+    } catch {
+      showToast('Could not cancel meetup', 'error')
+    }
+  }
+
+  const sendPresence = async (status: 'on_the_way' | 'arrived') => {
+    if (!selectedConversation) return
+    const res = await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        listingId: selectedConversation.listingId,
+        toUserId: selectedConversation.peerId,
+        body: status === 'on_the_way' ? "I'm on my way!" : "I'm here!",
+        presenceStatus: status,
+      }),
+    }).catch(() => null)
+    if (res?.ok) {
+      const created = await res.json() as Message
+      setThread((current) => [...current, created])
+    } else {
+      showToast('Could not send update — try again', 'error')
+    }
+  }
+
+  const openMeetupPicker = () => {
+    setMeetupCampus('fairfax')
+    setMeetupZone('jc-lobby')
+    setMeetupDate('')
+    setMeetupTimeInput('')
+    setShowMeetupPicker(true)
+  }
+
+  const handleConfirmCompletion = async () => {
+    if (!transaction) return
+    setConfirmingCompletion(true)
+    try {
+      const res = await fetch(`/api/transactions/${transaction.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'confirm-completion' }),
+      })
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null)
+        showToast(payload?.error || 'Could not confirm', 'error')
+        return
+      }
+      const updated = (await res.json()) as Transaction
+      setTransaction(updated)
+      showToast(updated.status === 'completed' ? 'Transaction completed!' : 'Confirmed — waiting on the other side')
+    } catch {
+      showToast('Could not confirm', 'error')
+    } finally {
+      setConfirmingCompletion(false)
     }
   }
 
@@ -659,6 +867,8 @@ export default function MessagesPage() {
                       {thread.map((message) => {
                         const fromCurrentUser = message.fromUserId === currentUserId
                         if (message.type === 'offer') {
+                          const isExpired = message.offerStatus === 'pending' && !!message.expiresAt && new Date(message.expiresAt) < new Date()
+                          const isActionPending = offerActionPending === message.id
                           return (
                             <div key={message.id} className={`max-w-[90%] ${fromCurrentUser ? 'ml-auto' : 'mr-auto'}`}>
                               <div className={`rounded-2xl border-2 p-4 ${
@@ -666,24 +876,54 @@ export default function MessagesPage() {
                                 message.offerStatus === 'declined' ? 'border-red-200 bg-red-50' :
                                 ''
                               }`} style={
-                                message.offerStatus === 'pending'
+                                message.offerStatus === 'pending' && !isExpired
                                   ? { borderColor: 'var(--m-gold)', background: 'var(--m-soft-warm)' }
                                   : message.offerStatus === 'accepted'
                                   ? { background: 'var(--m-green-soft)' }
                                   : undefined
                               }>
-                                <p className="font-mono-label text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--m-muted)' }}>Offer</p>
+                                <p className="font-mono-label text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--m-muted)' }}>
+                                  {message.parentOfferMessageId ? 'Counteroffer' : 'Offer'}
+                                </p>
                                 <p className="font-display font-black text-display-md tabular-nums mt-1" style={{ color: 'var(--m-ink)' }}>${message.offerAmount}</p>
                                 <p className="text-[12px] mt-0.5" style={{ color: 'var(--m-muted)' }}>{message.body}</p>
-                                {message.offerStatus === 'pending' && !fromCurrentUser && (
-                                  <div className="mt-2 flex gap-2">
-                                    <button type="button" onClick={() => handleOfferResponse(message.id, 'accepted')} className="rounded-lg px-3 py-1 text-xs font-semibold text-white hover:opacity-90" style={{ background: 'var(--m-green)' }}>Accept</button>
-                                    <button type="button" onClick={() => handleOfferResponse(message.id, 'declined')} className="rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50">Decline</button>
+                                {message.offerStatus === 'pending' && !isExpired && !fromCurrentUser && (
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    <button type="button" disabled={isActionPending} onClick={() => handleOfferResponse(message.id, 'accepted')} className="rounded-lg px-3 py-1 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50" style={{ background: 'var(--m-green)' }}>Accept</button>
+                                    <button type="button" disabled={isActionPending} onClick={() => handleOfferResponse(message.id, 'declined')} className="rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">Decline</button>
+                                    <button type="button" disabled={isActionPending} onClick={() => { setCounteringId(message.id); setCounterAmount(String(message.offerAmount ?? '')) }} className="rounded-lg border px-3 py-1 text-xs font-semibold hover:bg-white disabled:opacity-50" style={{ borderColor: 'var(--m-line)', color: 'var(--m-ink)' }}>Counter</button>
                                   </div>
+                                )}
+                                {counteringId === message.id && (
+                                  <form
+                                    className="mt-2 flex items-center gap-2"
+                                    onSubmit={(e) => { e.preventDefault(); handleCounterOffer(message.id) }}
+                                  >
+                                    <span className="text-xs" style={{ color: 'var(--m-muted)' }}>$</span>
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      max={100000}
+                                      value={counterAmount}
+                                      onChange={(e) => setCounterAmount(e.target.value)}
+                                      className="ui-input w-24 py-1 text-xs"
+                                      autoFocus
+                                    />
+                                    <button type="submit" disabled={isActionPending} className="rounded-lg px-3 py-1 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--m-ink)' }}>Send</button>
+                                    <button type="button" onClick={() => setCounteringId(null)} className="text-xs" style={{ color: 'var(--m-muted)' }}>Cancel</button>
+                                  </form>
                                 )}
                                 {message.offerStatus === 'accepted' && <p className="mt-2 text-xs font-semibold text-[var(--m-green)]">✓ Offer accepted</p>}
                                 {message.offerStatus === 'declined' && <p className="mt-2 text-xs font-semibold text-red-600">✗ Offer declined</p>}
-                                {message.offerStatus === 'pending' && fromCurrentUser && <p className="mt-2 text-xs text-amber-700">Waiting for response…</p>}
+                                {message.offerStatus === 'withdrawn' && <p className="mt-2 text-xs font-semibold text-red-600">Offer withdrawn</p>}
+                                {message.offerStatus === 'superseded' && <p className="mt-2 text-xs" style={{ color: 'var(--m-muted)' }}>Replaced by a counteroffer</p>}
+                                {message.offerStatus === 'pending' && isExpired && <p className="mt-2 text-xs" style={{ color: 'var(--m-muted)' }}>Offer expired</p>}
+                                {message.offerStatus === 'pending' && !isExpired && fromCurrentUser && (
+                                  <div className="mt-2 flex items-center gap-3">
+                                    <p className="text-xs text-amber-700">Waiting for response…</p>
+                                    <button type="button" disabled={isActionPending} onClick={() => handleOfferResponse(message.id, 'withdrawn')} className="text-xs font-medium hover:underline disabled:opacity-50" style={{ color: 'var(--m-muted)' }}>Withdraw</button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )
@@ -692,10 +932,22 @@ export default function MessagesPage() {
                           return (
                             <div key={message.id} className={`max-w-[90%] ${fromCurrentUser ? 'ml-auto' : 'mr-auto'}`}>
                               <div className="rounded-2xl border bg-white p-4" style={{ borderColor: 'var(--m-green)' }}>
-                                <p className="font-mono-label text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--m-muted)' }}>Meetup</p>
+                                <p className="font-mono-label text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--m-muted)' }}>
+                                  Meetup {message.meetupStatus ? `— ${message.meetupStatus}` : ''}
+                                </p>
                                 <p className="mt-1 text-sm font-semibold text-[var(--m-ink)]">{message.body}</p>
                                 {message.meetupZone ? <p className="mt-1 text-xs text-[var(--m-muted)]">{PICKUP_ZONE_LABELS[message.meetupZone]}</p> : null}
+                                {message.meetupTime ? <p className="mt-0.5 text-xs text-[var(--m-muted)]">{new Date(message.meetupTime).toLocaleString()}</p> : null}
                               </div>
+                            </div>
+                          )
+                        }
+                        if (message.presenceStatus) {
+                          return (
+                            <div key={message.id} className="flex justify-center">
+                              <span className="rounded-full bg-[var(--m-soft)] px-3 py-1 text-xs font-medium" style={{ color: 'var(--m-ink)' }}>
+                                {fromCurrentUser ? 'You: ' : `${selectedConversation.peerLabel}: `}{message.body}
+                              </span>
                             </div>
                           )
                         }
@@ -735,13 +987,139 @@ export default function MessagesPage() {
                       {starter}
                     </button>
                   ))}
-                  <button type="button" onClick={() => sendMeetup('proposed')} className="rounded-full bg-[var(--m-green-soft)] px-3 py-1 text-xs font-semibold text-[var(--m-ink)]">
-                    Suggest meetup
-                  </button>
-                  <button type="button" onClick={() => sendMeetup('confirmed')} className="rounded-full bg-[var(--m-green-soft)] px-3 py-1 text-xs font-semibold text-[var(--m-ink)]">
-                    Confirm meetup
-                  </button>
                 </div>
+
+                {/* Meetup scheduling + completion confirmation only apply once an
+                    offer has been accepted and a transaction exists.
+                    ponytail: transactions don't track who proposed the current
+                    meetup time, so Confirm/Suggest-another/Cancel show to both
+                    participants rather than just "the other party" — add a
+                    proposed_by column if that distinction matters later. */}
+                {transaction ? (
+                  <div className="mt-3 space-y-2 rounded-xl border p-3" style={{ borderColor: 'var(--m-line)' }}>
+                    {transaction.status === 'completed' ? (
+                      <p className="text-xs font-semibold text-[var(--m-green)]">
+                        ✓ Transaction completed{transaction.completedAt ? ` on ${new Date(transaction.completedAt).toLocaleDateString()}` : ''}
+                      </p>
+                    ) : (
+                      <>
+                        {transaction.meetupZone && transaction.meetupTime ? (
+                          <div>
+                            <p className="text-xs font-semibold" style={{ color: 'var(--m-ink)' }}>
+                              Meetup {transaction.status === 'meetup_scheduled' ? 'confirmed' : 'proposed'}: {PICKUP_ZONE_LABELS[transaction.meetupZone]}
+                            </p>
+                            <p className="text-xs" style={{ color: 'var(--m-muted)' }}>{new Date(transaction.meetupTime).toLocaleString()}</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {transaction.status !== 'meetup_scheduled' && (
+                                <button type="button" onClick={handleConfirmMeetup} className="rounded-full px-3 py-1 text-xs font-semibold text-white" style={{ background: 'var(--m-green)' }}>
+                                  Confirm
+                                </button>
+                              )}
+                              <button type="button" onClick={openMeetupPicker} className="rounded-full border px-3 py-1 text-xs font-semibold" style={{ borderColor: 'var(--m-line)', color: 'var(--m-ink)' }}>
+                                Suggest another time
+                              </button>
+                              <button type="button" onClick={handleCancelMeetup} className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50">
+                                Cancel
+                              </button>
+                            </div>
+                            {transaction.status === 'meetup_scheduled' && (
+                              <div className="mt-2 flex gap-2">
+                                <button type="button" onClick={() => sendPresence('on_the_way')} className="rounded-full bg-[var(--m-green-soft)] px-3 py-1 text-xs font-semibold text-[var(--m-ink)]">
+                                  I&apos;m on my way
+                                </button>
+                                <button type="button" onClick={() => sendPresence('arrived')} className="rounded-full bg-[var(--m-green-soft)] px-3 py-1 text-xs font-semibold text-[var(--m-ink)]">
+                                  I&apos;m here
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <button type="button" onClick={openMeetupPicker} className="rounded-full bg-[var(--m-green-soft)] px-3 py-1 text-xs font-semibold text-[var(--m-ink)]">
+                            Schedule meetup
+                          </button>
+                        )}
+
+                        {selectedConversation.listingSellerId === currentUserId ? (
+                          !transaction.sellerConfirmedAt ? (
+                            <button
+                              type="button"
+                              disabled={confirmingCompletion}
+                              onClick={handleConfirmCompletion}
+                              className="rounded-full px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                              style={{ background: 'var(--m-ink)' }}
+                            >
+                              Mark exchange complete
+                            </button>
+                          ) : !transaction.buyerConfirmedAt ? (
+                            <p className="text-xs" style={{ color: 'var(--m-muted)' }}>Waiting for {selectedConversation.peerLabel} to confirm…</p>
+                          ) : null
+                        ) : transaction.sellerConfirmedAt && !transaction.buyerConfirmedAt ? (
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-medium" style={{ color: 'var(--m-ink)' }}>Did you receive the item?</p>
+                            <button
+                              type="button"
+                              disabled={confirmingCompletion}
+                              onClick={handleConfirmCompletion}
+                              className="rounded-full px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                              style={{ background: 'var(--m-green)' }}
+                            >
+                              Confirm
+                            </button>
+                          </div>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                ) : null}
+
+                {showMeetupPicker && transaction ? (
+                  <form onSubmit={handleProposeMeetup} className="mt-3 space-y-2 rounded-xl border bg-[var(--m-soft)] p-3" style={{ borderColor: 'var(--m-line)' }}>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="mb-1 block text-xs font-medium" style={{ color: 'var(--m-ink)' }}>Campus</label>
+                        <select
+                          value={meetupCampus}
+                          onChange={(e) => {
+                            const campus = e.target.value as CampusLocation
+                            setMeetupCampus(campus)
+                            setMeetupZone(CAMPUS_ZONE_MAP[campus][0] as PickupZone)
+                          }}
+                          className="ui-input"
+                        >
+                          {Object.keys(CAMPUS_ZONE_MAP).map((campus) => (
+                            <option key={campus} value={campus}>{LOCATION_LABELS[campus as CampusLocation]}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium" style={{ color: 'var(--m-ink)' }}>Location</label>
+                        <select value={meetupZone} onChange={(e) => setMeetupZone(e.target.value as PickupZone)} className="ui-input">
+                          {CAMPUS_ZONE_MAP[meetupCampus].map((zone) => (
+                            <option key={zone} value={zone}>{PICKUP_ZONE_LABELS[zone as PickupZone]}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="mb-1 block text-xs font-medium" style={{ color: 'var(--m-ink)' }}>Date</label>
+                        <input type="date" value={meetupDate} onChange={(e) => setMeetupDate(e.target.value)} className="ui-input" required />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium" style={{ color: 'var(--m-ink)' }}>Time</label>
+                        <input type="time" value={meetupTimeInput} onChange={(e) => setMeetupTimeInput(e.target.value)} className="ui-input" required />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button type="submit" disabled={schedulingMeetup} className="ui-btn-primary">
+                        {schedulingMeetup ? 'Proposing…' : 'Propose meetup'}
+                      </button>
+                      <button type="button" onClick={() => setShowMeetupPicker(false)} className="text-xs" style={{ color: 'var(--m-muted)' }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
 
                 <form
                   className="mt-3 flex gap-2 border-t pt-3"
