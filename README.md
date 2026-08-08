@@ -83,9 +83,7 @@ This repository is public — do not commit real credentials here. Create your o
 
 The Supabase schema is in `supabase/`. If you need to reset and recreate the database:
 
-1. Run `supabase/schema.sql` in the Supabase SQL Editor
-2. Run `supabase/schema-addons.sql` (RPC + DB constraints)
-3. Run `supabase/schema-security.sql` (RLS + function security)
+Run every file in `supabase/migrations/` against the Supabase SQL Editor, in filename order (they're timestamp-prefixed). Never edit a migration that has already shipped — add a new one instead.
 
 ---
 
