@@ -22,6 +22,7 @@ import {
   listingsFindByIds,
   listingsCreate,
   usersFindById,
+  matchNewListingToDemand,
 } from '@/lib/data/supabaseDataAccess'
 
 // Opaque cursor: base64 of {"value": string|number, "id": string}, where
@@ -193,6 +194,10 @@ export async function POST(request: NextRequest) {
       coverImageUrl: listingInput.coverImageUrl,
       tags: listingInput.tags,
       status: 'available',
+    })
+
+    await matchNewListingToDemand(listing).catch((matchError) => {
+      console.error('matchNewListingToDemand error:', matchError)
     })
 
     return NextResponse.json(listing)

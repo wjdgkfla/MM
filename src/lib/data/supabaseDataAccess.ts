@@ -37,7 +37,7 @@ import {
   getDefaultListingExpiry,
   shouldCreatePriceDropNotification,
 } from '@/lib/marketplaceLifecycle'
-import { recoverConversationSummariesFromMessages } from '@/lib/readState'
+import { conversationUnreadCount, recoverConversationSummariesFromMessages } from '@/lib/readState'
 import { wilsonScore } from '@/lib/trust'
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -900,23 +900,6 @@ export async function messagesCounterOffer(
   return created
 }
 
-async function messagesUnreadCountForThread(
-  listingId: string,
-  userId: string,
-  lastReadAt?: string | null
-): Promise<number> {
-  let q = getSupabaseAdmin()
-    .from('messages')
-    .select('*', { count: 'exact', head: true })
-    .eq('listing_id', listingId)
-    .eq('to_user_id', userId)
-
-  if (lastReadAt) q = q.gt('created_at', lastReadAt)
-
-  const { count, error } = await q
-  return error ? 0 : count ?? 0
-}
-
 async function createMessageNotification(
   input: Omit<Message, 'id' | 'createdAt'>,
   messageId: string,
@@ -979,14 +962,37 @@ export async function conversationsListByUser(userId: string) {
         return !blockedIds.has(peerId)
       })
 
-  return Promise.all(visibleRows.map(async (row) => {
+  // Single batched query for unread counts across every conversation instead
+  // of one count query per row (P1-2) — mirrors the in-memory counting
+  // readState.conversationUnreadCount already uses for the legacy-recovery path.
+  const conversationIds = visibleRows.map((row) => String(row.id))
+  const { data: incomingRows } = await db
+    .from('messages')
+    .select('conversation_id, to_user_id, created_at')
+    .eq('to_user_id', userId)
+    .in('conversation_id', conversationIds)
+
+  const messagesByConversation = new Map<string, { toUserId: string; createdAt: string }[]>()
+  for (const message of (incomingRows as Record<string, unknown>[]) || []) {
+    const conversationId = String(message.conversation_id)
+    const list = messagesByConversation.get(conversationId) || []
+    list.push({ toUserId: String(message.to_user_id), createdAt: String(message.created_at) })
+    messagesByConversation.set(conversationId, list)
+  }
+
+  return visibleRows.map((row) => {
+    const id = String(row.id)
     const listingId = String(row.listing_id)
     const buyerId = String(row.buyer_id)
     const sellerId = String(row.seller_id)
     const lastReadAt = userId === buyerId ? row.buyer_last_read_at : row.seller_last_read_at
-    const unreadCount = await messagesUnreadCountForThread(listingId, userId, lastReadAt ? String(lastReadAt) : null)
+    const unreadCount = conversationUnreadCount(
+      messagesByConversation.get(id) || [],
+      userId,
+      lastReadAt ? String(lastReadAt) : null
+    )
     return {
-      id: String(row.id),
+      id,
       listingId,
       participantIds: Array.isArray(row.participant_ids)
         ? (row.participant_ids as [string, string])
@@ -995,7 +1001,7 @@ export async function conversationsListByUser(userId: string) {
       lastMessageAt: row.updated_at ? new Date(String(row.updated_at)).toISOString() : new Date().toISOString(),
       unreadCount,
     }
-  }))
+  })
 }
 
 export async function conversationsMarkRead(conversationId: string, userId: string): Promise<boolean> {
@@ -1116,16 +1122,42 @@ export async function savedSearchesListByUser(userId: string): Promise<SavedSear
   return ((data || []) as Record<string, unknown>[]).map(rowToSavedSearch)
 }
 
+// Stable JSON stringify (sorted keys) so the same query/filters always
+// canonicalize to the same key regardless of key insertion order.
+function canonicalizeSavedSearch(query: string, filters: Record<string, unknown>): string {
+  const sortedFilters = Object.keys(filters)
+    .filter((key) => filters[key] !== '' && filters[key] != null && filters[key] !== false)
+    .sort()
+    .reduce((acc, key) => {
+      acc[key] = filters[key]
+      return acc
+    }, {} as Record<string, unknown>)
+  return `${query.trim().toLowerCase()}|${JSON.stringify(sortedFilters)}`
+}
+
 export async function savedSearchesCreate(input: CreateSavedSearchInput): Promise<SavedSearch> {
-  const id = nanoid()
-  const { data, error } = await getSupabaseAdmin()
+  const normalizedKey = canonicalizeSavedSearch(input.query, input.filters)
+  const db = getSupabaseAdmin()
+
+  // Dedup on (user_id, normalized_key): if this user already saved the same
+  // query/filters, return the existing row instead of inserting a duplicate.
+  const { data: existing } = await db
+    .from('saved_searches')
+    .select('*')
+    .eq('user_id', input.userId)
+    .eq('normalized_key', normalizedKey)
+    .single()
+  if (existing) return rowToSavedSearch(existing as Record<string, unknown>)
+
+  const { data, error } = await db
     .from('saved_searches')
     .insert({
-      id,
+      id: nanoid(),
       user_id: input.userId,
       label: input.label,
       query: input.query,
       filters: input.filters,
+      normalized_key: normalizedKey,
       created_at: new Date().toISOString(),
     })
     .select()
@@ -1202,6 +1234,93 @@ async function notifyPriceWatchers(listing: Listing, previousPrice: number): Pro
     })
     await priceWatchesUpsert(watch.userId, listing.id, listing.price)
   }))
+}
+
+// Demand matching (P1-11/P1-12) — on a new sell listing, scan active wanted
+// listings and saved searches for a match and notify. A single-listing scan
+// against existing demand on creation, not a reverse index of every search
+// against every listing.
+// ponytail: O(active wanted + active saved searches) scan per new listing.
+// Fine at this app's scale — move to normalized matching keys / an indexed
+// job if either table grows large enough for this to show up in latency.
+
+async function notifyWantedMatches(listing: Listing): Promise<void> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('listings')
+    .select('*')
+    .eq('listing_kind', 'wanted')
+    .eq('status', 'available')
+    .eq('category', listing.category)
+    .in('moderation_state', ['visible', 'flagged'])
+    .is('deleted_at', null)
+    .neq('seller_id', listing.sellerId)
+    .gte('price', listing.price) // wanted listing's price doubles as the buyer's budget ceiling
+  if (error || !data) return
+
+  await Promise.all((data as Record<string, unknown>[]).map((row) => {
+    const wanted = rowToListing(row)
+    return notificationsCreate({
+      userId: wanted.sellerId,
+      type: 'wanted-match',
+      title: 'A listing matching what you want was just posted',
+      body: `${listing.title} — $${listing.price} matches your "${wanted.title}" wanted post.`,
+      link: `/item/${listing.id}`,
+      meta: { listingId: listing.id, wantedListingId: wanted.id },
+    }).catch((err) => console.error('notifyWantedMatches notificationsCreate error:', err))
+  }))
+}
+
+function savedSearchMatchesListing(search: SavedSearch, listing: Listing): boolean {
+  const filters = search.filters || {}
+  if (filters.category && filters.category !== listing.category) return false
+  if (filters.campusLocation && filters.campusLocation !== listing.campusLocation) return false
+  if (filters.pickupZone && filters.pickupZone !== listing.pickupZone) return false
+  if (filters.condition && filters.condition !== listing.condition) return false
+  if (filters.listingKind && filters.listingKind !== listing.listingKind) return false
+  if (filters.freeOnly && listing.price !== 0) return false
+  if (filters.minPrice != null && filters.minPrice !== '' && listing.price < Number(filters.minPrice)) return false
+  if (filters.maxPrice != null && filters.maxPrice !== '' && listing.price > Number(filters.maxPrice)) return false
+  if (filters.courseTag) {
+    const tag = String(filters.courseTag).toLowerCase().replace(/[^a-z0-9]/g, '')
+    const haystack = `${listing.courseCode || ''}${listing.tags.join('')}`.toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (tag && !haystack.includes(tag)) return false
+  }
+  if (search.query.trim()) {
+    const terms = search.query.toLowerCase().trim().split(/\s+/).filter(Boolean)
+    const haystack = `${listing.title} ${listing.description} ${listing.courseCode || ''}`.toLowerCase()
+    if (!terms.every((term) => haystack.includes(term))) return false
+  }
+  return true
+}
+
+async function notifySavedSearchMatches(listing: Listing): Promise<void> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('saved_searches')
+    .select('*')
+    .neq('user_id', listing.sellerId)
+  if (error || !data) return
+
+  const matches = (data as Record<string, unknown>[])
+    .map(rowToSavedSearch)
+    .filter((search) => savedSearchMatchesListing(search, listing))
+
+  await Promise.all(matches.map((search) =>
+    notificationsCreate({
+      userId: search.userId,
+      type: 'saved-search-match',
+      title: 'New match for your saved search',
+      body: `${listing.title} — $${listing.price} matches "${search.label}".`,
+      link: `/item/${listing.id}`,
+      meta: { listingId: listing.id, savedSearchId: search.id },
+    }).catch((err) => console.error('notifySavedSearchMatches notificationsCreate error:', err))
+  ))
+}
+
+// Called fire-and-forget (caller awaits + .catch's) right after a sell
+// listing is created — mirrors notifyPriceWatchers' best-effort pattern.
+export async function matchNewListingToDemand(listing: Listing): Promise<void> {
+  if (listing.listingKind !== 'sell') return
+  await Promise.all([notifyWantedMatches(listing), notifySavedSearchMatches(listing)])
 }
 
 // ─── Reports ───────────────────────────────────────────────────────────────

@@ -83,6 +83,8 @@ function HomeContent() {
   const [cursor, setCursor]           = useState<string | null>(null)
   const [hasMore, setHasMore]         = useState(true)
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({})
+  const [notifyMeSaved, setNotifyMeSaved] = useState(false)
+  const [notifyMeSaving, setNotifyMeSaving] = useState(false)
   // Bumped every time the main filter/search/sort fetch starts. loadMore and
   // the main fetch itself check this before applying their response, so a
   // slow request whose filters have since changed can't clobber newer state.
@@ -139,6 +141,21 @@ function HomeContent() {
     })
   }
 
+  const notifyMe = async () => {
+    if (!session) { router.push('/sign-in?redirect=/'); return }
+    setNotifyMeSaving(true)
+    try {
+      await fetch('/api/saved-searches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label: search, query: search, filters: {} }),
+      })
+      setNotifyMeSaved(true)
+    } finally {
+      setNotifyMeSaving(false)
+    }
+  }
+
   const handleToggleFavorite = (listingId: string) => {
     if (!session) { router.push('/sign-in?redirect=/'); return }
     toggleFavorite(listingId)
@@ -185,6 +202,7 @@ function HomeContent() {
     setHasMore(true)
     setLoading(true)
     setFetchError('')
+    setNotifyMeSaved(false)
     fetch(`/api/listings?${buildParams(null).toString()}`)
       .then(res => {
         if (!res.ok) throw new Error(`Server error ${res.status}`)
@@ -196,14 +214,6 @@ function HomeContent() {
         setListings(result)
         setCursor(data?.nextCursor ?? null)
         setHasMore(Boolean(data?.nextCursor))
-        // Auto-save zero-result searches for logged-in users (notified when a match appears)
-        if (result.length === 0 && search && session) {
-          fetch('/api/saved-searches', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ label: search, query: search, filters: {} }),
-          }).catch(() => {})
-        }
       })
       .catch(() => {
         if (requestIdRef.current === requestId) setFetchError('Failed to load listings. Check your connection and try again.')
@@ -388,12 +398,12 @@ function HomeContent() {
                 {search ? (
                   <>
                     <p className="text-[16px] font-bold" style={{ color: 'var(--m-ink)' }}>
-                      No results for &ldquo;{search}&rdquo;
+                      No listings yet for &ldquo;{search}&rdquo;
                     </p>
                     <p className="mt-1.5 text-[13px]" style={{ color: 'var(--m-muted)' }}>
                       Nobody has listed that yet — post a Wanted to let sellers know you&apos;re looking.
                     </p>
-                    <div className="mt-5 flex justify-center gap-3">
+                    <div className="mt-5 flex flex-wrap justify-center gap-3">
                       <a
                         href={`/sell?kind=wanted&q=${encodeURIComponent(search)}`}
                         className="flex h-10 items-center gap-1.5 rounded-full px-4 text-[13px] font-bold text-white transition-opacity hover:opacity-90"
@@ -401,6 +411,15 @@ function HomeContent() {
                       >
                         + Post Wanted
                       </a>
+                      <button
+                        type="button"
+                        onClick={notifyMe}
+                        disabled={notifyMeSaving || notifyMeSaved}
+                        className="flex h-10 items-center gap-1.5 rounded-full border px-4 text-[13px] font-semibold disabled:opacity-60"
+                        style={{ borderColor: 'var(--m-line)', color: 'var(--m-ink)' }}
+                      >
+                        {notifyMeSaved ? "You'll be notified" : notifyMeSaving ? 'Saving…' : 'Notify me when one is posted'}
+                      </button>
                       <button type="button" onClick={clearAll} className="flex h-10 items-center rounded-full border px-4 text-[13px] font-semibold" style={{ borderColor: 'var(--m-line)', color: 'var(--m-ink)' }}>
                         Clear search
                       </button>

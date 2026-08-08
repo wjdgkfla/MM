@@ -163,6 +163,7 @@ export type NotificationType =
   | 'meetup-update'
   | 'price-drop'
   | 'saved-search-match'
+  | 'wanted-match'
   | 'listing-expiry'
   | 'moderation'
   | 'account'
