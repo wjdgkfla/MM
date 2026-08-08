@@ -668,6 +668,10 @@ export default function ItemPageClient() {
               Listed at{' '}
               <span className="font-semibold text-[var(--m-green)]">{priceLabel}</span>. Enter your offer below.
             </p>
+            <p className="mt-2 flex items-start gap-1.5 text-xs text-[var(--m-muted)]">
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+              Meet on campus in a public spot, and check the item before paying.
+            </p>
             <form onSubmit={handleMakeOffer} className="mt-4 space-y-4">
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--m-muted)]">$</span>
