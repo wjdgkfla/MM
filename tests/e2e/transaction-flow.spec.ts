@@ -39,7 +39,11 @@ test.describe('buyer/seller transaction flow', () => {
     await page.getByRole('button', { name: /post listing/i }).first().click()
 
     await expect(page).toHaveURL(/\/my-listings\/.+\/edit\?posted=1/)
-    listingUrl = page.url().replace(/\/edit\?posted=1$/, '')
+    // The post-creation redirect is the seller-only edit page
+    // (/my-listings/{id}/edit) — the public listing page buyers browse is
+    // /item/{id}, a different route entirely.
+    const listingId = page.url().match(/\/my-listings\/([^/]+)\/edit/)![1]
+    listingUrl = `/item/${listingId}`
 
     await context.close()
   })
@@ -144,7 +148,12 @@ test.describe('buyer/seller transaction flow', () => {
     await expect(buyerPage.getByText('Did you receive the item?')).toBeVisible()
     await buyerPage.getByRole('button', { name: 'Confirm' }).click()
 
-    await expect(buyerPage.getByText(/transaction completed/i)).toBeVisible()
+    // Two elements legitimately match /transaction completed/i here: the
+    // persistent status line ("Transaction completed on ...") and a
+    // transient success toast ("Transaction completed!") — .first() is
+    // enough to prove completion landed without racing the toast's
+    // auto-dismiss.
+    await expect(buyerPage.getByText(/transaction completed/i).first()).toBeVisible()
     await buyerContext.close()
   })
 

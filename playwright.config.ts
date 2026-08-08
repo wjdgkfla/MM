@@ -1,4 +1,19 @@
 import { defineConfig, devices } from '@playwright/test'
+import { loadEnvConfig } from '@next/env'
+
+// `next dev` loads .env.local automatically; this config runs as a plain
+// Node process outside Next's runtime (global-setup.ts needs
+// SUPABASE_SERVICE_ROLE_KEY before the dev server even starts), so it has
+// to load the same file itself. @next/env is already a transitive
+// dependency of Next.js — reusing it instead of adding a new one.
+loadEnvConfig(process.cwd())
+
+// Computed once here (main process, loaded before workers spawn) and
+// inherited by every worker/global-setup/global-teardown process. Without
+// this, tests/e2e/utils/testUsers.ts's `Date.now().toString(36)` fallback
+// produces a different run ID per process, so global-setup creates users
+// under one email and the spec files look for a different one.
+process.env.PLAYWRIGHT_RUN_ID = process.env.PLAYWRIGHT_RUN_ID || Date.now().toString(36)
 
 // E2E tests need a real dev server + a real (or seeded) Supabase project —
 // see tests/e2e/README.md. `npm run test:e2e` starts `next dev` for you.

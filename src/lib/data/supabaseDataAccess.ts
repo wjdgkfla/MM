@@ -362,16 +362,21 @@ export async function listingsFindByIds(ids: string[]): Promise<Listing[]> {
 // One grouped COUNT query for the number of visible, non-sold listings per
 // category — backs SubNavRail hiding pills for categories with no listings.
 export async function listingsCountByCategory(): Promise<Record<string, number>> {
+  // Grouped aggregates (count:id.count()) are disabled on this PostgREST
+  // instance ("Use of aggregate functions is not allowed") — count in JS
+  // instead. Fine at this scale: this is a small campus marketplace, not a
+  // dataset that needs a server-side GROUP BY.
   const { data, error } = await getSupabaseAdmin()
     .from('listings')
-    .select('category, count:id.count()')
+    .select('category')
     .is('deleted_at', null)
     .in('moderation_state', ['visible', 'flagged'])
     .neq('status', 'sold')
   if (error) throw new Error(error.message)
   const counts: Record<string, number> = {}
   for (const row of (data || []) as Record<string, unknown>[]) {
-    counts[String(row.category)] = Number(row.count) || 0
+    const category = String(row.category)
+    counts[category] = (counts[category] || 0) + 1
   }
   return counts
 }
