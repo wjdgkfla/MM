@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { Listing, CONDITION_LABELS, PICKUP_ZONE_LABELS } from '@/lib/types'
 import { formatRecency } from '@/lib/time'
+import { badgeToneByTrust, trustBadgeLabel } from '@/lib/trust'
 
 interface ListingCardProps {
   listing: Listing
@@ -44,6 +45,8 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
   const bg          = CAT_BG[listing.category] || CAT_BG.other
   const initials    = getInitials(listing.sellerProfile?.displayName || '?')
   const photoCount  = listing.imageUrls.filter(Boolean).length
+  const trustBadge  = listing.sellerProfile?.trustBadge
+  const showTrustBadge = trustBadge === 'verified-gmu' || trustBadge === 'trusted-seller'
 
   return (
     <article
@@ -187,28 +190,37 @@ export function ListingCard({ listing, isSaved = false, onToggleSave }: ListingC
           </span>
         </div>
 
-        {/* Seller avatar — links to the seller page (was hover-only tooltip, dead on touch) */}
-        {initials && (
-          <Link
-            href={`/seller/${listing.sellerId}`}
-            onMouseEnter={() => setSellerHovered(true)}
-            onMouseLeave={() => setSellerHovered(false)}
-            className="relative flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
-            style={{ background: 'var(--m-ink)' }}
-            title={listing.sellerProfile?.displayName}
-          >
-            {initials}
-            {/* Tooltip */}
-            {sellerHovered && listing.sellerProfile?.displayName && (
-              <div
-                className="pointer-events-none absolute bottom-full right-0 mb-1.5 whitespace-nowrap rounded-lg px-2 py-1 text-[11px] font-medium text-white"
-                style={{ background: 'rgba(0,0,0,0.8)' }}
-              >
-                {listing.sellerProfile.displayName}
-              </div>
-            )}
-          </Link>
-        )}
+        <div className="flex items-center gap-1.5">
+          {/* Verified/trusted badge — surfaced here, not just on the seller's own page */}
+          {showTrustBadge && trustBadge && (
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeToneByTrust[trustBadge]}`}>
+              {trustBadgeLabel(trustBadge)}
+            </span>
+          )}
+
+          {/* Seller avatar — links to the seller page (was hover-only tooltip, dead on touch) */}
+          {initials && (
+            <Link
+              href={`/seller/${listing.sellerId}`}
+              onMouseEnter={() => setSellerHovered(true)}
+              onMouseLeave={() => setSellerHovered(false)}
+              className="relative flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
+              style={{ background: 'var(--m-ink)' }}
+              title={listing.sellerProfile?.displayName}
+            >
+              {initials}
+              {/* Tooltip */}
+              {sellerHovered && listing.sellerProfile?.displayName && (
+                <div
+                  className="pointer-events-none absolute bottom-full right-0 mb-1.5 whitespace-nowrap rounded-lg px-2 py-1 text-[11px] font-medium text-white"
+                  style={{ background: 'rgba(0,0,0,0.8)' }}
+                >
+                  {listing.sellerProfile.displayName}
+                </div>
+              )}
+            </Link>
+          )}
+        </div>
       </div>
     </article>
   )
