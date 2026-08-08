@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   title: 'Mason Market | Buy & Sell at George Mason University',
   description:
     'The trusted student marketplace for George Mason University. Buy and sell textbooks, electronics, furniture, and more — safely on campus.',
-  metadataBase: new URL('https://mason-market.vercel.app'),
+  metadataBase: new URL('https://masonmarket-seven.vercel.app'),
   openGraph: {
     title: 'Mason Market | GMU Student Marketplace',
     description:
