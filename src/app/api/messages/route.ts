@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { isValidEntityId } from '@/lib/validators'
-import { MEETUP_STATUSES, PICKUP_ZONES } from '@/lib/types'
+import { MEETUP_STATUSES, PICKUP_ZONES, PRESENCE_STATUSES } from '@/lib/types'
 import {
   listingsFindById,
   messagesListByListing,
@@ -66,7 +66,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { listingId, toUserId, body: messageBody, type, offerAmount, meetupStatus, meetupZone, meetupTime } = body
+    const {
+      listingId,
+      toUserId,
+      body: messageBody,
+      type,
+      offerAmount,
+      meetupStatus,
+      meetupZone,
+      meetupTime,
+      presenceStatus,
+    } = body
 
     if (!listingId || !toUserId || !messageBody) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -96,6 +106,9 @@ export async function POST(request: NextRequest) {
       if (meetupTime !== undefined && Number.isNaN(Date.parse(String(meetupTime)))) {
         return NextResponse.json({ error: 'Invalid meetupTime' }, { status: 400 })
       }
+    }
+    if (presenceStatus !== undefined && !PRESENCE_STATUSES.includes(presenceStatus)) {
+      return NextResponse.json({ error: 'Invalid presenceStatus' }, { status: 400 })
     }
 
     const listing = await listingsFindById(String(listingId))
@@ -154,9 +167,12 @@ export async function POST(request: NextRequest) {
       type: isOffer ? 'offer' : isMeetup ? 'meetup' : 'text',
       offerAmount: isOffer ? Number(offerAmount) : undefined,
       offerStatus: isOffer ? 'pending' : undefined,
+      // 48h default so a pending offer doesn't stay actionable indefinitely.
+      expiresAt: isOffer ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() : undefined,
       meetupStatus: isMeetup ? meetupStatus : undefined,
       meetupZone: isMeetup ? meetupZone : undefined,
       meetupTime: isMeetup ? meetupTime : undefined,
+      presenceStatus: presenceStatus || undefined,
     })
 
     // Fire push notification to recipient (non-blocking)

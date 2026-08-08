@@ -4,7 +4,7 @@ import { ListingCard } from '@/components/ListingCard'
 import { SellerTrustCard } from '@/components/SellerTrustCard'
 import { SellerRating } from '@/components/SellerRating'
 import { formatPostedDate, formatRecency } from '@/lib/time'
-import { usersFindById, listingsFindBySellerId } from '@/lib/data/supabaseDataAccess'
+import { usersFindById, listingsFindBySellerId, usersReputationSummary } from '@/lib/data/supabaseDataAccess'
 
 export default async function SellerProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -14,6 +14,7 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
     notFound()
   }
 
+  const reputation = await usersReputationSummary(seller.id)
   const allSellerListings = await listingsFindBySellerId(seller.id)
   const activeListings = allSellerListings.filter(
     (listing) => listing.moderationState !== 'hidden' && listing.status !== 'sold'
@@ -36,7 +37,7 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
         ) : null}
 
         <div className="mt-5">
-          <SellerTrustCard seller={seller} sellerListingCount={activeListings.length} />
+          <SellerTrustCard seller={seller} sellerListingCount={activeListings.length} reputation={reputation} />
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -55,8 +56,8 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
         </div>
 
         <div className="mt-5 border-t pt-5" style={{ borderColor: 'var(--m-line)' }}>
-          <h2 className="mb-3 text-sm font-semibold" style={{ color: 'var(--m-ink)' }}>Manner temperature</h2>
-          <SellerRating sellerId={seller.id} />
+          <h2 className="mb-3 text-sm font-semibold" style={{ color: 'var(--m-ink)' }}>Reputation</h2>
+          <SellerRating sellerId={seller.id} completedTransactionCount={reputation.completedTransactionCount} />
         </div>
       </div>
 

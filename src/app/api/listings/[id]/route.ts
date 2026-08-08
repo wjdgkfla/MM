@@ -12,6 +12,9 @@ import {
   listingsRemove,
   listingsIncrementViewCount,
   usersFindById,
+  usersReputationSummary,
+  transactionsFindByListingId,
+  ratingsFindByReviewerAndTransaction,
 } from '@/lib/data/supabaseDataAccess'
 
 export async function GET(
@@ -42,13 +45,32 @@ export async function GET(
     const sellerListingCount = sellerListings.filter(
       (l) => l.moderationState !== 'hidden' && l.status !== 'sold'
     ).length
+    const sellerReputation = await usersReputationSummary(listing.sellerId)
+
+    // Reviewable transaction for the signed-in user on this listing (P0-4):
+    // the most recent completed transaction where they were a participant
+    // and haven't already reviewed it. Drives whether the item page shows
+    // "rate this trade" for either the buyer or the seller side.
+    let myReview: { transactionId: string; eligible: boolean } | null = null
+    if (session) {
+      const transactions = await transactionsFindByListingId(id)
+      const myTransaction = transactions.find(
+        (t) =>
+          t.status === 'completed' &&
+          (t.buyerId === session.userId || t.sellerId === session.userId)
+      )
+      if (myTransaction) {
+        const existingReview = await ratingsFindByReviewerAndTransaction(session.userId, myTransaction.id)
+        myReview = { transactionId: myTransaction.id, eligible: !existingReview }
+      }
+    }
 
     // Fire-and-forget view count increment — skip for the seller viewing their own listing
     if (!session || session.userId !== listing.sellerId) {
       listingsIncrementViewCount(id)
     }
 
-    return NextResponse.json({ listing, seller: seller || null, sellerListingCount })
+    return NextResponse.json({ listing, seller: seller || null, sellerListingCount, sellerReputation, myReview })
   } catch (err) {
     console.error('GET /api/listings/[id] error:', err)
     return NextResponse.json({ error: 'Failed to load listing' }, { status: 500 })

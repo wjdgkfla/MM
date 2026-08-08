@@ -133,9 +133,11 @@ export interface User {
 }
 
 export type MessageType = 'text' | 'offer' | 'meetup'
-export type OfferStatus = 'pending' | 'accepted' | 'declined'
+export type OfferStatus = 'pending' | 'accepted' | 'declined' | 'withdrawn' | 'superseded'
 export const MEETUP_STATUSES = ['proposed', 'confirmed', 'rescheduled', 'cancelled', 'completed'] as const
 export type MeetupStatus = (typeof MEETUP_STATUSES)[number]
+export const PRESENCE_STATUSES = ['on_the_way', 'arrived'] as const
+export type PresenceStatus = (typeof PRESENCE_STATUSES)[number]
 
 export interface Message {
   id: string
@@ -146,9 +148,12 @@ export interface Message {
   type?: MessageType
   offerAmount?: number
   offerStatus?: OfferStatus
+  parentOfferMessageId?: string
+  expiresAt?: string
   meetupStatus?: MeetupStatus
   meetupZone?: PickupZone
   meetupTime?: string
+  presenceStatus?: PresenceStatus
   createdAt: string
 }
 
@@ -206,6 +211,9 @@ export interface Rating {
   sellerId: string
   buyerId: string
   listingId: string
+  transactionId: string
+  reviewerId: string
+  revieweeId: string
   score: RatingScore
   tags: RatingTag[]
   createdAt: string

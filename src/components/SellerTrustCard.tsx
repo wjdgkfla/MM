@@ -1,14 +1,21 @@
 import { User } from '@/lib/types'
 import { formatPostedDate, formatRecency } from '@/lib/time'
 import { LOCATION_LABELS } from '@/lib/types'
-import { badgeToneByTrust, trustBadgeLabel, mannerTemperature } from '@/lib/trust'
+import { badgeToneByTrust, trustBadgeLabel, reputationLabel, ReputationStats } from '@/lib/trust'
 
 interface SellerTrustCardProps {
   seller: User | null
   sellerListingCount?: number
+  reputation?: ReputationStats
 }
 
-export function SellerTrustCard({ seller, sellerListingCount = 0 }: SellerTrustCardProps) {
+const EMPTY_REPUTATION: ReputationStats = {
+  completedTransactionCount: 0,
+  reviewCount: 0,
+  positiveReviewPercentage: 0,
+}
+
+export function SellerTrustCard({ seller, sellerListingCount = 0, reputation = EMPTY_REPUTATION }: SellerTrustCardProps) {
   if (!seller) {
     return (
       <section className="rounded-[var(--r-lg)] border border-[var(--m-line)] bg-white p-5 sm:p-6">
@@ -33,19 +40,15 @@ export function SellerTrustCard({ seller, sellerListingCount = 0 }: SellerTrustC
         </span>
       </div>
 
-      {seller.reputationScore < 0 && (
+      {reputation.reviewCount > 0 && reputation.positiveReviewPercentage < 50 && (
         <p className="mb-3 rounded-lg px-3 py-2 text-xs font-medium" style={{ background: 'var(--m-gold-soft)', color: 'var(--m-gold-text)' }}>
           ⚠ This seller&apos;s previous trades received below-average ratings.
         </p>
       )}
 
-      <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-        <div className="rounded-xl bg-[var(--m-soft)] p-3 text-center">
-          <p className="font-semibold" style={{ color: mannerTemperature(seller.reputationScore) >= 36.5 ? 'var(--m-green)' : 'var(--m-gold-text)' }}>
-            {mannerTemperature(seller.reputationScore)}°
-          </p>
-          <p className="text-xs text-[var(--m-muted)]">Manner temp</p>
-        </div>
+      <p className="mt-3 text-sm font-medium text-[var(--m-ink)]">{reputationLabel(reputation)}</p>
+
+      <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
         <div className="rounded-xl bg-[var(--m-soft)] p-3 text-center">
           <p className="font-semibold text-[var(--m-ink)]">{seller.gmuEmailVerified ? 'Yes' : 'No'}</p>
           <p className="text-xs text-[var(--m-muted)]">Campus Verified</p>

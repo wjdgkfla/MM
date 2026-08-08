@@ -13,6 +13,7 @@ import {
   RatingScore,
   RatingTag,
   Notification,
+  PickupZone,
   PriceWatch,
   Report,
   ReportStatus,
@@ -37,6 +38,7 @@ import {
   shouldCreatePriceDropNotification,
 } from '@/lib/marketplaceLifecycle'
 import { recoverConversationSummariesFromMessages } from '@/lib/readState'
+import { wilsonScore } from '@/lib/trust'
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -150,9 +152,12 @@ function rowToMessage(row: Record<string, unknown>): Message {
     type: row.type === 'offer' ? 'offer' : row.type === 'meetup' ? 'meetup' : 'text',
     offerAmount: row.offer_amount != null ? Number(row.offer_amount) : undefined,
     offerStatus: row.offer_status ? (row.offer_status as Message['offerStatus']) : undefined,
+    parentOfferMessageId: row.parent_offer_message_id ? String(row.parent_offer_message_id) : undefined,
+    expiresAt: row.expires_at ? new Date(String(row.expires_at)).toISOString() : undefined,
     meetupStatus: row.meetup_status ? (row.meetup_status as Message['meetupStatus']) : undefined,
     meetupZone: row.meetup_zone ? (row.meetup_zone as Message['meetupZone']) : undefined,
     meetupTime: row.meetup_time ? new Date(String(row.meetup_time)).toISOString() : undefined,
+    presenceStatus: row.presence_status ? (row.presence_status as Message['presenceStatus']) : undefined,
     createdAt: row.created_at ? new Date(String(row.created_at)).toISOString() : new Date().toISOString(),
   }
 }
@@ -225,6 +230,9 @@ function rowToRating(row: Record<string, unknown>): Rating {
     sellerId: String(row.seller_id || ''),
     buyerId: String(row.buyer_id || ''),
     listingId: String(row.listing_id || ''),
+    transactionId: String(row.transaction_id || ''),
+    reviewerId: String(row.reviewer_id || ''),
+    revieweeId: String(row.reviewee_id || ''),
     score: Number(row.score) === -1 ? -1 : 1,
     tags: Array.isArray(row.tags) ? (row.tags as RatingTag[]) : [],
     createdAt: row.created_at ? new Date(String(row.created_at)).toISOString() : new Date().toISOString(),
@@ -638,16 +646,20 @@ export async function usersUpdateProfile(id: string, input: UpdateProfileInput):
   return rowToUser(data as Record<string, unknown>)
 }
 
-export async function usersAdjustReputationScore(userId: string, delta: number): Promise<void> {
-  // Atomic RPC (UPDATE ... SET x = x + delta) — a plain select-then-update
-  // here would race when two ratings for the same seller land close
-  // together, silently dropping one rating's effect on the score.
-  const { error } = await getSupabaseAdmin().rpc('adjust_reputation_score', {
-    user_id: userId,
-    delta,
-  })
+// Recomputes reputation_score from scratch (Wilson-score lower bound over
+// all reviews received) rather than applying an incremental delta — P0-5
+// replaces the old price-weighted adjust_reputation_score RPC. Recomputing
+// from the full review set is idempotent, so concurrent calls converging on
+// a stale/overwritten value (unlike a delta) don't compound an error.
+export async function usersRecomputeReputationScore(userId: string): Promise<void> {
+  const { positive, total } = await ratingsCountsForReviewee(userId)
+  const score = wilsonScore(positive, total)
+  const { error } = await getSupabaseAdmin()
+    .from('users')
+    .update({ reputation_score: score })
+    .eq('id', userId)
   if (error) {
-    console.error(`usersAdjustReputationScore(${userId}) rpc error:`, error.message)
+    console.error(`usersRecomputeReputationScore(${userId}) update error:`, error.message)
   }
 }
 
@@ -709,9 +721,12 @@ export async function messagesCreate(input: Omit<Message, 'id' | 'createdAt'>): 
     type: input.type || 'text',
     offer_amount: input.offerAmount ?? null,
     offer_status: input.offerStatus ?? null,
+    parent_offer_message_id: input.parentOfferMessageId ?? null,
+    expires_at: input.expiresAt ?? null,
     meetup_status: input.meetupStatus ?? null,
     meetup_zone: input.meetupZone ?? null,
     meetup_time: input.meetupTime ?? null,
+    presence_status: input.presenceStatus ?? null,
     created_at: now,
   }
 
@@ -794,19 +809,9 @@ export async function messagesGetInboxByUser(userId: string): Promise<Message[]>
   return (data as Record<string, unknown>[]).map(rowToMessage)
 }
 
-export async function messagesExistsByUserAndListing(userId: string, listingId: string): Promise<boolean> {
-  // Use count query — .single() throws when 0 rows found, which breaks the ratings flow
-  const { count, error } = await getSupabaseAdmin()
-    .from('messages')
-    .select('*', { count: 'exact', head: true })
-    .eq('listing_id', listingId)
-    .eq('from_user_id', userId)
-  return !error && (count ?? 0) > 0
-}
-
 export async function messagesUpdateOfferStatus(
   messageId: string,
-  status: 'accepted' | 'declined'
+  status: 'accepted' | 'declined' | 'withdrawn'
 ): Promise<Message | null> {
   const { data, error } = await getSupabaseAdmin()
     .from('messages')
@@ -816,15 +821,49 @@ export async function messagesUpdateOfferStatus(
     .single()
   if (error || !data) return null
   const updated = rowToMessage(data as Record<string, unknown>)
-  await notificationsCreate({
-    userId: updated.fromUserId,
-    type: 'offer-update',
-    title: status === 'accepted' ? 'Offer accepted' : 'Offer declined',
-    body: status === 'accepted' ? 'Your offer was accepted.' : 'Your offer was declined.',
-    link: `/messages?listingId=${updated.listingId}`,
-    meta: { messageId },
-  }).catch((notifyError) => console.error('offer notification error:', notifyError))
+  // Withdrawal is the buyer acting on their own offer — nothing to notify them of.
+  if (status !== 'withdrawn') {
+    await notificationsCreate({
+      userId: updated.fromUserId,
+      type: 'offer-update',
+      title: status === 'accepted' ? 'Offer accepted' : 'Offer declined',
+      body: status === 'accepted' ? 'Your offer was accepted.' : 'Your offer was declined.',
+      link: `/messages?listingId=${updated.listingId}`,
+      meta: { messageId },
+    }).catch((notifyError) => console.error('offer notification error:', notifyError))
+  }
   return updated
+}
+
+// Atomic counteroffer: supersedes the parent offer and inserts a new pending
+// offer in the same chain via counter_offer(), mirroring accept_offer()'s
+// row-locked read/write pattern so only one offer per chain is ever pending.
+export async function messagesCounterOffer(
+  parentMessageId: string,
+  actorUserId: string,
+  amount: number,
+  body: string
+): Promise<Message> {
+  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
+  const { data, error } = await getSupabaseAdmin().rpc('counter_offer', {
+    parent_message_id: parentMessageId,
+    actor_user_id: actorUserId,
+    new_amount: amount,
+    new_body: body,
+    new_expires_at: expiresAt,
+  })
+  if (error) throw new Error(error.message)
+  const created = await messagesFindById(data as string)
+  if (!created) throw new Error('Counteroffer not found after creation')
+  await notificationsCreate({
+    userId: created.toUserId,
+    type: 'offer-update',
+    title: 'Counteroffer received',
+    body: `New offer: $${amount}`,
+    link: `/messages?listingId=${created.listingId}`,
+    meta: { messageId: created.id },
+  }).catch((notifyError) => console.error('counter-offer notification error:', notifyError))
+  return created
 }
 
 async function messagesUnreadCountForThread(
@@ -1224,6 +1263,9 @@ export async function ratingsCreate(input: {
   sellerId: string
   buyerId: string
   listingId: string
+  transactionId: string
+  reviewerId: string
+  revieweeId: string
   score: RatingScore
   tags: RatingTag[]
 }): Promise<Rating> {
@@ -1235,6 +1277,9 @@ export async function ratingsCreate(input: {
       seller_id: input.sellerId,
       buyer_id: input.buyerId,
       listing_id: input.listingId,
+      transaction_id: input.transactionId,
+      reviewer_id: input.reviewerId,
+      reviewee_id: input.revieweeId,
       score: input.score,
       tags: input.tags,
       created_at: new Date().toISOString(),
@@ -1245,28 +1290,65 @@ export async function ratingsCreate(input: {
   return rowToRating(data as Record<string, unknown>)
 }
 
-export async function ratingsFindBySellerId(sellerId: string): Promise<Rating[]> {
+// Reviews received by a user, regardless of whether they were the buyer or
+// the seller in the underlying transaction (two-way reviews — P0-4).
+export async function ratingsFindByRevieweeId(revieweeId: string): Promise<Rating[]> {
   const { data, error } = await getSupabaseAdmin()
     .from('ratings')
     .select('*')
-    .eq('seller_id', sellerId)
+    .eq('reviewee_id', revieweeId)
     .order('created_at', { ascending: false })
   if (error) throw new Error(error.message)
   return ((data || []) as Record<string, unknown>[]).map(rowToRating)
 }
 
-export async function ratingsFindByBuyerAndListing(
-  buyerId: string,
-  listingId: string
+export async function ratingsFindByReviewerAndTransaction(
+  reviewerId: string,
+  transactionId: string
 ): Promise<Rating | null> {
   const { data, error } = await getSupabaseAdmin()
     .from('ratings')
     .select('*')
-    .eq('buyer_id', buyerId)
-    .eq('listing_id', listingId)
+    .eq('reviewer_id', reviewerId)
+    .eq('transaction_id', transactionId)
     .single()
   if (error || !data) return null
   return rowToRating(data as Record<string, unknown>)
+}
+
+// Positive/total review counts for a user, as reviewee — shared by the
+// reputation score recompute and the user-facing reputation summary below.
+async function ratingsCountsForReviewee(userId: string): Promise<{ positive: number; total: number }> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('ratings')
+    .select('score')
+    .eq('reviewee_id', userId)
+  if (error) throw new Error(error.message)
+  const scores = (data || []) as { score: number }[]
+  return { total: scores.length, positive: scores.filter((s) => Number(s.score) === 1).length }
+}
+
+// Transparent reputation components (P0-5): completed transactions + review
+// positivity, computed from real data instead of a price-weighted score.
+export async function usersReputationSummary(userId: string): Promise<{
+  completedTransactionCount: number
+  reviewCount: number
+  positiveReviewPercentage: number
+}> {
+  const [{ count: completedTransactionCount, error: txnError }, counts] = await Promise.all([
+    getSupabaseAdmin()
+      .from('transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'completed')
+      .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`),
+    ratingsCountsForReviewee(userId),
+  ])
+  if (txnError) throw new Error(txnError.message)
+  return {
+    completedTransactionCount: completedTransactionCount || 0,
+    reviewCount: counts.total,
+    positiveReviewPercentage: counts.total > 0 ? Math.round((counts.positive / counts.total) * 100) : 0,
+  }
 }
 
 // ─── Blocks ────────────────────────────────────────────────────────────────
@@ -1383,5 +1465,89 @@ export async function transactionsAcceptOffer(
   if (error) throw new Error(error.message)
   const transaction = await transactionsFindById(data as string)
   if (!transaction) throw new Error('Transaction not found after creation')
+  return transaction
+}
+
+// The most recent reserved-or-later transaction between this buyer/seller
+// pair on a listing — how the messages thread finds "the" transaction to
+// attach meetup/completion actions to.
+export async function transactionsFindActiveForListingAndUsers(
+  listingId: string,
+  userA: string,
+  userB: string
+): Promise<Transaction | null> {
+  const all = await transactionsFindByListingId(listingId)
+  return (
+    all.find(
+      (t) =>
+        (t.buyerId === userA && t.sellerId === userB) ||
+        (t.buyerId === userB && t.sellerId === userA)
+    ) || null
+  )
+}
+
+// Propose/update the meetup zone + time on the transaction. Low-stakes
+// negotiation (either party can revise before confirming), so a plain update
+// is enough — no row-locked RPC needed like accept_offer/confirm_completion.
+export async function transactionsProposeMeetup(
+  transactionId: string,
+  zone: PickupZone,
+  time: string
+): Promise<Transaction | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('transactions')
+    .update({ meetup_zone: zone, meetup_time: time, updated_at: new Date().toISOString() })
+    .eq('id', transactionId)
+    .select()
+    .single()
+  if (error || !data) return null
+  return rowToTransaction(data as Record<string, unknown>)
+}
+
+// The other party confirms the proposed meetup — locks in meetup_scheduled.
+export async function transactionsConfirmMeetup(transactionId: string): Promise<Transaction | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('transactions')
+    .update({ status: 'meetup_scheduled', updated_at: new Date().toISOString() })
+    .eq('id', transactionId)
+    .select()
+    .single()
+  if (error || !data) return null
+  return rowToTransaction(data as Record<string, unknown>)
+}
+
+// Either party cancels the proposed/confirmed meetup — clears the meetup
+// fields and drops back to reserved (the sale itself isn't cancelled).
+export async function transactionsCancelMeetup(transactionId: string): Promise<Transaction | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('transactions')
+    .update({
+      meetup_zone: null,
+      meetup_time: null,
+      status: 'reserved',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', transactionId)
+    .select()
+    .single()
+  if (error || !data) return null
+  return rowToTransaction(data as Record<string, unknown>)
+}
+
+// Atomic completion confirmation: records this participant's confirmation
+// and, once both sides have confirmed, flips the transaction to completed.
+// Row-locked in confirm_transaction_completion() so simultaneous buyer+seller
+// confirms can't race each other into missing the other side's timestamp.
+export async function transactionsConfirmCompletion(
+  transactionId: string,
+  actorUserId: string
+): Promise<Transaction> {
+  const { error } = await getSupabaseAdmin().rpc('confirm_transaction_completion', {
+    txn_id: transactionId,
+    actor_user_id: actorUserId,
+  })
+  if (error) throw new Error(error.message)
+  const transaction = await transactionsFindById(transactionId)
+  if (!transaction) throw new Error('Transaction not found after confirmation')
   return transaction
 }

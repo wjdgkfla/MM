@@ -2,30 +2,22 @@
 
 import { useEffect, useState } from 'react'
 import { Rating, RATING_TAG_LABELS, RatingTag } from '@/lib/types'
+import { reputationLabel } from '@/lib/trust'
 
 interface SellerRatingProps {
   sellerId: string
   compact?: boolean
-  mannerTemp?: number
+  completedTransactionCount?: number
 }
 
-/** Maps positive-review ratio to a "manner temperature" like 당근마켓 */
-function getMannerTemp(ratings: Rating[]): number {
-  if (ratings.length === 0) return 36.5
-  const positiveCount = ratings.filter((r) => r.score === 1).length
-  const ratio = positiveCount / ratings.length
-  // Range: 36.5 (baseline) → 99 (all positive)
-  return Math.round((36.5 + ratio * 62.5) * 10) / 10
-}
-
-function getTempColor(temp: number): string {
-  if (temp >= 80) return 'text-[var(--m-green)]'
-  if (temp >= 60) return 'text-blue-500'
-  if (temp >= 40) return 'text-amber-500'
+function getPercentColor(percentage: number): string {
+  if (percentage >= 80) return 'text-[var(--m-green)]'
+  if (percentage >= 60) return 'text-blue-500'
+  if (percentage >= 40) return 'text-amber-500'
   return 'text-red-500'
 }
 
-export function SellerRating({ sellerId, compact = false, mannerTemp }: SellerRatingProps) {
+export function SellerRating({ sellerId, compact = false, completedTransactionCount = 0 }: SellerRatingProps) {
   const [ratings, setRatings] = useState<Rating[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -39,8 +31,13 @@ export function SellerRating({ sellerId, compact = false, mannerTemp }: SellerRa
 
   if (loading) return null
 
-  const temp = mannerTemp !== undefined ? mannerTemp : getMannerTemp(ratings)
   const positiveCount = ratings.filter((r) => r.score === 1).length
+  const positiveReviewPercentage = ratings.length > 0 ? Math.round((positiveCount / ratings.length) * 100) : 0
+  const summary = reputationLabel({
+    completedTransactionCount,
+    reviewCount: ratings.length,
+    positiveReviewPercentage,
+  })
   const tagCounts: Partial<Record<RatingTag, number>> = {}
   for (const rating of ratings) {
     for (const tag of rating.tags) {
@@ -53,20 +50,17 @@ export function SellerRating({ sellerId, compact = false, mannerTemp }: SellerRa
 
   if (compact) {
     return (
-      <span className={`inline-flex items-center gap-1 text-sm font-semibold ${getTempColor(temp)}`}>
-        🌡️ {temp}° manner
+      <span className={`inline-flex items-center gap-1 text-sm font-semibold ${getPercentColor(positiveReviewPercentage)}`}>
+        {summary}
       </span>
     )
   }
 
   return (
     <div>
-      <div className="flex items-center gap-4">
-        <div>
-          <span className={`text-3xl font-bold ${getTempColor(temp)}`}>{temp}°</span>
-          <p className="text-xs text-[var(--m-muted)] mt-0.5">Manner temperature</p>
-        </div>
-        <div className="text-sm text-[var(--m-muted)]">
+      <div>
+        <p className={`text-sm font-semibold ${getPercentColor(positiveReviewPercentage)}`}>{summary}</p>
+        <div className="mt-1 text-sm text-[var(--m-muted)]">
           {ratings.length > 0 ? (
             <p>
               {positiveCount} 👍 · {ratings.length - positiveCount} 👎

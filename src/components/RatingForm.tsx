@@ -4,12 +4,11 @@ import { useState } from 'react'
 import { RATING_TAGS, RATING_TAG_LABELS, RatingTag } from '@/lib/types'
 
 interface RatingFormProps {
-  sellerId: string
-  listingId: string
+  transactionId: string
   onSuccess?: () => void
 }
 
-export function RatingForm({ sellerId, listingId, onSuccess }: RatingFormProps) {
+export function RatingForm({ transactionId, onSuccess }: RatingFormProps) {
   const [score, setScore] = useState<1 | -1 | null>(null)
   const [selectedTags, setSelectedTags] = useState<RatingTag[]>([])
   const [submitting, setSubmitting] = useState(false)
@@ -34,7 +33,7 @@ export function RatingForm({ sellerId, listingId, onSuccess }: RatingFormProps) 
       const res = await fetch('/api/ratings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sellerId, listingId, score, tags: selectedTags }),
+        body: JSON.stringify({ transactionId, score, tags: selectedTags }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => null)
@@ -60,7 +59,7 @@ export function RatingForm({ sellerId, listingId, onSuccess }: RatingFormProps) 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-[var(--m-line)] bg-[var(--m-soft)] p-4">
-      <p className="text-sm font-semibold text-[var(--m-ink)]">Rate this seller</p>
+      <p className="text-sm font-semibold text-[var(--m-ink)]">Rate this trade</p>
       <div className="flex gap-3">
         <button
           type="button"

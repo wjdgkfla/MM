@@ -21,7 +21,7 @@ import {
 } from '@/lib/types'
 import { formatPostedDate, formatRecency } from '@/lib/time'
 import { useFavorites } from '@/lib/useFavorites'
-import { isCampusMeetupRecommended } from '@/lib/trust'
+import { isCampusMeetupRecommended, ReputationStats } from '@/lib/trust'
 import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { showToast } from '@/components/Toast'
 import { ListingPhotoGallery } from '@/components/ListingPhotoGallery'
@@ -32,6 +32,14 @@ type ListingDetailResponse = {
   listing: Listing
   seller: User | null
   sellerListingCount: number
+  sellerReputation: ReputationStats
+  myReview: { transactionId: string; eligible: boolean } | null
+}
+
+const EMPTY_REPUTATION: ReputationStats = {
+  completedTransactionCount: 0,
+  reviewCount: 0,
+  positiveReviewPercentage: 0,
 }
 
 const statusActionsByCurrentStatus: Record<
@@ -53,6 +61,8 @@ export default function ItemPageClient() {
   const [listing, setListing] = useState<Listing | null>(null)
   const [seller, setSeller] = useState<User | null>(null)
   const [sellerListingCount, setSellerListingCount] = useState(0)
+  const [sellerReputation, setSellerReputation] = useState<ReputationStats>(EMPTY_REPUTATION)
+  const [myReview, setMyReview] = useState<ListingDetailResponse['myReview']>(null)
   const [loading, setLoading] = useState(true)
   const [actionBusy, setActionBusy] = useState(false)
   const [actionError, setActionError] = useState('')
@@ -104,11 +114,15 @@ export default function ItemPageClient() {
         setListing(data.listing)
         setSeller(data.seller)
         setSellerListingCount(data.sellerListingCount || 0)
+        setSellerReputation(data.sellerReputation || EMPTY_REPUTATION)
+        setMyReview(data.myReview || null)
       })
       .catch(() => {
         setListing(null)
         setSeller(null)
         setSellerListingCount(0)
+        setSellerReputation(EMPTY_REPUTATION)
+        setMyReview(null)
       })
       .finally(() => setLoading(false))
   }, [params?.id])
@@ -464,16 +478,23 @@ export default function ItemPageClient() {
                   View seller page
                 </Link>
               </div>
-              <SellerTrustCard seller={seller} sellerListingCount={sellerListingCount} />
+              <SellerTrustCard seller={seller} sellerListingCount={sellerListingCount} reputation={sellerReputation} />
               <div className="mt-3">
-                <SellerRating sellerId={listing.sellerId} compact />
+                <SellerRating
+                  sellerId={listing.sellerId}
+                  compact
+                  completedTransactionCount={sellerReputation.completedTransactionCount}
+                />
               </div>
             </div>
 
-            {isSoldListing && !isOwnListing && session ? (
+            {myReview?.eligible && session ? (
               <div>
                 <h2 className="mb-3 text-base font-semibold text-[var(--m-ink)]">Rate your experience</h2>
-                <RatingForm sellerId={listing.sellerId} listingId={listing.id} />
+                <RatingForm
+                  transactionId={myReview.transactionId}
+                  onSuccess={() => setMyReview((current) => (current ? { ...current, eligible: false } : current))}
+                />
               </div>
             ) : null}
           </div>
