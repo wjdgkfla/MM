@@ -146,7 +146,7 @@ function rowToMessage(row: Record<string, unknown>): Message {
     fromUserId: String(row.from_user_id || ''),
     toUserId: String(row.to_user_id || ''),
     body: String(row.body || ''),
-    type: row.type === 'offer' ? 'offer' : 'text',
+    type: row.type === 'offer' ? 'offer' : row.type === 'meetup' ? 'meetup' : 'text',
     offerAmount: row.offer_amount != null ? Number(row.offer_amount) : undefined,
     offerStatus: row.offer_status ? (row.offer_status as Message['offerStatus']) : undefined,
     meetupStatus: row.meetup_status ? (row.meetup_status as Message['meetupStatus']) : undefined,

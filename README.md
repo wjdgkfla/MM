@@ -54,11 +54,10 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Test Accounts
 
-| Email | Password | Role |
-|---|---|---|
-| `admin@gmu.edu` | `Mason@Market2025!` | Admin |
+This repository is public — do not commit real credentials here. Create your own accounts locally:
 
-To create your own student account, sign up with any `@gmu.edu` or `@masonlive.gmu.edu` email via the Supabase dashboard (Authentication → Users → Add user → check "Auto Confirm User").
+- **Student account:** sign up with any `@gmu.edu` or `@masonlive.gmu.edu` email via the Supabase dashboard (Authentication → Users → Add user → check "Auto Confirm User").
+- **Admin account:** create a student account as above, then add its email to `ADMIN_EMAILS` in your `.env.local` (see `.env.local.example`).
 
 ---
 
