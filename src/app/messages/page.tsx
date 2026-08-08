@@ -10,6 +10,29 @@ import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { AuthRequiredCard } from '@/components/AuthRequiredCard'
 import { showToast } from '@/components/Toast'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
+import { getSupabaseClient, isSupabaseClientConfigured } from '@/lib/supabase/client'
+
+// Mirrors supabaseDataAccess.ts's rowToMessage — Realtime delivers raw DB
+// rows (snake_case), not the API's camelCase Message contract.
+function rowToMessageClient(row: Record<string, unknown>): Message {
+  return {
+    id: String(row.id),
+    listingId: String(row.listing_id || ''),
+    fromUserId: String(row.from_user_id || ''),
+    toUserId: String(row.to_user_id || ''),
+    body: String(row.body || ''),
+    type: row.type === 'offer' ? 'offer' : row.type === 'meetup' ? 'meetup' : 'text',
+    offerAmount: row.offer_amount != null ? Number(row.offer_amount) : undefined,
+    offerStatus: row.offer_status ? (row.offer_status as Message['offerStatus']) : undefined,
+    parentOfferMessageId: row.parent_offer_message_id ? String(row.parent_offer_message_id) : undefined,
+    expiresAt: row.expires_at ? new Date(String(row.expires_at)).toISOString() : undefined,
+    meetupStatus: row.meetup_status ? (row.meetup_status as Message['meetupStatus']) : undefined,
+    meetupZone: row.meetup_zone ? (row.meetup_zone as Message['meetupZone']) : undefined,
+    meetupTime: row.meetup_time ? new Date(String(row.meetup_time)).toISOString() : undefined,
+    presenceStatus: row.presence_status ? (row.presence_status as Message['presenceStatus']) : undefined,
+    createdAt: row.created_at ? new Date(String(row.created_at)).toISOString() : new Date().toISOString(),
+  }
+}
 
 type ConversationSummary = {
   key: string
@@ -224,66 +247,66 @@ export default function MessagesPage() {
   }, [currentUserId])
 
   useEffect(() => {
-    const loadThread = async (showLoadingSpinner = true) => {
+    let cancelled = false
+
+    const loadThread = async () => {
       if (!selectedConversation) {
         setThread([])
         return
       }
 
-      if (showLoadingSpinner && threadCountRef.current === 0) setLoadingThread(true)
+      if (threadCountRef.current === 0) setLoadingThread(true)
       try {
-        if (showLoadingSpinner && !selectedConversation.isSynthetic) await fetch('/api/messages', {
+        if (!selectedConversation.isSynthetic) await fetch('/api/messages', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'mark-read', conversationId: selectedConversation.key }),
         }).catch(() => {})
-        if (showLoadingSpinner) {
-          setConversations((current) => current.map((c) =>
-            c.key === selectedConversation.key && c.unreadCount ? { ...c, unreadCount: 0 } : c
-          ))
-        }
+        setConversations((current) => current.map((c) =>
+          c.key === selectedConversation.key && c.unreadCount ? { ...c, unreadCount: 0 } : c
+        ))
         const url = `/api/messages?listingId=${selectedConversation.listingId}&peerId=${selectedConversation.peerId}`
         const res = await fetch(url)
         if (!res.ok) return
         const data = (await res.json()) as Message[]
-        if (Array.isArray(data)) {
-          setThread((prev) => {
-            if (data.length === 0 && prev.length > 0) return prev
-            if (data.length !== prev.length) return data
-            const previousLast = prev[prev.length - 1]?.id
-            const nextLast = data[data.length - 1]?.id
-            return previousLast !== nextLast ? data : prev
-          })
-        }
+        if (!cancelled && Array.isArray(data)) setThread(data)
       } catch {
-        // Silently ignore poll errors — don't clear the thread
+        // Silently ignore load errors — don't clear the thread
       } finally {
-        if (showLoadingSpinner) setLoadingThread(false)
+        if (!cancelled) setLoadingThread(false)
       }
     }
 
-    const shouldShowInitialLoader = threadCountRef.current === 0
-    setLoadingThread(shouldShowInitialLoader)
-    loadThread(shouldShowInitialLoader)
+    setLoadingThread(threadCountRef.current === 0)
+    loadThread()
 
-    // Poll every 2s when tab is visible, pause when hidden — feels near real-time
-    let pollInterval: ReturnType<typeof setInterval> | null = null
-
-    const startPolling = () => {
-      if (pollInterval) return
-      pollInterval = setInterval(() => loadThread(false), 2000)
-    }
-    const stopPolling = () => {
-      if (pollInterval) { clearInterval(pollInterval); pollInterval = null }
+    // Load the thread once, then rely on Supabase Realtime for new messages
+    // instead of polling — appends incoming rows rather than refetching.
+    // Push notifications (server-side) still cover users not on this screen.
+    if (!selectedConversation || selectedConversation.isSynthetic || !isSupabaseClientConfigured()) {
+      return () => { cancelled = true }
     }
 
-    startPolling()
-    const onVisibility = () => document.hidden ? stopPolling() : startPolling()
-    document.addEventListener('visibilitychange', onVisibility)
+    const channel = getSupabaseClient()
+      .channel(`messages-${selectedConversation.key}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${selectedConversation.key}`,
+        },
+        (payload) => {
+          const message = rowToMessageClient(payload.new as Record<string, unknown>)
+          setThread((current) => (current.some((m) => m.id === message.id) ? current : [...current, message]))
+        }
+      )
+      .subscribe()
 
     return () => {
-      stopPolling()
-      document.removeEventListener('visibilitychange', onVisibility)
+      cancelled = true
+      getSupabaseClient().removeChannel(channel)
     }
   }, [selectedConversation])
 
