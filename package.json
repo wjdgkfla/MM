@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint . --cache-location .eslintcache-next",
     "test": "jest && tsx --test tests/deployment-hardening.test.ts",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
@@ -21,6 +22,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",

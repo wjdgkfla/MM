@@ -37,3 +37,8 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 .mason-market-dev-store.json
+
+# Playwright E2E
+/test-results
+/playwright-report
+tests/e2e/.auth

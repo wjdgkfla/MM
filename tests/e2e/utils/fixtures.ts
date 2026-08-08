@@ -1,0 +1,13 @@
+// A tiny 1x1 JPEG, valid enough to pass validateImageFile's magic-byte check
+// (src/lib/uploadValidation.ts) and Supabase Storage's upload — content
+// doesn't matter for these flows, only that it's a real JPEG.
+const SAMPLE_JPEG_BASE64 =
+  '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkI' +
+  'CQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQ' +
+  'EBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAABAAEDASIA' +
+  'AhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAj/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEB' +
+  'AQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k='
+
+export function sampleJpegBuffer(): Buffer {
+  return Buffer.from(SAMPLE_JPEG_BASE64, 'base64')
+}
