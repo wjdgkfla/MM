@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { LISTING_STATUSES, ListingStatus } from '@/lib/types'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { normalizeListingInput } from '@/lib/listingValidation'
+import { deleteListingStorageObjects } from '@/lib/uploadValidation'
 import { canTransitionListingStatus } from '@/lib/marketplaceLifecycle'
 import {
   listingsFindById,
@@ -175,6 +176,13 @@ export async function PUT(
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
 
+    // Clean up storage objects for images that were removed by this edit (P1-8: avoid orphans).
+    // Runs after the DB update succeeds so we never delete a file the listing still references.
+    const removedImageUrls = existing.imageUrls.filter((url) => !listingInput.imageUrls.includes(url))
+    if (removedImageUrls.length > 0) {
+      await deleteListingStorageObjects(removedImageUrls)
+    }
+
     return NextResponse.json(listing)
   } catch (err) {
     console.error('PUT /api/listings/[id] error:', err)
@@ -207,6 +215,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Only the seller can delete this listing' }, { status: 403 })
     }
 
+    // listingsRemove soft-deletes (sets deleted_at) rather than dropping the row — see P0-6.
+    // Deliberately not deleting the listing's storage objects here: a soft-deleted listing may
+    // still need admin review or restoration, and the images are evidence for that. Storage
+    // cleanup for soft-deleted listings belongs in a later hard-delete/retention pass, not here.
     const deleted = await listingsRemove(id, session.userId)
     if (!deleted) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })

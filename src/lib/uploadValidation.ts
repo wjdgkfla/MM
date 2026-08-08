@@ -1,3 +1,5 @@
+import { getSupabaseAdmin } from '@/lib/supabase/server'
+
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
@@ -54,3 +56,36 @@ export function extensionForImageType(type: string) {
   if (type === 'image/webp') return 'webp'
   return 'jpg'
 }
+
+/** Maps a public listings-bucket URL back to its storage object path, or null if it doesn't match. */
+function listingStoragePath(url: string): string | null {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!supabaseUrl) return null
+  try {
+    const parsed = new URL(url)
+    const prefix = new URL('/storage/v1/object/public/listings/', supabaseUrl)
+    if (parsed.origin !== prefix.origin || !parsed.pathname.startsWith(prefix.pathname)) return null
+    return decodeURIComponent(parsed.pathname.slice(prefix.pathname.length))
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Deletes listing images from Supabase Storage given their public URLs.
+ * Used when an edit replaces images (P1-8) so old files don't become orphans.
+ * Best-effort: logs and swallows storage errors rather than failing the caller's request,
+ * since the DB update (source of truth) has already succeeded by the time this runs.
+ */
+export async function deleteListingStorageObjects(urls: string[]): Promise<void> {
+  const paths = urls.map(listingStoragePath).filter((p): p is string => Boolean(p))
+  if (paths.length === 0) return
+  const { error } = await getSupabaseAdmin().storage.from('listings').remove(paths)
+  if (error) console.error('Listing storage cleanup error:', error)
+}
+
+// TODO(scheduled cleanup): This only handles the "images replaced on edit" case. Uploads that
+// succeed but never get attached to a listing (upload succeeds, listing creation abandoned) are
+// not cleaned up here — that needs a scheduled job that lists objects under `listings/<userId>/`,
+// diffs them against `image_urls` actually referenced across all listings for that user, and
+// removes objects older than some grace period (e.g. 24h) with no referencing listing.

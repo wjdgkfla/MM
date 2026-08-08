@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { CAMPUS_LOCATIONS } from '@/lib/types'
+import { isAllowedListingImageUrl } from '@/lib/listingValidation'
 import { usersFindById, usersUpdateProfile } from '@/lib/data/supabaseDataAccess'
 
 export async function GET(request: NextRequest) {
@@ -29,11 +30,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Display name must be at least 2 characters' }, { status: 400 })
     }
 
-    // Empty string clears the photo; anything else must be a plausible http(s) URL —
-    // this value is rendered with next/image `unoptimized`, which skips remotePatterns.
+    // Empty string clears the photo; anything else must point into our own Supabase Storage
+    // bucket (same managed-upload path used for listing images — P1-9) rather than an arbitrary
+    // external URL. The profile page's upload flow already goes through /api/upload for this.
     if (profileImageUrl !== undefined && profileImageUrl !== '') {
-      if (profileImageUrl.length > 2048 || !/^https?:\/\//i.test(profileImageUrl)) {
-        return NextResponse.json({ error: 'Profile image must be an http(s) URL' }, { status: 400 })
+      if (!isAllowedListingImageUrl(profileImageUrl)) {
+        return NextResponse.json({ error: 'Profile image must be uploaded through Mason Market' }, { status: 400 })
       }
     }
 

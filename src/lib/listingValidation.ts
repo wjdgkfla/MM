@@ -44,7 +44,7 @@ function normalizeTags(tags: unknown): string[] {
     : []
 }
 
-function isAllowedListingImageUrl(value: string): boolean {
+export function isAllowedListingImageUrl(value: string): boolean {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   if (!supabaseUrl) return false
 
