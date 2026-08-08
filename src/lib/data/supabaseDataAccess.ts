@@ -243,12 +243,6 @@ function rowToRating(row: Record<string, unknown>): Rating {
 
 export const DEFAULT_PAGE_SIZE = 24
 
-// Upper bound on how many rows we'll pull into JS to apply the courseTag
-// filter (matches against course_code and tags, which PostgREST can't do a
-// combined substring match on in one query). Campus-marketplace scale, not
-// meant to hold at very large listing counts.
-const COURSE_TAG_PREFILTER_CAP = 2000
-
 function buildListingsQuery(db: ReturnType<typeof getSupabaseAdmin>, query: ListingQuery | undefined) {
   let q = db.from('listings').select('*').is('deleted_at', null)
 
@@ -272,58 +266,67 @@ function buildListingsQuery(db: ReturnType<typeof getSupabaseAdmin>, query: List
   if (query?.minPrice != null && query.minPrice >= 0) q = q.gte('price', query.minPrice)
   if (query?.maxPrice != null && query.maxPrice >= 0) q = q.lte('price', query.maxPrice)
 
+  // courseTag matches against course_code_normalized and tags_normalized —
+  // generated columns (see 20260704000000_search_and_pagination.sql) that
+  // strip non-alphanumerics so the match is a real SQL WHERE clause instead
+  // of pulling rows into JS to filter.
+  if (query?.courseTag) {
+    const normalized = query.courseTag.toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (normalized) {
+      q = q.or(`course_code_normalized.ilike.%${normalized}%,tags_normalized.ilike.%${normalized}%`)
+    }
+  }
+
   if (query?.search) {
     const term = query.search.trim().split(/\s+/).join(' & ')
     q = q.textSearch('search_vector', term, { type: 'websearch', config: 'english' })
   }
 
-  if (query?.sort === 'price-asc')       q = q.order('price', { ascending: true })
-  else if (query?.sort === 'price-desc') q = q.order('price', { ascending: false })
-  else if (query?.sort === 'oldest')     q = q.order('created_at', { ascending: true })
-  else                                   q = q.order('created_at', { ascending: false })
+  // Cursor pagination keys off the same column used to sort, plus id as a
+  // tiebreaker, so paging stays stable while listings change underneath it
+  // (offset pagination can skip/duplicate rows when that happens).
+  const sortsAscending = query?.sort === 'oldest' || query?.sort === 'price-asc'
+  const cursorField = query?.sort === 'price-asc' || query?.sort === 'price-desc' ? 'price' : 'created_at'
+  const cmp = sortsAscending ? 'gt' : 'lt'
+
+  if (query?.cursor) {
+    const value = cursorField === 'price' ? Number(query.cursor.value) : String(query.cursor.value)
+    q = q.or(`${cursorField}.${cmp}.${value},and(${cursorField}.eq.${value},id.${cmp}.${query.cursor.id})`)
+  }
+
+  if (query?.sort === 'price-asc')       q = q.order('price', { ascending: true }).order('id', { ascending: true })
+  else if (query?.sort === 'price-desc') q = q.order('price', { ascending: false }).order('id', { ascending: false })
+  else if (query?.sort === 'oldest')     q = q.order('created_at', { ascending: true }).order('id', { ascending: true })
+  else                                   q = q.order('created_at', { ascending: false }).order('id', { ascending: false })
 
   return q
 }
 
-function matchesCourseTag(listing: Listing, courseTag: string): boolean {
-  const normalized = courseTag.toLowerCase().replace(/[^a-z0-9]/g, '')
-  if (listing.courseCode && listing.courseCode.toLowerCase().replace(/[^a-z0-9]/g, '').includes(normalized)) {
-    return true
-  }
-  return listing.tags.some((tag) => tag.toLowerCase().replace(/[^a-z0-9]/g, '').includes(normalized))
-}
-
-export async function listingsFindMany(query?: ListingQuery): Promise<Listing[]> {
+export async function listingsFindMany(
+  query?: ListingQuery
+): Promise<{ listings: Listing[]; nextCursor: { value: string | number; id: string } | null }> {
   const db = getSupabaseAdmin()
   const pageSize = query?.pageSize ?? DEFAULT_PAGE_SIZE
-  const page = query?.page ?? 0
-  const from = page * pageSize
-  const to = from + pageSize - 1
 
-  // courseTag matches against course_code (structured field) and tags (free
-  // text), which PostgREST can't express as one substring-OR query — so we
-  // filter in JS, but BEFORE paginating, not after, so page boundaries stay
-  // accurate against the filtered set.
-  if (query?.courseTag) {
-    const q = buildListingsQuery(db, query).limit(COURSE_TAG_PREFILTER_CAP)
-    const { data, error } = await q
-    if (error) {
-      console.error('listingsFindMany error:', error)
-      return []
-    }
-    const all = (data || []).map((r) => rowToListing(r as Record<string, unknown>))
-    const filtered = all.filter((l) => matchesCourseTag(l, query.courseTag!))
-    return filtered.slice(from, to + 1)
-  }
-
-  const q = buildListingsQuery(db, query).range(from, to)
+  const q = buildListingsQuery(db, query).limit(pageSize)
   const { data, error } = await q
   if (error) {
     console.error('listingsFindMany error:', error)
-    return []
+    return { listings: [], nextCursor: null }
   }
 
-  return (data || []).map((r) => rowToListing(r as Record<string, unknown>))
+  const rows = (data || []) as Record<string, unknown>[]
+  const listings = rows.map((r) => rowToListing(r))
+
+  let nextCursor: { value: string | number; id: string } | null = null
+  if (listings.length === pageSize) {
+    const lastRow = rows[rows.length - 1]
+    const cursorField = query?.sort === 'price-asc' || query?.sort === 'price-desc' ? 'price' : 'created_at'
+    const value = cursorField === 'price' ? Number(lastRow.price) : String(lastRow.created_at)
+    nextCursor = { value, id: String(lastRow.id) }
+  }
+
+  return { listings, nextCursor }
 }
 
 export async function listingsFindById(id: string): Promise<Listing | undefined> {
@@ -354,6 +357,37 @@ export async function listingsFindByIds(ids: string[]): Promise<Listing[]> {
     })
   )
   return ids.map((id) => byId.get(id)).filter((l): l is Listing => l !== undefined)
+}
+
+// One grouped COUNT query for the number of visible, non-sold listings per
+// category — backs SubNavRail hiding pills for categories with no listings.
+export async function listingsCountByCategory(): Promise<Record<string, number>> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('listings')
+    .select('category, count:id.count()')
+    .is('deleted_at', null)
+    .in('moderation_state', ['visible', 'flagged'])
+    .neq('status', 'sold')
+  if (error) throw new Error(error.message)
+  const counts: Record<string, number> = {}
+  for (const row of (data || []) as Record<string, unknown>[]) {
+    counts[String(row.category)] = Number(row.count) || 0
+  }
+  return counts
+}
+
+// Single count(*) query for a seller's active listing count — avoids
+// fetching every listing by that seller into the app just to filter/count.
+export async function listingsCountBySellerId(sellerId: string): Promise<number> {
+  const { count, error } = await getSupabaseAdmin()
+    .from('listings')
+    .select('*', { count: 'exact', head: true })
+    .eq('seller_id', sellerId)
+    .neq('status', 'sold')
+    .neq('moderation_state', 'hidden')
+    .is('deleted_at', null)
+  if (error) throw new Error(error.message)
+  return count ?? 0
 }
 
 export async function listingsFindBySellerId(sellerId: string): Promise<Listing[]> {

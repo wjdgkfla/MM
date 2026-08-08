@@ -29,7 +29,7 @@ export type ListingQuery = {
   courseTag?: string
   sort?: 'newest' | 'oldest' | 'price-asc' | 'price-desc'
   showHidden?: boolean
-  page?: number
+  cursor?: { value: string | number; id: string }
   pageSize?: number
 }
 

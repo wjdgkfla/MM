@@ -80,9 +80,9 @@ function HomeContent() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [fetchError, setFetchError]   = useState('')
   const [showEmailBanner, setShowEmailBanner] = useState(false)
-  const [page, setPage]               = useState(0)
+  const [cursor, setCursor]           = useState<string | null>(null)
   const [hasMore, setHasMore]         = useState(true)
-  const PAGE_SIZE = 24
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({})
   // Bumped every time the main filter/search/sort fetch starts. loadMore and
   // the main fetch itself check this before applying their response, so a
   // slow request whose filters have since changed can't clobber newer state.
@@ -101,9 +101,16 @@ function HomeContent() {
       campusLocation: campus && CAMPUS_LOCATIONS.includes(campus as CampusLocation) ? (campus as CampusLocation) : '',
       listingKind: kind && LISTING_KINDS.includes(kind as ListingKind) ? (kind as ListingKind) : '',
     }))
-    setPage(0)
+    setCursor(null)
     setHasMore(true)
   }, [searchParams])
+
+  useEffect(() => {
+    fetch('/api/listings/category-counts')
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => setCategoryCounts(data || {}))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (!session) return
@@ -153,7 +160,7 @@ function HomeContent() {
     return () => clearTimeout(id)
   }, [filters.minPrice, filters.maxPrice, filters.courseTag])
 
-  const buildParams = (pg = 0) => {
+  const buildParams = (cur: string | null = null) => {
     const p = new URLSearchParams()
     if (search)              p.set('search', search)
     if (category)            p.set('category', category)
@@ -167,27 +174,28 @@ function HomeContent() {
     if (debouncedText.courseTag) p.set('courseTag', debouncedText.courseTag)
     if (filters.freeOnly)    p.set('freeOnly', 'true')
     p.set('sort', sort)
-    p.set('page', String(pg))
+    if (cur) p.set('cursor', cur)
     return p
   }
 
   // Main fetch — reset on any filter/search/sort/category change
   useEffect(() => {
     const requestId = ++requestIdRef.current
-    setPage(0)
+    setCursor(null)
     setHasMore(true)
     setLoading(true)
     setFetchError('')
-    fetch(`/api/listings?${buildParams(0).toString()}`)
+    fetch(`/api/listings?${buildParams(null).toString()}`)
       .then(res => {
         if (!res.ok) throw new Error(`Server error ${res.status}`)
         return res.json()
       })
-      .then((data: Listing[]) => {
+      .then((data: { listings: Listing[]; nextCursor: string | null }) => {
         if (requestIdRef.current !== requestId) return // filters changed since this fetch started
-        const result = Array.isArray(data) ? data : []
+        const result = Array.isArray(data?.listings) ? data.listings : []
         setListings(result)
-        setHasMore(result.length === PAGE_SIZE)
+        setCursor(data?.nextCursor ?? null)
+        setHasMore(Boolean(data?.nextCursor))
         // Auto-save zero-result searches for logged-in users (notified when a match appears)
         if (result.length === 0 && search && session) {
           fetch('/api/saved-searches', {
@@ -207,18 +215,18 @@ function HomeContent() {
   }, [search, category, sort, filters.campusLocation, filters.pickupZone, filters.condition, filters.status, filters.listingKind, filters.freeOnly, debouncedText])
 
   const loadMore = async () => {
+    if (!cursor) return
     const requestId = requestIdRef.current
-    const next = page + 1
     setLoadingMore(true)
     try {
-      const res = await fetch(`/api/listings?${buildParams(next).toString()}`)
+      const res = await fetch(`/api/listings?${buildParams(cursor).toString()}`)
       if (!res.ok) return
-      const data = await res.json() as Listing[]
+      const data = await res.json() as { listings: Listing[]; nextCursor: string | null }
       if (requestIdRef.current !== requestId) return // filters changed while this page was loading
-      if (Array.isArray(data) && data.length > 0) {
-        setListings(prev => [...prev, ...data])
-        setPage(next)
-        setHasMore(data.length === PAGE_SIZE)
+      if (Array.isArray(data?.listings) && data.listings.length > 0) {
+        setListings(prev => [...prev, ...data.listings])
+        setCursor(data.nextCursor ?? null)
+        setHasMore(Boolean(data.nextCursor))
       } else {
         setHasMore(false)
       }
@@ -232,7 +240,7 @@ function HomeContent() {
     setCategory(null)
     setSort('newest')
     setFilters(EMPTY_FILTERS)
-    setPage(0)
+    setCursor(null)
     setHasMore(true)
     router.replace('/')
   }
@@ -271,17 +279,18 @@ function HomeContent() {
         category={category}
         onCategoryChange={c => {
           setCategory(c)
-          setPage(0)
+          setCursor(null)
           const p = new URLSearchParams(searchParams.toString())
           if (c) p.set('category', c); else p.delete('category')
           router.replace(`/?${p.toString()}`)
         }}
         sort={sort}
-        onSortChange={s => { setSort(s); setPage(0) }}
+        onSortChange={s => { setSort(s); setCursor(null) }}
         filterCount={filterCount}
         onFiltersOpen={() => setDrawerOpen(true)}
         totalCount={listings.length}
         loading={loading}
+        categoryCounts={categoryCounts}
       />
 
       <FilterDrawer

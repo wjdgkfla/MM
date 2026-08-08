@@ -14,6 +14,7 @@ interface SubNavRailProps {
   onFiltersOpen: () => void
   totalCount: number
   loading: boolean
+  categoryCounts?: Record<string, number>
 }
 
 export function SubNavRail({
@@ -21,6 +22,7 @@ export function SubNavRail({
   sort, onSortChange,
   filterCount, onFiltersOpen,
   totalCount, loading,
+  categoryCounts = {},
 }: SubNavRailProps) {
   const { t, locale } = useLocale()
 
@@ -33,7 +35,7 @@ export function SubNavRail({
 
   const cats: Array<{ id: Category | null; label: string }> = [
     { id: null, label: t('nav.all') },
-    ...CATEGORIES.map(c => ({ id: c, label: CATEGORY_LABELS[c] })),
+    ...CATEGORIES.filter(c => (categoryCounts[c] || 0) > 0).map(c => ({ id: c, label: CATEGORY_LABELS[c] })),
   ]
 
   return (

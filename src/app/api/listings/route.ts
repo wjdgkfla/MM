@@ -24,6 +24,25 @@ import {
   usersFindById,
 } from '@/lib/data/supabaseDataAccess'
 
+// Opaque cursor: base64 of {"value": string|number, "id": string}, where
+// value is the created_at/price of the last row on the previous page.
+function decodeCursor(raw: string | null): { value: string | number; id: string } | undefined {
+  if (!raw) return undefined
+  try {
+    const parsed = JSON.parse(Buffer.from(raw, 'base64').toString('utf8'))
+    if (parsed && typeof parsed.id === 'string' && (typeof parsed.value === 'string' || typeof parsed.value === 'number')) {
+      return { value: parsed.value, id: parsed.id }
+    }
+  } catch {
+    // ignore malformed cursor, fall back to first page
+  }
+  return undefined
+}
+
+function encodeCursor(cursor: { value: string | number; id: string }): string {
+  return Buffer.from(JSON.stringify(cursor), 'utf8').toString('base64')
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const mine = searchParams.get('mine')
@@ -40,7 +59,7 @@ export async function GET(request: NextRequest) {
   const freeOnly = searchParams.get('freeOnly')
   const courseTag = searchParams.get('courseTag')
   const sort = (searchParams.get('sort') || 'newest') as 'newest' | 'oldest' | 'price-asc' | 'price-desc'
-  const pageParam = searchParams.get('page')
+  const cursorParam = searchParams.get('cursor')
 
   const ids = searchParams.get('ids')
 
@@ -91,12 +110,12 @@ export async function GET(request: NextRequest) {
       courseTag: courseTag || undefined,
       sort,
       showHidden: session?.role === 'admin',
-      page: pageParam ? Math.max(0, Number(pageParam)) : 0,
+      cursor: decodeCursor(cursorParam),
       pageSize: 24,
     }
 
-    const listings = await listingsFindMany(query)
-    return NextResponse.json(listings)
+    const { listings, nextCursor } = await listingsFindMany(query)
+    return NextResponse.json({ listings, nextCursor: nextCursor ? encodeCursor(nextCursor) : null })
   } catch (err) {
     console.error('GET /api/listings error:', err)
     return NextResponse.json({ error: 'Failed to load listings' }, { status: 500 })

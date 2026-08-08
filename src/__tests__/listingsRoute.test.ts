@@ -22,7 +22,7 @@ describe('GET /api/listings', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetSessionFromRequest.mockResolvedValue(null)
-    mockListingsFindMany.mockResolvedValue([])
+    mockListingsFindMany.mockResolvedValue({ listings: [], nextCursor: null })
   })
 
   test('lets anonymous shoppers browse by category filter', async () => {

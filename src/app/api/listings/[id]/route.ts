@@ -6,7 +6,7 @@ import { deleteListingStorageObjects } from '@/lib/uploadValidation'
 import { canTransitionListingStatus } from '@/lib/marketplaceLifecycle'
 import {
   listingsFindById,
-  listingsFindBySellerId,
+  listingsCountBySellerId,
   listingsUpdateStatus,
   listingsUpdate,
   listingsRemove,
@@ -40,11 +40,8 @@ export async function GET(
 
     const seller = await usersFindById(listing.sellerId)
     // users.listing_count is never actually incremented anywhere in the codebase — always 0.
-    // Compute active listings live instead, matching the seller profile page's own logic.
-    const sellerListings = await listingsFindBySellerId(listing.sellerId)
-    const sellerListingCount = sellerListings.filter(
-      (l) => l.moderationState !== 'hidden' && l.status !== 'sold'
-    ).length
+    // Use a single count(*) query instead of fetching every listing by this seller.
+    const sellerListingCount = await listingsCountBySellerId(listing.sellerId)
     const sellerReputation = await usersReputationSummary(listing.sellerId)
 
     // Reviewable transaction for the signed-in user on this listing (P0-4):
