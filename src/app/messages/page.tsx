@@ -58,6 +58,7 @@ export default function MessagesPage() {
   const [reportReason, setReportReason] = useState<ReportReason>('harassment')
   const [reportNotes, setReportNotes] = useState('')
   const [reportSubmitting, setReportSubmitting] = useState(false)
+  const [blocking, setBlocking] = useState(false)
   const didAutoSend = useRef(false)
   const isSendingRef = useRef(false)
   const threadScrollRef = useRef<HTMLDivElement>(null)
@@ -400,6 +401,33 @@ export default function MessagesPage() {
     }
   }
 
+  const handleBlockUser = async () => {
+    if (!selectedConversation) return
+    if (!window.confirm(`Block ${selectedConversation.peerLabel}? They will no longer be able to message you.`)) return
+    setBlocking(true)
+    try {
+      const res = await fetch('/api/blocks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blockedId: selectedConversation.peerId }),
+      })
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null)
+        showToast(payload?.error || 'Could not block user', 'error')
+        return
+      }
+      showToast(`Blocked ${selectedConversation.peerLabel}`)
+      const blockedKey = selectedConversation.key
+      setConversations((current) => current.filter((c) => c.key !== blockedKey))
+      setSelectedKey(null)
+      setShowThread(false)
+    } catch {
+      showToast('Could not block user', 'error')
+    } finally {
+      setBlocking(false)
+    }
+  }
+
   const handleOfferResponse = async (messageId: string, status: 'accepted' | 'declined') => {
     try {
       const res = await fetch(`/api/messages/${messageId}`, {
@@ -574,6 +602,15 @@ export default function MessagesPage() {
                         style={{ color: 'var(--m-muted)' }}
                       >
                         {showReportForm ? 'Cancel report' : `Report ${selectedConversation.peerLabel}`}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleBlockUser}
+                        disabled={blocking}
+                        className="text-xs font-medium hover:underline disabled:opacity-50"
+                        style={{ color: 'var(--m-muted)' }}
+                      >
+                        {blocking ? 'Blocking…' : `Block ${selectedConversation.peerLabel}`}
                       </button>
                     </div>
                   </div>

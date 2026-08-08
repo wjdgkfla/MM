@@ -207,7 +207,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Only the seller can delete this listing' }, { status: 403 })
     }
 
-    const deleted = await listingsRemove(id)
+    const deleted = await listingsRemove(id, session.userId)
     if (!deleted) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }

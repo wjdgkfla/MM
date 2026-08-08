@@ -17,6 +17,7 @@ import {
   Report,
   ReportStatus,
   SavedSearch,
+  Transaction,
   User,
   UserAccountState,
   UserRole,
@@ -241,7 +242,7 @@ export const DEFAULT_PAGE_SIZE = 24
 const COURSE_TAG_PREFILTER_CAP = 2000
 
 function buildListingsQuery(db: ReturnType<typeof getSupabaseAdmin>, query: ListingQuery | undefined) {
-  let q = db.from('listings').select('*')
+  let q = db.from('listings').select('*').is('deleted_at', null)
 
   // Non-admins never see hidden listings. Admins can opt in via showHidden
   // (e.g. the moderation queue) — otherwise they get the same visible+flagged
@@ -323,6 +324,7 @@ export async function listingsFindById(id: string): Promise<Listing | undefined>
     .from('listings')
     .select('*')
     .eq('id', id)
+    .is('deleted_at', null)
     .single()
   if (error || !data) return undefined
   return rowToListing(data as Record<string, unknown>)
@@ -334,6 +336,7 @@ export async function listingsFindByIds(ids: string[]): Promise<Listing[]> {
     .from('listings')
     .select('*')
     .in('id', ids)
+    .is('deleted_at', null)
   if (error) throw new Error(error.message)
   if (!data) return []
   const byId = new Map(
@@ -350,11 +353,15 @@ export async function listingsFindBySellerId(sellerId: string): Promise<Listing[
     .from('listings')
     .select('*')
     .eq('seller_id', sellerId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
   if (error) throw new Error(error.message)
   return ((data || []) as Record<string, unknown>[]).map(rowToListing)
 }
 
+// Admin/moderation view — intentionally includes soft-deleted listings so
+// support can still see them for disputes/investigations. Do not add a
+// deleted_at filter here.
 export async function listingsListAllForAdmin(): Promise<Listing[]> {
   const { data, error } = await getSupabaseAdmin()
     .from('listings')
@@ -469,11 +476,12 @@ export async function listingsUpdateModerationState(
   return rowToListing(data as Record<string, unknown>)
 }
 
-export async function listingsRemove(id: string): Promise<boolean> {
+export async function listingsRemove(id: string, deletedBy: string): Promise<boolean> {
   const { error } = await getSupabaseAdmin()
     .from('listings')
-    .delete()
+    .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
     .eq('id', id)
+    .is('deleted_at', null)
   return !error
 }
 
@@ -886,7 +894,19 @@ export async function conversationsListByUser(userId: string) {
     return recoverConversationSummariesFromMessages(legacyMessages, userId)
   }
 
-  return Promise.all(rows.map(async (row) => {
+  // Blocking someone removes their conversation from the active inbox, but
+  // message history is preserved in the DB for reporting/support.
+  const blockedIds = new Set(await blocksListByUser(userId))
+  const visibleRows = blockedIds.size === 0
+    ? rows
+    : rows.filter((row) => {
+        const buyerId = String(row.buyer_id)
+        const sellerId = String(row.seller_id)
+        const peerId = userId === buyerId ? sellerId : buyerId
+        return !blockedIds.has(peerId)
+      })
+
+  return Promise.all(visibleRows.map(async (row) => {
     const listingId = String(row.listing_id)
     const buyerId = String(row.buyer_id)
     const sellerId = String(row.seller_id)
@@ -1247,4 +1267,121 @@ export async function ratingsFindByBuyerAndListing(
     .single()
   if (error || !data) return null
   return rowToRating(data as Record<string, unknown>)
+}
+
+// ─── Blocks ────────────────────────────────────────────────────────────────
+
+export async function blocksCreate(blockerId: string, blockedId: string): Promise<boolean> {
+  const { error } = await getSupabaseAdmin()
+    .from('blocks')
+    .upsert({ blocker_id: blockerId, blocked_id: blockedId }, { onConflict: 'blocker_id,blocked_id', ignoreDuplicates: true })
+  if (error) {
+    console.error('blocksCreate error:', error)
+    return false
+  }
+  return true
+}
+
+export async function blocksRemove(blockerId: string, blockedId: string): Promise<boolean> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('blocks')
+    .delete()
+    .eq('blocker_id', blockerId)
+    .eq('blocked_id', blockedId)
+    .select('blocker_id')
+  return !error && Array.isArray(data) && data.length > 0
+}
+
+export async function blocksListByUser(userId: string): Promise<string[]> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('blocks')
+    .select('blocked_id')
+    .eq('blocker_id', userId)
+  if (error) throw new Error(error.message)
+  return ((data || []) as Record<string, unknown>[]).map((r) => String(r.blocked_id))
+}
+
+// Bidirectional: true if either user has blocked the other.
+export async function blocksIsBlocked(userIdA: string, userIdB: string): Promise<boolean> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('blocks')
+    .select('blocker_id')
+    .or(
+      `and(blocker_id.eq.${userIdA},blocked_id.eq.${userIdB}),and(blocker_id.eq.${userIdB},blocked_id.eq.${userIdA})`
+    )
+    .limit(1)
+  if (error) throw new Error(error.message)
+  return Array.isArray(data) && data.length > 0
+}
+
+export async function messagesFindById(id: string): Promise<Message | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('messages')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (error || !data) return null
+  return rowToMessage(data as Record<string, unknown>)
+}
+
+// ─── Transactions ──────────────────────────────────────────────────────────
+
+function rowToTransaction(row: Record<string, unknown>): Transaction {
+  return {
+    id: String(row.id),
+    listingId: String(row.listing_id),
+    sellerId: String(row.seller_id),
+    buyerId: String(row.buyer_id),
+    acceptedOfferMessageId: row.accepted_offer_message_id ? String(row.accepted_offer_message_id) : undefined,
+    askingPrice: Number(row.asking_price) || 0,
+    agreedPrice: row.agreed_price != null ? Number(row.agreed_price) : undefined,
+    status: (row.status as Transaction['status']) || 'initiated',
+    meetupZone: row.meetup_zone ? (row.meetup_zone as Transaction['meetupZone']) : undefined,
+    meetupTime: row.meetup_time ? new Date(String(row.meetup_time)).toISOString() : undefined,
+    sellerConfirmedAt: row.seller_confirmed_at ? new Date(String(row.seller_confirmed_at)).toISOString() : undefined,
+    buyerConfirmedAt: row.buyer_confirmed_at ? new Date(String(row.buyer_confirmed_at)).toISOString() : undefined,
+    completedAt: row.completed_at ? new Date(String(row.completed_at)).toISOString() : undefined,
+    cancelledAt: row.cancelled_at ? new Date(String(row.cancelled_at)).toISOString() : undefined,
+    cancellationReason: row.cancellation_reason ? String(row.cancellation_reason) : undefined,
+    createdAt: row.created_at ? new Date(String(row.created_at)).toISOString() : new Date().toISOString(),
+    updatedAt: row.updated_at ? new Date(String(row.updated_at)).toISOString() : new Date().toISOString(),
+  }
+}
+
+export async function transactionsFindById(id: string): Promise<Transaction | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('transactions')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (error || !data) return null
+  return rowToTransaction(data as Record<string, unknown>)
+}
+
+export async function transactionsFindByListingId(listingId: string): Promise<Transaction[]> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('transactions')
+    .select('*')
+    .eq('listing_id', listingId)
+    .order('created_at', { ascending: false })
+  if (error) throw new Error(error.message)
+  return ((data || []) as Record<string, unknown>[]).map(rowToTransaction)
+}
+
+// Atomic accept-offer: marks the offer accepted, declines competing pending
+// offers on the listing, creates the transaction row, and reserves the
+// listing for the buyer — all inside the accept_offer() Postgres function so
+// two concurrent accepts (or an accept racing a listing edit) can't both win.
+export async function transactionsAcceptOffer(
+  offerMessageId: string,
+  actorUserId: string
+): Promise<Transaction> {
+  const { data, error } = await getSupabaseAdmin().rpc('accept_offer', {
+    offer_message_id: offerMessageId,
+    actor_user_id: actorUserId,
+  })
+  if (error) throw new Error(error.message)
+  const transaction = await transactionsFindById(data as string)
+  if (!transaction) throw new Error('Transaction not found after creation')
+  return transaction
 }

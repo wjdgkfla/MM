@@ -97,7 +97,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
 
-    const removed = await listingsRemove(existing.id)
+    const removed = await listingsRemove(existing.id, session.userId)
     if (!removed) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }

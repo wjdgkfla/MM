@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import {
+  messagesFindById,
   messagesUpdateOfferStatus,
+  notificationsCreate,
+  transactionsAcceptOffer,
   usersFindById,
 } from '@/lib/data/supabaseDataAccess'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
@@ -55,6 +58,33 @@ export async function PATCH(
     }
     if (msg.offer_status === 'accepted' || msg.offer_status === 'declined') {
       return NextResponse.json({ error: 'This offer has already been responded to' }, { status: 409 })
+    }
+
+    if (offerStatus === 'accepted') {
+      // Atomic: marks the offer accepted, declines competing pending offers,
+      // creates the transaction row, and reserves the listing for the buyer.
+      // Replaces the old plain offer_status update, which never reserved the
+      // listing for a specific buyer or recorded an agreed price anywhere.
+      let transaction
+      try {
+        transaction = await transactionsAcceptOffer(id, session.userId)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Could not accept offer'
+        return NextResponse.json({ error: message }, { status: 409 })
+      }
+      const updated = await messagesFindById(id)
+      if (!updated) return NextResponse.json({ error: 'Message not found' }, { status: 404 })
+      // transactionsAcceptOffer bypasses messagesUpdateOfferStatus (which normally
+      // fires this), so the buyer notification has to happen here instead.
+      await notificationsCreate({
+        userId: updated.fromUserId,
+        type: 'offer-update',
+        title: 'Offer accepted',
+        body: 'Your offer was accepted.',
+        link: `/messages?listingId=${updated.listingId}`,
+        meta: { messageId: id },
+      }).catch((notifyError) => console.error('offer-accepted notification error:', notifyError))
+      return NextResponse.json({ ...updated, transactionId: transaction.id })
     }
 
     const updated = await messagesUpdateOfferStatus(id, offerStatus)

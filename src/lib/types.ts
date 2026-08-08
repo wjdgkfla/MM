@@ -322,3 +322,33 @@ export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
   harassment: 'Harassment',
   'duplicate-listing': 'Duplicate listing',
 }
+
+export const TRANSACTION_STATUSES = [
+  'initiated',
+  'reserved',
+  'meetup_scheduled',
+  'completed',
+  'cancelled',
+  'disputed',
+] as const
+export type TransactionStatus = (typeof TRANSACTION_STATUSES)[number]
+
+export interface Transaction {
+  id: string
+  listingId: string
+  sellerId: string
+  buyerId: string
+  acceptedOfferMessageId?: string
+  askingPrice: number
+  agreedPrice?: number
+  status: TransactionStatus
+  meetupZone?: PickupZone
+  meetupTime?: string
+  sellerConfirmedAt?: string
+  buyerConfirmedAt?: string
+  completedAt?: string
+  cancelledAt?: string
+  cancellationReason?: string
+  createdAt: string
+  updatedAt: string
+}

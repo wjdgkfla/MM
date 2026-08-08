@@ -10,6 +10,7 @@ import {
   conversationsListByUser,
   conversationsMarkRead,
   usersFindById,
+  blocksIsBlocked,
 } from '@/lib/data/supabaseDataAccess'
 import { sendPushToUser } from '@/lib/pushNotification'
 
@@ -139,6 +140,10 @@ export async function POST(request: NextRequest) {
     }
     if (recipient.accountState === 'suspended') {
       return NextResponse.json({ error: 'This seller account is not currently active' }, { status: 403 })
+    }
+
+    if (await blocksIsBlocked(session.userId, String(toUserId))) {
+      return NextResponse.json({ error: 'You cannot message this user' }, { status: 403 })
     }
 
     const message = await messagesCreate({
