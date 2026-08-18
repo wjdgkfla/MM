@@ -31,6 +31,7 @@ export default function MyListingsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'all' | Listing['status']>('all')
 
   useEffect(() => {
     if (!session) return
@@ -61,6 +62,18 @@ export default function MyListingsPage() {
       sold: listings.filter((item) => item.status === 'sold').length,
     }
   }, [listings])
+
+  const visibleListings = useMemo(
+    () => (statusFilter === 'all' ? listings : listings.filter((item) => item.status === statusFilter)),
+    [listings, statusFilter]
+  )
+
+  const STATUS_TABS: Array<{ key: 'all' | Listing['status']; label: string; count: number }> = [
+    { key: 'all', label: 'All', count: totals.all },
+    { key: 'available', label: 'Available', count: totals.available },
+    { key: 'reserved', label: 'Reserved', count: totals.reserved },
+    { key: 'sold', label: 'Sold', count: totals.sold },
+  ]
 
   const updateStatus = async (id: string, nextStatus: ListingStatusAction) => {
     setBusyId(id)
@@ -144,14 +157,31 @@ export default function MyListingsPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-display-lg font-black" style={{ color: 'var(--m-ink)' }}>{t('header.myPosts')}</h1>
-          <p className="mt-1 text-sm" style={{ color: 'var(--m-muted)' }}>
-            {totals.all} total • {totals.available} available • {totals.reserved} reserved • {totals.sold} sold
-          </p>
+          <p className="mt-1 text-sm" style={{ color: 'var(--m-muted)' }}>{totals.all} total listings</p>
         </div>
         <Link href="/sell" className="ui-btn-primary">
           {t('sell.postNew')}
         </Link>
       </div>
+
+      {!loading && listings.length > 0 ? (
+        <div className="mt-5 flex flex-wrap gap-2">
+          {STATUS_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setStatusFilter(tab.key)}
+              className="ui-pill"
+              style={{
+                background: statusFilter === tab.key ? 'var(--m-ink)' : 'var(--m-soft)',
+                color: statusFilter === tab.key ? 'white' : 'var(--m-ink)',
+              }}
+            >
+              {tab.label} ({tab.count})
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {error ? <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
 
@@ -172,9 +202,15 @@ export default function MyListingsPage() {
             Create your first listing
           </Link>
         </div>
+      ) : visibleListings.length === 0 ? (
+        <div className="mt-12 rounded-[var(--r-lg)] border p-10 text-center max-w-[480px] mx-auto" style={{ borderColor: 'var(--m-line)' }}>
+          <p className="text-sm" style={{ color: 'var(--m-muted)' }}>
+            No {statusFilter} listings right now.
+          </p>
+        </div>
       ) : (
         <div className="mt-6 space-y-3">
-          {listings.map((listing) => {
+          {visibleListings.map((listing) => {
             const actions = statusActionsByCurrentStatus[listing.status]
             const isBusy = busyId === listing.id
 
