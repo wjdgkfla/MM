@@ -13,7 +13,7 @@ interface ListingCardProps {
   onToggleSave?: (listingId: string) => void
 }
 
-const FALLBACK_IMAGE = '/listings/moving-boxes.svg'
+const FALLBACK_IMAGE = '/listings/no-photo.svg'
 
 /** Turn a display name like "Alex Chen" into "AC" */
 function getInitials(name: string): string {

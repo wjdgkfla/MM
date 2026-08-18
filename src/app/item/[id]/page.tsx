@@ -3,7 +3,7 @@ import { listingsFindById } from '@/lib/data/supabaseDataAccess'
 import { LOCATION_LABELS } from '@/lib/types'
 import ItemPageClient from './ItemPageClient'
 
-const FALLBACK_IMAGE = '/listings/moving-boxes.svg'
+const FALLBACK_IMAGE = '/listings/no-photo.svg'
 
 export async function generateMetadata({
   params,

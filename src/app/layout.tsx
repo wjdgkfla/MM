@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     siteName: 'Mason Market',
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Mason Market | GMU Student Marketplace',
     description:
       'Buy and sell textbooks, electronics, furniture, and more — safely on campus at GMU.',

@@ -9,7 +9,7 @@ type ListingPhotoGalleryProps = {
   coverImageUrl?: string
 }
 
-const FALLBACK_IMAGE = '/listings/moving-boxes.svg'
+const FALLBACK_IMAGE = '/listings/no-photo.svg'
 
 export function ListingPhotoGallery({ images, title, coverImageUrl }: ListingPhotoGalleryProps) {
   const gallery = useMemo(() => {

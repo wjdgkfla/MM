@@ -268,7 +268,10 @@ function HomeContent() {
     <>
       <SeasonalRibbon />
 
-      <HeroBlock initialSearch={search} featuredListings={listings.slice(0, 3)} />
+      <HeroBlock
+        initialSearch={search}
+        featuredListings={listings.filter(l => l.coverImageUrl || l.imageUrls[0]).slice(0, 3)}
+      />
 
       {showEmailBanner ? (
         <section className="border-y bg-white" style={{ borderColor: 'var(--m-line)' }}>

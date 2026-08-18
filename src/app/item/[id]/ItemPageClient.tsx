@@ -26,7 +26,7 @@ import { useAuthSession } from '@/lib/auth/useAuthSession'
 import { showToast } from '@/components/Toast'
 import { ListingPhotoGallery } from '@/components/ListingPhotoGallery'
 
-const FALLBACK_IMAGE = '/listings/moving-boxes.svg'
+const FALLBACK_IMAGE = '/listings/no-photo.svg'
 
 type ListingDetailResponse = {
   listing: Listing
