@@ -13,7 +13,7 @@ import {
   ListingKind,
   PickupZone,
 } from '@/lib/types'
-import { isGmuEmail } from '@/lib/validators'
+import { isGmuEmail, isValidEntityId } from '@/lib/validators'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { normalizeListingInput } from '@/lib/listingValidation'
 import {
@@ -31,7 +31,12 @@ function decodeCursor(raw: string | null): { value: string | number; id: string 
   if (!raw) return undefined
   try {
     const parsed = JSON.parse(Buffer.from(raw, 'base64').toString('utf8'))
-    if (parsed && typeof parsed.id === 'string' && (typeof parsed.value === 'string' || typeof parsed.value === 'number')) {
+    // Both fields are interpolated into a PostgREST .or() filter, so only accept
+    // plain ids, finite prices, and timestamp-shaped strings (digits, T : . + - Z).
+    const validValue =
+      (typeof parsed?.value === 'number' && Number.isFinite(parsed.value)) ||
+      (typeof parsed?.value === 'string' && /^[0-9T:.+\-Z]{1,40}$/.test(parsed.value))
+    if (validValue && typeof parsed.id === 'string' && isValidEntityId(parsed.id)) {
       return { value: parsed.value, id: parsed.id }
     }
   } catch {

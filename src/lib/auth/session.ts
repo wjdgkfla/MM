@@ -106,7 +106,9 @@ export async function getSessionFromRequest(request: NextRequest): Promise<AuthS
   const user = await usersFindById(session.userId)
   if (!user || user.sessionVersion !== session.sessionVersion) return null
 
-  return session
+  // The cookie's role is a snapshot from sign-in; the DB row is the truth, so a
+  // demoted admin loses access (and a promoted one gains it) without re-signing in.
+  return { ...session, role: user.role }
 }
 
 export function setSessionCookie(response: NextResponse, session: AuthSession) {

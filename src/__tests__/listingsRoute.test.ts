@@ -53,6 +53,37 @@ describe('GET /api/listings', () => {
     )
   })
 
+  const cursorOf = (value: unknown, id: unknown) =>
+    Buffer.from(JSON.stringify({ value, id }), 'utf8').toString('base64')
+
+  test('drops cursors whose id or value carry PostgREST filter syntax', async () => {
+    const bad = [
+      cursorOf('2026-10-01T12:00:00+00:00', 'x),id.not.is.null,and(id.eq.y'),
+      cursorOf('1),id.not.is.null,and(id.eq.1', 'abc-123'),
+    ]
+    for (const cursor of bad) {
+      mockListingsFindMany.mockClear()
+      const response = await GET(new NextRequest(`http://localhost/api/listings?cursor=${encodeURIComponent(cursor)}`))
+
+      expect(response.status).toBe(200)
+      expect(mockListingsFindMany).toHaveBeenCalledWith(expect.objectContaining({ cursor: undefined }))
+    }
+  })
+
+  test('keeps a well-formed timestamp cursor and a numeric price cursor', async () => {
+    const timestamp = cursorOf('2026-10-01T12:00:00.123456+00:00', 'abc-123')
+    await GET(new NextRequest(`http://localhost/api/listings?cursor=${encodeURIComponent(timestamp)}`))
+    expect(mockListingsFindMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({ cursor: { value: '2026-10-01T12:00:00.123456+00:00', id: 'abc-123' } })
+    )
+
+    const price = cursorOf(25.5, 'abc-123')
+    await GET(new NextRequest(`http://localhost/api/listings?sort=price-asc&cursor=${encodeURIComponent(price)}`))
+    expect(mockListingsFindMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({ cursor: { value: 25.5, id: 'abc-123' } })
+    )
+  })
+
   test('still requires sign-in for private listing collections', async () => {
     const response = await GET(new NextRequest('http://localhost/api/listings?mine=true'))
 

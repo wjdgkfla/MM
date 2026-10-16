@@ -48,6 +48,9 @@ export async function PATCH(
     const body = await request.json()
     const { action } = body
 
+    // Meetup actions rewrite status/meetup fields, so they must never touch a finished sale.
+    const isFinished = transaction.status === 'completed' || transaction.status === 'cancelled'
+
     if (action === 'propose-meetup') {
       const { meetupZone, meetupTime } = body
       if (!PICKUP_ZONES.includes(meetupZone)) {
@@ -56,7 +59,7 @@ export async function PATCH(
       if (typeof meetupTime !== 'string' || Number.isNaN(Date.parse(meetupTime))) {
         return NextResponse.json({ error: 'Invalid meetupTime' }, { status: 400 })
       }
-      if (transaction.status === 'completed' || transaction.status === 'cancelled') {
+      if (isFinished) {
         return NextResponse.json({ error: 'This transaction is no longer active' }, { status: 409 })
       }
       const updated = await transactionsProposeMeetup(id, meetupZone, meetupTime)
@@ -65,6 +68,9 @@ export async function PATCH(
     }
 
     if (action === 'confirm-meetup') {
+      if (isFinished) {
+        return NextResponse.json({ error: 'This transaction is no longer active' }, { status: 409 })
+      }
       if (!transaction.meetupZone || !transaction.meetupTime) {
         return NextResponse.json({ error: 'No meetup has been proposed yet' }, { status: 409 })
       }
@@ -74,6 +80,9 @@ export async function PATCH(
     }
 
     if (action === 'cancel-meetup') {
+      if (isFinished) {
+        return NextResponse.json({ error: 'This transaction is no longer active' }, { status: 409 })
+      }
       const updated = await transactionsCancelMeetup(id)
       if (!updated) return NextResponse.json({ error: 'Could not cancel meetup' }, { status: 500 })
       return NextResponse.json(updated)
