@@ -6,6 +6,7 @@ import {
   messagesListThread,
   messagesCreate,
   usersFindById,
+  blocksIsBlocked,
 } from '@/lib/data/supabaseDataAccess'
 
 export async function GET(
@@ -112,10 +113,15 @@ export async function POST(
       }
     }
 
+    const toUserId = senderRole === 'buyer' ? listing.sellerId : buyerId
+    if (await blocksIsBlocked(session.userId, toUserId)) {
+      return NextResponse.json({ error: 'You cannot message this user' }, { status: 403 })
+    }
+
     const message = await messagesCreate({
       listingId: id,
       fromUserId: session.userId,
-      toUserId: senderRole === 'buyer' ? listing.sellerId : buyerId,
+      toUserId,
       body: content,
     })
 

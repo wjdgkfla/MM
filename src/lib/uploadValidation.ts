@@ -77,8 +77,13 @@ function listingStoragePath(url: string): string | null {
  * Best-effort: logs and swallows storage errors rather than failing the caller's request,
  * since the DB update (source of truth) has already succeeded by the time this runs.
  */
-export async function deleteListingStorageObjects(urls: string[]): Promise<void> {
-  const paths = urls.map(listingStoragePath).filter((p): p is string => Boolean(p))
+export async function deleteListingStorageObjects(urls: string[], ownerUserId: string): Promise<void> {
+  // Listing image URLs may point at any object in the bucket, so only delete files
+  // under the owner's own upload folder (see /api/upload) — never another user's.
+  const ownFolder = `listings/${ownerUserId}/`
+  const paths = urls
+    .map(listingStoragePath)
+    .filter((p): p is string => Boolean(p) && p!.startsWith(ownFolder))
   if (paths.length === 0) return
   const { error } = await getSupabaseAdmin().storage.from('listings').remove(paths)
   if (error) console.error('Listing storage cleanup error:', error)

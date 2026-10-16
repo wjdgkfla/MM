@@ -2,6 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
+// The server later POSTs to this URL (web-push), so a client-chosen endpoint is an SSRF vector.
+// Real push services (FCM, Mozilla, Apple, WNS) are all public https hostnames, never IP literals.
+function isSafePushEndpoint(endpoint: unknown): endpoint is string {
+  if (typeof endpoint !== 'string' || endpoint.length > 2048) return false
+  try {
+    const url = new URL(endpoint)
+    const host = url.hostname
+    return (
+      url.protocol === 'https:' &&
+      host.includes('.') &&
+      host !== 'localhost' &&
+      !host.endsWith('.localhost') &&
+      !/^[\d.]+$/.test(host) &&
+      !host.startsWith('[')
+    )
+  } catch {
+    return false
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getSessionFromRequest(request)
@@ -9,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { endpoint, keys } = body
-    if (!endpoint || !keys?.p256dh || !keys?.auth) {
+    if (!isSafePushEndpoint(endpoint) || !keys?.p256dh || !keys?.auth) {
       return NextResponse.json({ error: 'Invalid subscription' }, { status: 400 })
     }
 

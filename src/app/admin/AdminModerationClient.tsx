@@ -228,7 +228,7 @@ export function AdminModerationClient({
     }
   }
 
-  const listings = payload?.listings || []
+  const listings = useMemo(() => payload?.listings || [], [payload?.listings])
   const users = payload?.users || []
   const reports = payload?.reports || []
   const activity = payload?.activity || []

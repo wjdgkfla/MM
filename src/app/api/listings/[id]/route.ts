@@ -199,7 +199,7 @@ export async function PUT(
     // Runs after the DB update succeeds so we never delete a file the listing still references.
     const removedImageUrls = existing.imageUrls.filter((url) => !listingInput.imageUrls.includes(url))
     if (removedImageUrls.length > 0) {
-      await deleteListingStorageObjects(removedImageUrls)
+      await deleteListingStorageObjects(removedImageUrls, session.userId)
     }
 
     return NextResponse.json(listing)

@@ -43,10 +43,17 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
-      - name: Enable extensions used by migrations
+      - name: Enable extensions and Supabase stand-ins used by migrations
         env:
           PGPASSWORD: postgres
-        run: psql -h localhost -U postgres -d postgres -c 'create extension if not exists pgcrypto;'
+        # Migrations revoke from the Supabase roles and add a table to the realtime
+        # publication; plain Postgres has neither, so create empty stand-ins.
+        run: |
+          psql -h localhost -U postgres -d postgres \
+            -c 'create extension if not exists pgcrypto;' \
+            -c 'create role anon nologin;' \
+            -c 'create role authenticated nologin;' \
+            -c 'create publication supabase_realtime;'
       - name: Apply migrations to an empty database
         env:
           PGPASSWORD: postgres
